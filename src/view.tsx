@@ -22,7 +22,7 @@ export class DailyWorkLogView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Daily work log";
+		return "Daily time log";
 	}
 
 	getIcon(): string {

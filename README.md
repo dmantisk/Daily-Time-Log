@@ -1,4 +1,4 @@
-# Daily Work Log
+# Daily Time Log
 
 An Obsidian plugin that visualizes daily time tracking (Events) and To-Do lists directly from your daily markdown notes — no YAML frontmatter required.
 
@@ -45,8 +45,8 @@ Free-form notes go here — not parsed or shown in the sidebar.
 This plugin isn't published on the Community Plugins browser yet. To install manually:
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from a [release](../../releases) (or build them yourself — see below).
-2. Copy the three files into `<your vault>/.obsidian/plugins/daily-work-log/`.
-3. In Obsidian, go to **Settings → Community plugins**, turn off Restricted mode if needed, and enable **Daily Work Log**.
+2. Copy the three files into `<your vault>/.obsidian/plugins/daily-time-log/`.
+3. In Obsidian, go to **Settings → Community plugins**, turn off Restricted mode if needed, and enable **Daily Time Log**.
 
 ### Building from source
 

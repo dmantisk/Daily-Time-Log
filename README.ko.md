@@ -1,4 +1,4 @@
-# Daily Work Log
+# Daily Time Log
 
 일일 마크다운 노트에서 작업 시간 기록(이벤트)과 할 일 목록을 바로 시각화해주는 옵시디언 플러그인입니다. YAML frontmatter가 필요 없습니다.
 
@@ -45,8 +45,8 @@
 아직 커뮤니티 플러그인 브라우저에는 등록되어 있지 않습니다. 수동 설치 방법은 다음과 같습니다.
 
 1. [릴리스](../../releases)에서 `main.js`, `manifest.json`, `styles.css` 세 파일을 내려받습니다 (또는 아래처럼 직접 빌드).
-2. 세 파일을 `<볼트 경로>/.obsidian/plugins/daily-work-log/`에 복사합니다.
-3. 옵시디언에서 **설정 → Community plugins**로 이동해 (필요하면 Restricted mode를 끄고) **Daily Work Log**를 활성화합니다.
+2. 세 파일을 `<볼트 경로>/.obsidian/plugins/daily-time-log/`에 복사합니다.
+3. 옵시디언에서 **설정 → Community plugins**로 이동해 (필요하면 Restricted mode를 끄고) **Daily Time Log**를 활성화합니다.
 
 ### 소스에서 직접 빌드하기
 
