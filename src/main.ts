@@ -1,4 +1,8 @@
 import { getLanguage, Plugin, setTooltip, TFile } from "obsidian";
+import {
+	buildCategoryBadgeEditorPlugin,
+	processCategoryBadgesInReadingView,
+} from "./categoryBadges";
 import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { t } from "./i18n";
@@ -10,6 +14,10 @@ export default class DailyWorkLogPlugin extends Plugin {
 	private lastSelfWrite: { path: string; content: string } | null = null;
 	private sidebarRibbonEl!: HTMLElement;
 	private dashboardRibbonEl!: HTMLElement;
+	/** Holds the currently registered CodeMirror extension for category badges.
+	 *  Stored as a mutable array so its contents can be replaced in-place and
+	 *  the change applied to open editors via updateOptions() without a reload. */
+	private readonly categoryBadgeExtensions: import("@codemirror/state").Extension[] = [];
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -52,6 +60,29 @@ export default class DailyWorkLogPlugin extends Plugin {
 			this.app.vault.on("modify", (file) => {
 				void this.handleVaultModify(file);
 			})
+		);
+
+		// Category badge rendering — live editor (CodeMirror ViewPlugin) and
+		// reading view (markdown post-processor). The editor extension is built
+		// into a mutable array registered with Obsidian, which refreshCategoryBadgeExtension()
+		// updates in place before calling updateOptions() whenever settings change.
+		this.categoryBadgeExtensions.push(
+			buildCategoryBadgeEditorPlugin(
+				this.settings.categories,
+				this.settings.dailyNoteFolder
+			)
+		);
+		this.registerEditorExtension(this.categoryBadgeExtensions);
+
+		this.registerMarkdownPostProcessor(
+			(el: HTMLElement, ctx) => {
+				processCategoryBadgesInReadingView(
+					el,
+					ctx,
+					this.settings.categories,
+					this.settings.dailyNoteFolder
+				);
+			}
 		);
 	}
 
@@ -104,6 +135,10 @@ export default class DailyWorkLogPlugin extends Plugin {
 		setTooltip(this.sidebarRibbonEl, t("ribbonOpenSidebar", this.settings.language));
 		setTooltip(this.dashboardRibbonEl, t("ribbonOpenDashboard", this.settings.language));
 
+		// Rebuild the category badge editor extension with the latest settings
+		// so colour/folder changes take effect in open editors immediately.
+		this.refreshCategoryBadgeExtension();
+
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DAILY_WORK_LOG)) {
 			if (leaf.view instanceof DailyWorkLogView) {
 				void leaf.view.refresh();
@@ -114,6 +149,26 @@ export default class DailyWorkLogPlugin extends Plugin {
 				void leaf.view.refresh();
 			}
 		}
+	}
+	/**
+	 * Rebuilds the category badge CodeMirror extension from the current
+	 * settings and hot-swaps it into all open editors via `updateOptions`.
+	 * Called by refreshViews() so colour and folder changes are applied
+	 * immediately without requiring Obsidian to reload the plugin.
+	 *
+	 * The reading-view post-processor always reads `this.settings` via closure
+	 * at call time, so it doesn't need a separate refresh step.
+	 */
+	private refreshCategoryBadgeExtension(): void {
+		this.categoryBadgeExtensions.length = 0;
+		this.categoryBadgeExtensions.push(
+			buildCategoryBadgeEditorPlugin(
+				this.settings.categories,
+				this.settings.dailyNoteFolder
+			)
+		);
+		// updateOptions is the Obsidian API for updating registered editor extensions at runtime.
+		this.app.workspace.updateOptions();
 	}
 
 	async activateView(): Promise<void> {

@@ -990,3 +990,35 @@
 	margin-top: 0;
 	margin-bottom: 12px;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Category badge pills — rendered inside both the live editor and reading view
+   for [Category] tokens in daily notes. Background + text colours are set as
+   inline styles by categoryBadges.ts (driven by plugin settings), so these
+   rules only handle shape, spacing, and typography. Users can further
+   customise via `.dwl-cat-badge--<name>` class snippets.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.dwl-cat-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.05em 0.45em;
+	border-radius: 0.9em;
+	font-size: 0.78em;
+	font-weight: 600;
+	line-height: 1.5;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+	/* Prevent the badge from inheriting a strikethrough from a completed to-do line */
+	text-decoration: none;
+	/* Subtle inset shadow so pastel badges have visible depth on white backgrounds */
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+	vertical-align: middle;
+	/* Small gap from surrounding text */
+	margin: 0 0.1em;
+	cursor: default;
+	/* Colour is set via inline style by categoryBadges.ts — these fallbacks
+	   only apply if the inline style is somehow absent. */
+	background-color: #e2e8f0;
+	color: #1e293b;
+}

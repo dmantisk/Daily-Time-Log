@@ -62,6 +62,16 @@ export const CHECKBOX_REGEX = /^[-*]\s*\[([ xX])\]\s*(.*)$/;
  * it (that regex's job is finding/parsing lines, not validating new input).
  */
 export const TIME_VALUE_REGEX = /^(?:[01]?\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * Matches `[Category]` but NOT `[[wikilinks]]` or checkbox markdown `[ ]`, `[x]`, `[X]`.
+ * Uses negative lookbehind/lookahead for brackets, and excludes `[ ]`, `[x]`, `[X]`.
+ * Supports English, Korean, and other Unicode letters/characters in category names.
+ * Group 1 = the category text inside the brackets.
+ */
+export const CATEGORY_BADGE_REGEX_SOURCE =
+	"(?<!\\[)\\[(?![ xX]\\])([^\\x00-\\x1F\\[\\]\\r\\n]+?)\\](?!\\])";
+
 const FRONTMATTER_DELIMITER = "---";
 
 /**
