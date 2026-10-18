@@ -64,13 +64,17 @@ export const CHECKBOX_REGEX = /^[-*]\s*\[([ xX])\]\s*(.*)$/;
 export const TIME_VALUE_REGEX = /^(?:[01]?\d|2[0-3]):[0-5]\d$/;
 
 /**
- * Matches `[Category]` but NOT `[[wikilinks]]` or checkbox markdown `[ ]`, `[x]`, `[X]`.
- * Uses negative lookbehind/lookahead for brackets, and excludes `[ ]`, `[x]`, `[X]`.
- * Supports English, Korean, and other Unicode letters/characters in category names.
- * Group 1 = the category text inside the brackets.
+ * Matches `[Category]` only when it sits directly after a time range
+ * (`- HH:mm - HH:mm [Category]`), i.e. in exact event-line position. This
+ * prevents brackets typed anywhere else in a note (diary prose, headings,
+ * checkboxes, wikilinks) from being rendered as category badges.
+ *
+ * Uses negative lookbehind/lookahead for brackets, excludes `[ ]`, `[x]`,
+ * `[X]`, and supports Unicode category names. Group 1 = the category text
+ * inside the brackets.
  */
 export const CATEGORY_BADGE_REGEX_SOURCE =
-	"(?<!\\[)\\[(?![ xX]\\])([^\\x00-\\x1F\\[\\]\\r\\n]+?)\\](?!\\])";
+	"(?<=\\d{1,2}:\\d{2}\\s*[-~]\\s*\\d{1,2}:\\d{2}\\s*)\\[(?![ xX]\\])([^\\x00-\\x1F\\[\\]\\r\\n]+?)\\](?!\\])";
 
 const FRONTMATTER_DELIMITER = "---";
 
