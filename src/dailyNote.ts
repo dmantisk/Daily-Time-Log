@@ -4,7 +4,7 @@
  * this module is about note creation, not parsing.
  */
 
-import { MARKER_LABELS, type MarkerLanguage } from "./parser";
+import { DEFAULT_EVENT_HEADING, type EventHeadingConfig } from "./parser";
 
 const DAILY_NOTE_BASENAME_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -43,25 +43,9 @@ export function isSameDate(a: Date, b: Date): boolean {
 	return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-/**
- * New notes are scaffolded with the three reserved markers already in
- * place (AGENTS.md 2. New Daily Note Creation) to minimize hand-typing
- * typo risk for future edits. `language` only picks which label text gets
- * inserted here — the parser recognizes every supported language's labels
- * (and the legacy underscore-prefixed spelling, AGENTS.md 1.3) regardless
- * of this setting, so switching languages later never breaks notes already
- * scaffolded under a different one. `MARKER_LABELS` holds the current
- * (no-underscore) spelling only — this never scaffolds the legacy form.
- */
-export function buildSkeletonContent(language: MarkerLanguage): string {
-	return [
-		`# ${MARKER_LABELS.timeline[language]}`,
-		"",
-		`# ${MARKER_LABELS.todo[language]}`,
-		"",
-		`# ${MARKER_LABELS.journal[language]}`,
-		"",
-	].join("\n");
+/** Creates a new note with its configured Event heading ready for entries. */
+export function buildSkeletonContent(config: EventHeadingConfig = DEFAULT_EVENT_HEADING): string {
+	return `${"#".repeat(config.level)} ${config.text}\n\n`;
 }
 
 /**
@@ -74,4 +58,3 @@ export function isInDailyNoteFolder(filePath: string, dailyNoteFolder: string): 
 	if (!folder) return true;
 	return filePath === folder || filePath.startsWith(`${folder}/`);
 }
-

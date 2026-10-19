@@ -11,7 +11,7 @@ import { formatDateBasename } from "./dailyNote";
 import { timelineDurationMinutes, type ParsedDailyNote } from "./parser";
 import { DEFAULT_CATEGORIES, type CustomCategory } from "./settings";
 
-/** How far back "recent" stats (To-Do completion, total Event time) look. */
+/** How far back recent Event-time statistics look. */
 export const RECENT_WINDOW_DAYS = 30;
 
 export interface CategoryStatItem {
@@ -23,8 +23,6 @@ export interface CategoryStatItem {
 
 export interface NoteActivitySummary {
 	date: Date;
-	todoTotal: number;
-	todoCompleted: number;
 	eventMinutes: number;
 	topCategory: string | null;
 }
@@ -35,8 +33,6 @@ export interface DashboardStats {
 	newestDate: Date | null;
 	/** Consecutive days with a note, counting backward from `today` (0 if today has none). */
 	currentStreak: number;
-	recentTodoTotal: number;
-	recentTodoCompleted: number;
 	recentEventMinutes: number;
 	avgEventMinutesPerDay: number;
 	topCategoryName: string | null;
@@ -79,8 +75,6 @@ export function computeDashboardStats(
 			oldestDate: null,
 			newestDate: null,
 			currentStreak: 0,
-			recentTodoTotal: 0,
-			recentTodoCompleted: 0,
 			recentEventMinutes: 0,
 			avgEventMinutesPerDay: 0,
 			topCategoryName: null,
@@ -101,8 +95,6 @@ export function computeDashboardStats(
 		cursor.setDate(cursor.getDate() - 1);
 	}
 
-	let recentTodoTotal = 0;
-	let recentTodoCompleted = 0;
 	let recentEventMinutes = 0;
 
 	// Map of category displayName -> total minutes
@@ -118,12 +110,6 @@ export function computeDashboardStats(
 	const sortedRecentParsed = [...recentParsed].sort((a, b) => b.date.getTime() - a.date.getTime());
 
 	for (const { date, parsed } of sortedRecentParsed) {
-		const todoTotal = parsed.todos.length;
-		const todoCompleted = parsed.todos.filter((item) => item.checked).length;
-
-		recentTodoTotal += todoTotal;
-		recentTodoCompleted += todoCompleted;
-
 		let noteEventMinutes = 0;
 		const noteCategoryMinutesMap = new Map<string, number>();
 
@@ -159,8 +145,6 @@ export function computeDashboardStats(
 
 		recentNotesSummary.push({
 			date,
-			todoTotal,
-			todoCompleted,
 			eventMinutes: noteEventMinutes,
 			topCategory: noteTopCategory,
 		});
@@ -202,8 +186,6 @@ export function computeDashboardStats(
 		oldestDate,
 		newestDate,
 		currentStreak,
-		recentTodoTotal,
-		recentTodoCompleted,
 		recentEventMinutes,
 		avgEventMinutesPerDay,
 		topCategoryName,
@@ -211,4 +193,3 @@ export function computeDashboardStats(
 		recentNotesSummary,
 	};
 }
-

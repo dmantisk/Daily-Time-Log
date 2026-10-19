@@ -11,15 +11,12 @@ import {
 	minutesToTime,
 	parseDailyNote,
 	removeLineRangeAt,
-	replaceLineAt,
 	replaceLineRangeAt,
 	stripHtml,
 	timeToMinutes,
 	timelineRangeMatches,
-	todoRangeMatches,
 	type MarkerLanguage,
 	type TimelineItem,
-	type TodoItem,
 } from "../parser";
 import { buildExportHtml } from "../pdfExport";
 import { getTextColorForBackground } from "./colorUtils";
@@ -48,17 +45,6 @@ function buildTimelineLine(values: EventEntryValues): string {
 	return `- ${values.start} - ${values.end} ${categoryPart}${values.description}`.trimEnd();
 }
 
-/**
- * A To-Do's `text` may include absorbed continuation lines (AGENTS.md 1.4.2),
- * but the sidebar has no UI for them yet (imsi.md §9.1) — only the first
- * line is ever shown. Without this, the raw multi-line string still renders,
- * just with its `\n`s collapsed into spaces by normal HTML whitespace
- * handling, silently running the note text into the to-do label.
- */
-function todoFirstLine(item: TodoItem): string {
-	return stripHtml(item.text.split("\n")[0]);
-}
-
 function formatDateHeader(date: Date, language: MarkerLanguage): string {
 	const basename = formatDateBasename(date);
 	if (isSameDate(date, new Date())) {
@@ -70,8 +56,6 @@ function formatDateHeader(date: Date, language: MarkerLanguage): string {
 export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken }) => {
 	const [activeFile, setActiveFile] = useState<TFile | null>(null);
 	const [timeline, setTimeline] = useState<TimelineItem[]>([]);
-	const [todos, setTodos] = useState<TodoItem[]>([]);
-	const [isTodosExpanded, setIsTodosExpanded] = useState(true);
 
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragStart, setDragStart] = useState<number | null>(null);
@@ -83,9 +67,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 	const reloadFile = async (file: TFile): Promise<void> => {
 		const content = await plugin.app.vault.read(file);
-		const parsed = parseDailyNote(content);
+		const parsed = parseDailyNote(content, plugin.getEventHeadingConfig());
 		setTimeline(parsed.timeline);
-		setTodos(parsed.todos);
 	};
 
 	// Re-syncs from the active file whenever refreshToken changes (see the
@@ -105,15 +88,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			if (cancelled) return;
 			setActiveFile(resolved);
 			if (!resolved) {
-				setTimeline([]);
-				setTodos([]);
-				return;
+			setTimeline([]);
+			return;
 			}
 			const content = await plugin.app.vault.read(resolved);
 			if (cancelled) return;
-			const parsed = parseDailyNote(content);
+			const parsed = parseDailyNote(content, plugin.getEventHeadingConfig());
 			setTimeline(parsed.timeline);
-			setTodos(parsed.todos);
 		};
 		void run();
 
@@ -131,57 +112,15 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		return () => window.removeEventListener("mouseup", onWindowMouseUp);
 	}, [isDragging, dragStart, dragEnd]);
 
-	// ── To-Do ──────────────────────────────────────────────────────────
-
-	const toggleTodo = async (item: TodoItem, checked: boolean): Promise<void> => {
-		if (!activeFile) return;
-		const content = await plugin.app.vault.read(activeFile);
-		const lines = content.split("\n");
-		if (!todoRangeMatches(lines, item)) {
-			await reloadFile(activeFile);
-			return;
-		}
-		const newLine = lines[item.line].replace(/\[[ xX]\]/, checked ? "[x]" : "[ ]");
-		await plugin.writeFile(activeFile, replaceLineAt(content, item.line, newLine));
-		await reloadFile(activeFile);
-	};
-
-	const addTodo = async (text: string): Promise<void> => {
-		if (!activeFile) return;
-		const content = await plugin.app.vault.read(activeFile);
-		await plugin.writeFile(activeFile, appendLineToBlock(content, "todo", `- [ ] ${text}`));
-		await reloadFile(activeFile);
-	};
-
-	const deleteTodo = async (item: TodoItem): Promise<void> => {
-		if (!activeFile) return;
-		const content = await plugin.app.vault.read(activeFile);
-		const lines = content.split("\n");
-		if (!todoRangeMatches(lines, item)) {
-			await reloadFile(activeFile);
-			return;
-		}
-		await plugin.writeFile(activeFile, removeLineRangeAt(content, item.line, item.lineCount));
-		await reloadFile(activeFile);
-	};
-
-	const confirmDeleteTodo = (item: TodoItem): void => {
-		new ConfirmDeleteModal(
-			plugin.app,
-			t("confirmTitle", language),
-			t("confirmDeleteTask", language).replace("%s", todoFirstLine(item)),
-			t("btnCancel", language),
-			t("confirmOk", language),
-			() => void deleteTodo(item)
-		).open();
-	};
-
 	// ── Event (Timeline) ──────────────────────────────────────────────
 
 	const addEvent = async (values: EventEntryValues): Promise<void> => {
 		if (!activeFile) return;
 		const content = await plugin.app.vault.read(activeFile);
-		await plugin.writeFile(activeFile, appendLineToBlock(content, "timeline", buildTimelineLine(values)));
+		await plugin.writeFile(
+			activeFile,
+			appendLineToBlock(content, buildTimelineLine(values), plugin.getEventHeadingConfig())
+		);
 		await reloadFile(activeFile);
 	};
 
@@ -252,7 +191,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			if (folder && !plugin.app.vault.getAbstractFileByPath(folder)) {
 				await plugin.app.vault.createFolder(folder);
 			}
-			file = await plugin.app.vault.create(filePath, buildSkeletonContent(language));
+			file = await plugin.app.vault.create(filePath, buildSkeletonContent(plugin.getEventHeadingConfig()));
 		}
 		if (file instanceof TFile) {
 			const leaf = plugin.app.workspace.getLeaf(false);
@@ -270,13 +209,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		const html = buildExportHtml({
 			dateHeader,
 			timeline,
-			todos,
 			categories,
 			themeMode: plugin.settings.themeMode,
 			startHour,
 			endHour,
 			uncategorizedLabel: t("uncategorized", language),
-			todayTodosLabel: t("todayTodosTitle", language),
 			printButtonLabel: t("printButton", language),
 		});
 
@@ -464,66 +401,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 				</div>
 			</div>
 
-			<div className="dwl-section dwl-todo-section">
-				<div
-					className="dwl-section-header dwl-todo-header"
-					onClick={() => setIsTodosExpanded(!isTodosExpanded)}
-				>
-					<span className="dwl-section-title">
-						{t("todayTodosTitle", language)}{" "}
-						<span className="dwl-section-count">
-							{todos.filter((it) => it.checked).length}/{todos.length}
-						</span>
-					</span>
-					<span className={`dwl-todo-toggle-icon${isTodosExpanded ? "" : " is-collapsed"}`}>▼</span>
-				</div>
-
-				{isTodosExpanded && (
-					<div className="dwl-todo-body">
-						<div className="dwl-todo-input-wrap">
-							<input
-								className="dwl-todo-input"
-								type="text"
-								placeholder={t("todoPlaceholder", language)}
-								onKeyDown={(evt) => {
-									evt.stopPropagation();
-									if (evt.key === "Enter") {
-										const value = evt.currentTarget.value.trim();
-										if (value) {
-											void addTodo(value);
-											evt.currentTarget.value = "";
-										}
-									} else if (evt.key === "Escape") {
-										evt.currentTarget.value = "";
-										evt.currentTarget.blur();
-									}
-								}}
-							/>
-						</div>
-
-						{todos.length === 0 ? (
-							<div className="dwl-empty-state">{t("emptyTodo", language)}</div>
-						) : (
-							<ul className="dwl-todo-list">
-								{todos.map((item) => (
-									<li key={item.line} className="dwl-todo-item">
-										<input
-											className="dwl-todo-checkbox"
-											type="checkbox"
-											checked={item.checked}
-											onChange={(evt) => void toggleTodo(item, evt.target.checked)}
-										/>
-										<span className={`dwl-todo-text${item.checked ? " dwl-todo-text-checked" : ""}`}>{todoFirstLine(item)}</span>
-										<button type="button" className="dwl-todo-delete-btn" onClick={() => confirmDeleteTodo(item)}>
-											✕
-										</button>
-									</li>
-								))}
-							</ul>
-						)}
-					</div>
-				)}
-			</div>
 		</div>
 	);
 };

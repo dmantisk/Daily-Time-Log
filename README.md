@@ -1,6 +1,6 @@
 # Daily Time Log
 
-An Obsidian plugin that visualizes daily time tracking (Events) and To-Do lists directly from your daily markdown notes — no YAML frontmatter required.
+An Obsidian plugin that visualizes time-tracking Events directly from your daily markdown notes — no YAML frontmatter required.
 
 *[한국어 안내는 README.ko.md를 참고하세요.](./README.ko.md)*
 
@@ -8,37 +8,27 @@ An Obsidian plugin that visualizes daily time tracking (Events) and To-Do lists 
 
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
 - **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — plus up to 10 custom), stored as a `[Category]` tag right in the note body.
-- **Collapsible To-Do panel**: docked at the bottom of the sidebar, with inline add/check/delete.
 - **PDF / HTML export**: turn any day into a standalone, printable HTML file.
 - **Configurable daily note folder**: notes don't have to live at the vault root, with folder autocomplete in settings.
-- **Minimal metadata**: everything is read from three plain markdown headings — no frontmatter needed.
-- **Multi-language, backward-compatible markers**: notes use `Event` / `ToDo` / `Diary` (or Korean `이벤트` / `할일` / `다이어리`) headings; the legacy underscore-prefixed spelling (`_Event` etc.) from older notes is still recognized so nothing breaks.
+- **Configurable Event heading**: choose its text and Markdown heading level; historical English and Korean Event headings remain recognized.
+- **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
 - **Two independent themes**: a Light/Dark toggle just for the sidebar (separate from Obsidian's own theme, popups always follow the system theme), and Work Insights that follows Obsidian's theme automatically.
-- **Work Insights**: a vault summary — total notes in configured folder, current streak, time window filtering (7d/30d/90d/All), To-Do completion rate, total event time and daily average, category time breakdown visualization (Multi-Segment Progress Bar), and recent note activity history.
+- **Work Insights**: a vault summary — total notes in configured folder, current streak, time window filtering (7d/30d/90d/All), total event time and daily average, category time breakdown visualization (Multi-Segment Progress Bar), and recent note activity history.
 
 ## Daily Note Format
 
-Daily notes must be named `YYYY-MM-DD.md`. A new note created through the plugin looks like this:
+Daily notes must be named `YYYY-MM-DD.md`. A new note created through the plugin contains the configured Event heading; by default:
 
 ```markdown
 # Event
 
 - 9:00 - 10:30 [Work] Team meeting
-
-# ToDo
-
-- [x] Submit weekly report
-- [ ] Review pull requests
-
-# Diary
-
-Free-form notes go here — not parsed or shown in the sidebar.
 ```
 
 - The `[Category]` tag right after the time range is optional — `- 9:00 - 10:30 Team meeting` (no category) still works.
-- Blocks can appear in any order.
-- Notes written before this format existed (`# _Event` etc., with a leading underscore) keep working — the plugin recognizes both spellings.
+- Set the Event heading text and level in plugin settings. The historical English and Korean Event headings, including underscore-prefixed variants, remain recognized.
+- When the configured heading is present, only its section (up to the next heading) is parsed. Notes without an Event heading retain legacy whole-note parsing.
 
 ## Installation
 
@@ -91,20 +81,14 @@ You don't need the sidebar at all — the sidebar is just a UI on top of plain m
 
 - 9:00 - 10:30 [Work] Team meeting
 - 14:00 - 14:30 Quick call with no category
-
-# ToDo
-
-- [ ] Something to do
-- [x] Something already done
 ```
 
 - `- HH:mm - HH:mm [Category] description` for an Event. The `[Category]` part is optional; the category name must match one of the names configured in **Settings → Category Management** to pick up its color (an unrecognized or missing category just shows as uncategorized).
-- `- [ ] text` / `- [x] text` for a To-Do, same as a normal Obsidian checkbox.
-- Save the file (or just keep typing — Obsidian autosaves) and the sidebar/Work Insights pick up the change automatically.
+- Save the file (or just keep typing — Obsidian autosaves) and the sidebar/Work Insights pick up Event changes automatically. Checkbox lines remain note content and are not parsed as tasks.
 
 #### Multi-line notes
 
-Any line right after an Event or To-Do line that doesn't itself look like a *new* Event/To-Do/heading line is treated as a continuation of the one above it — handy for jotting extra detail without cluttering the single description line:
+Any line right after an Event line that doesn't itself look like a *new* Event, checkbox, or heading line is treated as a continuation of the one above it — handy for jotting extra detail without cluttering the single description line:
 
 ```markdown
 # Event
@@ -112,27 +96,22 @@ Any line right after an Event or To-Do line that doesn't itself look like a *new
 - 9:00 - 10:30 [Work] Team meeting
 Discussed Q3 roadmap and confirmed next steps with design.
 Follow-up scheduled for next week.
-
-# ToDo
-
-- [ ] Ship the release
-Rollback plan is documented in the runbook.
 ```
 
 - For **Events**, the sidebar already supports this — press Enter in the description field of the add/edit popup and the extra lines are saved and shown right there when you reopen it.
-- For **To-Dos**, the sidebar's quick-add field is single-line only for now, but the note format supports it — add the extra line(s) by editing the note directly, right after the `- [ ]`/`- [x]` line. They're preserved (and can be deleted together with the to-do) even though the sidebar doesn't show or edit them yet.
-- A continuation line can't itself start like a new time range (`09:00 - 10:00 ...`) or a checkbox (`- [ ] ...`) — it would otherwise be misread as a separate new item the next time the note is parsed. The sidebar blocks saving a description that would do this; if you're editing the note directly, just avoid starting a note line that way.
+- A continuation line can't itself start like a new time range (`09:00 - 10:00 ...`), a checkbox (`- [ ] ...`), or a heading — it would otherwise be treated as independent note content. The sidebar blocks saving a description that would do this.
 - A single blank line stays part of the item as a paragraph break, but **two or more blank lines in a row end it right there** — the rest is left in the file untouched, just no longer part of that item, so it stops showing in the sidebar and won't be affected by editing that item. Saving from the sidebar automatically collapses 3+ blank lines down to 1.
 
 #### A note on HTML tags
 
-When viewing Event/To-Do content in the sidebar, HTML tags are stripped out. This uses simple tag-pattern matching (`<...>`), so writing a literal inequality comparison in a description (e.g. `3 < 5`, `10 > 2`) can be misread as a tag and disappear from the sidebar/export. If you need `<`/`>` as literal text, use the HTML entities `&lt;`/`&gt;` instead.
+When viewing Event content in the sidebar, HTML tags are stripped out. This uses simple tag-pattern matching (`<...>`), so writing a literal inequality comparison in a description (e.g. `3 < 5`, `10 > 2`) can be misread as a tag and disappear from the sidebar/export. If you need `<`/`>` as literal text, use the HTML entities `&lt;`/`&gt;` instead.
 
 ## Settings
 
 - **Day Start Hour / Day End Hour**: the hour range shown on the grid.
 - **Daily Note Folder**: where new daily notes are created (vault root by default), with folder autocomplete.
-- **Language**: auto-detected from Obsidian's own UI language on first run. Controls the marker labels inserted into new notes and all sidebar/settings text — existing notes in either language keep parsing correctly regardless of this setting.
+- **Event Heading Text / Level**: configure the heading that begins the Event section in your notes.
+- **Language**: auto-detected from Obsidian's own UI language on first run; controls sidebar and settings text.
 - **Background Theme Mode**: Light or Dark, for the sidebar only.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults.
 
@@ -144,6 +123,11 @@ npm run build   # type-check (tsc) + production build
 ```
 
 ## Changelog
+
+### Unreleased
+
+- Removed To-Do parsing, sidebar controls, dashboard metrics, and To-Do export; checkbox lines remain ordinary note content.
+- Added settings for the Event heading text and Markdown level, used when parsing and creating daily notes.
 
 ### 0.4.3 (2026-08-15)
 

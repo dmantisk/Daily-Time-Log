@@ -8,6 +8,7 @@ import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
 import { DEFAULT_SETTINGS, migrateLoadedSettings, type DailyWorkLogSettings, type SidebarTheme } from "./settings";
+import type { EventHeadingConfig } from "./parser";
 
 export default class DailyWorkLogPlugin extends Plugin {
 	settings: DailyWorkLogSettings = DEFAULT_SETTINGS;
@@ -90,24 +91,47 @@ export default class DailyWorkLogPlugin extends Plugin {
 		const loadedData = (await this.loadData()) as (Partial<DailyWorkLogSettings> & { theme?: SidebarTheme }) | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, migrateLoadedSettings(loadedData));
 
+		let shouldSave = false;
 		// First run only (no saved language yet) — auto-detect from Obsidian's own UI
 		// language, then persist it so this never re-triggers. Purely a nicer default;
 		// the dropdown in SettingTab can always override it afterward (AGENTS.md §2).
 		if (!loadedData || loadedData.language === undefined) {
 			this.settings.language = getLanguage() === "ko" ? "ko" : "en";
-			await this.saveSettings();
+			shouldSave = true;
 		}
+
+		if (typeof loadedData?.eventHeadingText !== "string") {
+			this.settings.eventHeadingText = this.settings.language === "ko" ? "이벤트" : "Event";
+			shouldSave = true;
+		}
+		this.settings.eventHeadingText = this.settings.eventHeadingText.trim();
+		if (!this.settings.eventHeadingText || /[\r\n]/.test(this.settings.eventHeadingText)) {
+			this.settings.eventHeadingText = this.settings.language === "ko" ? "이벤트" : "Event";
+			shouldSave = true;
+		}
+		if (!Number.isInteger(this.settings.eventHeadingLevel) || this.settings.eventHeadingLevel < 1 || this.settings.eventHeadingLevel > 6) {
+			this.settings.eventHeadingLevel = DEFAULT_SETTINGS.eventHeadingLevel;
+			shouldSave = true;
+		}
+		if (shouldSave) await this.saveSettings();
 	}
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
 
+	getEventHeadingConfig(): EventHeadingConfig {
+		return {
+			text: this.settings.eventHeadingText,
+			level: this.settings.eventHeadingLevel,
+		};
+	}
+
 	/**
 	 * Writes must go through this method (not `vault.modify` directly) so the
 	 * resulting `modify` event can be recognized as self-triggered and
 	 * skipped — otherwise the sidebar would redundantly re-render itself
-	 * every time it edits a To-Do checkbox (AGENTS.md 2. Event Listeners).
+	 * after every edit.
 	 */
 	async writeFile(file: TFile, content: string): Promise<void> {
 		this.lastSelfWrite = { path: file.path, content };

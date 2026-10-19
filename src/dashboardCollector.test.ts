@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeDashboardStats, getRecentWindowStart } from "./dashboardCollector";
 import type { ParsedDailyNote } from "./parser";
 
-const EMPTY_NOTE: ParsedDailyNote = { timeline: [], todos: [] };
+const EMPTY_NOTE: ParsedDailyNote = { timeline: [] };
 
 describe("getRecentWindowStart", () => {
 	it("returns the day exactly 29 days before today (30-day window, inclusive)", () => {
@@ -19,8 +19,6 @@ describe("computeDashboardStats", () => {
 		expect(stats.oldestDate).toBeNull();
 		expect(stats.newestDate).toBeNull();
 		expect(stats.currentStreak).toBe(0);
-		expect(stats.recentTodoTotal).toBe(0);
-		expect(stats.recentTodoCompleted).toBe(0);
 		expect(stats.recentEventMinutes).toBe(0);
 		expect(stats.avgEventMinutesPerDay).toBe(0);
 		expect(stats.topCategoryName).toBeNull();
@@ -54,7 +52,7 @@ describe("computeDashboardStats", () => {
 		expect(computeDashboardStats(dates, [], today).currentStreak).toBe(0);
 	});
 
-	it("aggregates recent To-Do completion, category breakdown, and daily average", () => {
+	it("aggregates category breakdown and daily average", () => {
 		const today = new Date(2026, 6, 14);
 		const dates = [new Date(2026, 6, 14)];
 		const recentParsed = [
@@ -64,10 +62,6 @@ describe("computeDashboardStats", () => {
 					timeline: [
 						{ line: 0, lineCount: 1, start: "09:00", end: "10:30", category: "Work", description: "work task" },
 						{ line: 1, lineCount: 1, start: "11:00", end: "12:00", category: "Study", description: "study task" },
-					],
-					todos: [
-						{ line: 2, lineCount: 1, checked: true, text: "a" },
-						{ line: 3, lineCount: 1, checked: false, text: "b" },
 					],
 				} satisfies ParsedDailyNote,
 			},
@@ -79,8 +73,6 @@ describe("computeDashboardStats", () => {
 		];
 
 		const stats = computeDashboardStats(dates, recentParsed, today, customCategories);
-		expect(stats.recentTodoTotal).toBe(2);
-		expect(stats.recentTodoCompleted).toBe(1);
 		expect(stats.recentEventMinutes).toBe(150); // 90m + 60m
 		expect(stats.avgEventMinutesPerDay).toBe(150);
 		expect(stats.topCategoryName).toBe("Work");
@@ -100,7 +92,6 @@ describe("computeDashboardStats", () => {
 
 		expect(stats.recentNotesSummary).toHaveLength(1);
 		expect(stats.recentNotesSummary[0].topCategory).toBe("Work");
-		expect(stats.recentNotesSummary[0].todoTotal).toBe(2);
 	});
 
 	it("folds a category no longer present in settings into uncategorized, rather than dropping its minutes", () => {
@@ -119,7 +110,6 @@ describe("computeDashboardStats", () => {
 						{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" },
 						{ line: 1, lineCount: 1, start: "10:00", end: "11:00", category: "OldRenamedCategory", description: "b" },
 					],
-					todos: [],
 				} satisfies ParsedDailyNote,
 			},
 		];
@@ -140,7 +130,6 @@ describe("computeDashboardStats", () => {
 				date: today,
 				parsed: {
 					timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "work", description: "a" }],
-					todos: [],
 				} satisfies ParsedDailyNote,
 			},
 		];
@@ -159,8 +148,6 @@ describe("computeDashboardStats", () => {
 			[{ date: today, parsed: EMPTY_NOTE }],
 			today
 		);
-		expect(stats.recentTodoTotal).toBe(0);
 		expect(stats.recentEventMinutes).toBe(0);
 	});
 });
-

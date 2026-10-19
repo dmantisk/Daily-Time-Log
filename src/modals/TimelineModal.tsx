@@ -38,8 +38,8 @@ function TimelineModalContent({
 	const [start, setStart] = useState(initial ? initial.start : defaultStart);
 	const [end, setEnd] = useState(initial ? initial.end : defaultEnd);
 	const [category, setCategory] = useState<string | undefined>(initial ? initial.category : undefined);
-	// The textarea shows the HTML-stripped form for readability (imsi_todo.md
-	// follow-up); the original raw markup is only restored on save, and only
+	// The textarea shows the HTML-stripped form for readability; the original
+	// raw markup is only restored on save, and only
 	// if this field was never touched, so a plugin like Editing Toolbar that
 	// wrote raw <font>/<b> tags doesn't get its formatting silently deleted
 	// just from opening and re-saving an event without editing the text.
@@ -56,7 +56,7 @@ function TimelineModalContent({
 		// exactly 2) — a run of several blank lines carries no extra meaning
 		// over a single paragraph break, just extra stored lineCount.
 		const trimmedDescription = rawDescription.trim().replace(/\n{3,}/g, "\n\n");
-		// A continuation line shaped like a real Timeline/To-Do line would be
+		// A continuation line shaped like a real event, checkbox, or heading would be
 		// misread as a new top-level item on the next parse instead of staying
 		// part of this description (AGENTS.md 1.4.2) — reject rather than
 		// silently losing it.

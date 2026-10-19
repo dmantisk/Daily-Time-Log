@@ -41,6 +41,10 @@ export interface DailyWorkLogSettings {
 	 * Obsidian's own UI language before falling back to the "en" default below.
 	 */
 	language: MarkerLanguage;
+	/** Markdown heading text that starts the Event block in daily notes. */
+	eventHeadingText: string;
+	/** Markdown heading level (1-6) used for the Event block. */
+	eventHeadingLevel: number;
 	/** Sidebar/grid view color scheme. Renamed from `theme` (see migrateLoadedSettings). */
 	themeMode: SidebarTheme;
 	/** Grid timeline's displayed hour range, inclusive start / exclusive end (0-24). */
@@ -54,6 +58,8 @@ export interface DailyWorkLogSettings {
 
 export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	language: "en",
+	eventHeadingText: "Event",
+	eventHeadingLevel: 1,
 	themeMode: "light",
 	startHour: 0,
 	endHour: 24,

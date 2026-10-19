@@ -1,11 +1,8 @@
 import type { MarkerLanguage } from "./parser";
 
 /**
- * UI display strings — a separate concern from marker parsing (parser.ts
- * MARKER_LABELS). The parser always recognizes every supported language's
- * markers regardless of settings (AGENTS.md 1.3); this table instead governs
- * what the sidebar itself displays, and follows the single configured
- * language only. See design.md §9.
+ * UI display strings. The parser recognizes the configured Event heading plus
+ * historical Event spellings; this table governs the plugin interface only.
  *
  * Values are kept in exact parity with DayTime Tracker's own locale/en.ts
  * and locale/ko.ts wherever a directly corresponding string exists — the
@@ -18,7 +15,6 @@ export type UIStringKey =
 	| "ribbonOpenDashboard"
 	| "commandOpenSidebar"
 	| "commandOpenDashboard"
-	| "todoPlaceholder"
 	| "modalAddTitle"
 	| "modalEditTitle"
 	| "lblTimeSet"
@@ -35,12 +31,9 @@ export type UIStringKey =
 	| "exportPdfDesc"
 	| "exportSuccess"
 	| "printButton"
-	| "todayTodosTitle"
 	| "confirmTitle"
-	| "confirmDeleteTask"
 	| "confirmDeleteEvent"
 	| "confirmOk"
-	| "emptyTodo"
 	| "emptyStateTitleNoNote"
 	| "emptyStateDescNoNote"
 	| "emptyStateTitleNotDaily"
@@ -51,7 +44,6 @@ export type UIStringKey =
 	| "statTotalNotes"
 	| "statStreak"
 	| "statDateRange"
-	| "statTodoRate"
 	| "statEventTime"
 	| "unitDays"
 	| "recentNotesTitle"
@@ -65,6 +57,11 @@ export type UIStringKey =
 	| "settingFolderName"
 	| "settingFolderDesc"
 	| "settingFolderPlaceholder"
+	| "settingEventHeadingTextName"
+	| "settingEventHeadingTextDesc"
+	| "settingEventHeadingLevelName"
+	| "settingEventHeadingLevelDesc"
+	| "alertInvalidEventHeading"
 	| "settingLanguageName"
 	| "settingLanguageDesc"
 	| "alertStartBeforeEnd"
@@ -104,7 +101,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		ribbonOpenDashboard: "Open Work Insights",
 		commandOpenSidebar: "Open sidebar",
 		commandOpenDashboard: "Open Work Insights",
-		todoPlaceholder: "Add a new to-do... (Enter)",
 		modalAddTitle: "What did you do?",
 		modalEditTitle: "Edit Daily Activity",
 		lblTimeSet: "Time Setting",
@@ -121,25 +117,21 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		exportPdfDesc: "Export timeline to a printable HTML file.",
 		exportSuccess: "Timeline HTML file has been generated. Open it in a browser to save as PDF!",
 		printButton: "Save as PDF / Print",
-		todayTodosTitle: "Today's To-Dos",
 		confirmTitle: "Notice",
-		confirmDeleteTask: "Are you sure you want to delete the to-do '%s'?",
 		confirmDeleteEvent: "Delete this event?",
 		confirmOk: "Confirm",
-		emptyTodo: "No to-dos for today.",
 		emptyStateTitleNoNote: "No note open",
 		emptyStateDescNoNote: "Please select an active note to view or edit logs.",
 		emptyStateTitleNotDaily: "Not a daily note",
 		invalidTimeFormat: "Invalid time format. (e.g. 09:00)",
 		multilineContinuationError:
-			"Line 2 onward can't start like a time range (e.g. 09:00 - 10:00) or a checkbox (e.g. - [ ]) — please rephrase.",
+			"Line 2 onward can't start like a time range (e.g. 09:00 - 10:00), checkbox, or heading — please rephrase.",
 		dashboardTitle: "Work Insights",
 
 		btnRefresh: "Refresh",
 		statTotalNotes: "Total Notes",
 		statStreak: "Current Streak",
 		statDateRange: "Date Range",
-		statTodoRate: "To-Do Completion (30d)",
 		statEventTime: "Event Time (30d)",
 		unitDays: " days",
 		recentNotesTitle: "Recent Notes",
@@ -154,9 +146,12 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingFolderDesc: "Folder where today's daily note will be created. Leave empty to use the vault root.",
 		settingFolderPlaceholder: "Vault root",
 		settingLanguageName: "Language",
-		settingLanguageDesc:
-			"Display language for the Event/ToDo/Diary markers inserted into new daily notes. " +
-			"Changing it never breaks markers already written in another language in existing files.",
+		settingEventHeadingTextName: "Event heading text",
+		settingEventHeadingTextDesc: "Heading label that marks the start of the Event section in daily notes.",
+		settingEventHeadingLevelName: "Event heading level",
+		settingEventHeadingLevelDesc: "Markdown heading depth used for the Event section (1-6).",
+		alertInvalidEventHeading: "The Event heading must be a single line.",
+		settingLanguageDesc: "Display language for the plugin interface.",
 		alertStartBeforeEnd: "Start hour must be earlier than end hour.",
 		alertEndAfterStart: "End hour must be later than start hour.",
 		settingThemeModeName: "Background Theme Mode",
@@ -194,7 +189,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		ribbonOpenDashboard: "DailyWorkLog 일과 인사이트 열기",
 		commandOpenSidebar: "사이드바 열기",
 		commandOpenDashboard: "일과 인사이트 열기",
-		todoPlaceholder: "새로운 할 일 추가... (Enter)",
 		modalAddTitle: "무엇을 했나요?",
 		modalEditTitle: "일과 수정",
 		lblTimeSet: "시간 설정",
@@ -211,25 +205,21 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		exportPdfDesc: "타임라인을 PDF/인쇄용 HTML 파일로 내보냅니다.",
 		exportSuccess: "타임라인 인쇄용 HTML 파일이 생성되었습니다. 브라우저 창에서 PDF로 저장하세요!",
 		printButton: "PDF로 저장 / 인쇄하기",
-		todayTodosTitle: "오늘 할 일",
 		confirmTitle: "알림",
-		confirmDeleteTask: "'%s' 할 일을 삭제하시겠습니까?",
 		confirmDeleteEvent: "이 이벤트를 삭제하시겠습니까?",
 		confirmOk: "확인",
-		emptyTodo: "등록된 오늘 할 일이 없습니다.",
 		emptyStateTitleNoNote: "선택된 노트가 없습니다",
 		emptyStateDescNoNote: "일과를 기록하고 조회하려면 활성화된 노트를 선택해 주세요.",
 		emptyStateTitleNotDaily: "날짜 노트가 아닙니다",
 		invalidTimeFormat: "시간 형식이 올바르지 않습니다. (예: 09:00)",
 		multilineContinuationError:
-			"2번째 줄부터는 시간 범위(예: 09:00 - 10:00)나 체크박스(예: - [ ]) 형식으로 시작할 수 없습니다. 문구를 조금 바꿔주세요.",
+			"2번째 줄부터는 시간 범위(예: 09:00 - 10:00), 체크박스 또는 제목 형식으로 시작할 수 없습니다. 문구를 조금 바꿔주세요.",
 		dashboardTitle: "일과 인사이트",
 
 		btnRefresh: "새로고침",
 		statTotalNotes: "총 노트 수",
 		statStreak: "연속 작성일",
 		statDateRange: "기록 기간",
-		statTodoRate: "최근 30일 할 일 완료율",
 		statEventTime: "최근 30일 기록 시간",
 		unitDays: "일",
 		recentNotesTitle: "최근 노트",
@@ -244,9 +234,12 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingFolderDesc: "'오늘' 버튼으로 노트를 생성할 때 사용할 폴더를 지정합니다. 비워두면 볼트 최상위 폴더에 생성됩니다.",
 		settingFolderPlaceholder: "볼트 최상위 폴더",
 		settingLanguageName: "언어",
-		settingLanguageDesc:
-			"새 일일 노트를 생성할 때 삽입되는 Event/ToDo/Diary 마커의 표시 언어입니다. " +
-			"언어를 바꿔도 기존 파일에 쓰인 다른 언어 마커는 계속 인식됩니다.",
+		settingEventHeadingTextName: "이벤트 제목 문구",
+		settingEventHeadingTextDesc: "일일 노트에서 Event 섹션의 시작을 표시하는 제목 문구입니다.",
+		settingEventHeadingLevelName: "이벤트 제목 수준",
+		settingEventHeadingLevelDesc: "Event 섹션에 사용할 마크다운 제목 수준입니다 (1-6).",
+		alertInvalidEventHeading: "Event 제목은 한 줄이어야 합니다.",
+		settingLanguageDesc: "플러그인 인터페이스 표시 언어입니다.",
 		alertStartBeforeEnd: "시작 시간은 종료 시간보다 빨라야 합니다.",
 		alertEndAfterStart: "종료 시간은 시작 시간보다 늦어야 합니다.",
 		settingThemeModeName: "배경 테마 설정",

@@ -1,23 +1,21 @@
 /**
- * Builds a standalone, print-ready HTML snapshot of one day's grid + To-Do
+ * Builds a standalone, print-ready HTML snapshot of one day's grid
  * list (design.md §13). Pure string-building — no Obsidian API — so it can
  * be unit-tested directly; the caller (TimelineView.tsx) handles writing the
  * result to the vault and opening it.
  */
 import { getTextColorForBackground } from "./components/colorUtils";
-import { stripHtml, timeToMinutes, type TimelineItem, type TodoItem } from "./parser";
+import { timeToMinutes, type TimelineItem } from "./parser";
 import type { CustomCategory, SidebarTheme } from "./settings";
 
 export interface ExportContext {
 	dateHeader: string;
 	timeline: TimelineItem[];
-	todos: TodoItem[];
 	categories: CustomCategory[];
 	themeMode: SidebarTheme;
 	startHour: number;
 	endHour: number;
 	uncategorizedLabel: string;
-	todayTodosLabel: string;
 	printButtonLabel: string;
 }
 
@@ -97,23 +95,6 @@ export function buildExportHtml(ctx: ExportContext): string {
 			</div>`;
 	}
 
-	const doneCount = ctx.todos.filter((it) => it.checked).length;
-	const todosHtml =
-		ctx.todos.length === 0
-			? ""
-			: `
-			<div class="todos-block">
-				<div class="todos-title">${escapeHtml(ctx.todayTodosLabel)} (${doneCount}/${ctx.todos.length})</div>
-				<ul class="todos-list">
-					${ctx.todos
-						.map(
-							(item) =>
-								`<li class="${item.checked ? "is-checked" : ""}"><input type="checkbox" disabled ${item.checked ? "checked" : ""}/> <span>${escapeHtml(stripHtml(item.text))}</span></li>`
-						)
-						.join("")}
-				</ul>
-			</div>`;
-
 	return `<!DOCTYPE html>
 <html>
 <head>
@@ -131,10 +112,6 @@ export function buildExportHtml(ctx: ExportContext): string {
 	.ampm { font-size: 9px; opacity: 0.7; margin-left: 2px; }
 	.grid-cells { flex: 1; position: relative; border-bottom: 1px solid ${colors.borderColor}; box-sizing: border-box; }
 	.grid-block { position: absolute; top: 3px; height: calc(100% - 6px); border-radius: 4px; font-size: 11px; font-weight: 600; display: flex; align-items: center; padding: 0 6px; overflow: hidden; white-space: nowrap; box-sizing: border-box; }
-	.todos-block { border: 1px solid ${colors.borderColor}; border-radius: 6px; padding: 12px 16px; }
-	.todos-title { font-weight: 600; margin-bottom: 8px; }
-	.todos-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-	.todos-list li.is-checked span { text-decoration: line-through; color: ${colors.textMuted}; }
 	@media print { .print-btn { display: none; } body { padding: 0; } }
 </style>
 </head>
@@ -145,7 +122,6 @@ export function buildExportHtml(ctx: ExportContext): string {
 			<button class="print-btn" onclick="window.print()">${escapeHtml(ctx.printButtonLabel)}</button>
 		</div>
 		<div class="grid">${gridRowsHtml}</div>
-		${todosHtml}
 	</div>
 </body>
 </html>`;

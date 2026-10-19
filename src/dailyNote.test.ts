@@ -39,19 +39,9 @@ describe("formatDateBasename / formatDateFilename", () => {
 });
 
 describe("buildSkeletonContent", () => {
-	it("puts exactly one blank line after each marker, including the last one", () => {
-		const lines = buildSkeletonContent("en").split("\n");
-		expect(lines).toEqual(["# Event", "", "# ToDo", "", "# Diary", ""]);
-	});
-
-	it("uses the Korean labels when language is ko", () => {
-		const lines = buildSkeletonContent("ko").split("\n");
-		expect(lines).toEqual(["# 이벤트", "", "# 할일", "", "# 다이어리", ""]);
-	});
-
-	it("never scaffolds the legacy underscore-prefixed spelling (AGENTS.md 1.3)", () => {
-		expect(buildSkeletonContent("en")).not.toContain("_Event");
-		expect(buildSkeletonContent("ko")).not.toContain("_이벤트");
+	it("creates only the configured Event heading followed by a blank line", () => {
+		expect(buildSkeletonContent()).toBe("# Event\n\n");
+		expect(buildSkeletonContent({ text: "이벤트", level: 2 })).toBe("## 이벤트\n\n");
 	});
 });
 
@@ -76,4 +66,3 @@ describe("isInDailyNoteFolder", () => {
 		expect(isInDailyNoteFolder("Daily Notes Extra/2026-07-13.md", "Daily Notes")).toBe(false);
 	});
 });
-

@@ -4,13 +4,11 @@ import { buildExportHtml } from "./pdfExport";
 const baseCtx = {
 	dateHeader: "2026-08-05 (Wed)",
 	timeline: [],
-	todos: [],
 	categories: [{ name: "Work", displayName: "Work", color: "#d0e1fd", isDefault: true }],
 	themeMode: "light" as const,
 	startHour: 0,
 	endHour: 24,
 	uncategorizedLabel: "Uncategorized",
-	todayTodosLabel: "Today's To-Dos",
 	printButtonLabel: "Save as PDF / Print",
 };
 
@@ -38,18 +36,9 @@ describe("buildExportHtml", () => {
 		expect(html).toContain("Uncategorized");
 	});
 
-	it("strips HTML tags from To-Do text instead of injecting them raw", () => {
-		const html = buildExportHtml({
-			...baseCtx,
-			todos: [{ line: 0, lineCount: 1, checked: false, text: "<script>alert(1)</script>" }],
-		});
-		expect(html).not.toContain("<script>alert(1)</script>");
-		expect(html).not.toContain("<script>");
-		expect(html).toContain("<span>alert(1)</span>");
-	});
-
-	it("omits the to-dos block markup entirely when there are no todos", () => {
+	it("exports only the timeline without task-list markup", () => {
 		const html = buildExportHtml(baseCtx);
 		expect(html).not.toContain('class="todos-block"');
+		expect(html).not.toContain('type="checkbox"');
 	});
 });

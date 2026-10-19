@@ -56,13 +56,7 @@
 	overflow: hidden;
 }
 
-.dwl-empty-state {
-	color: var(--dwl-text-muted);
-	font-size: var(--font-ui-small);
-	padding: 0.5rem 0;
-}
-
-/* Shared section (Event / To-Do) header — design.md §6 */
+/* Event section — design.md §6 */
 
 .dwl-section {
 	display: flex;
@@ -84,14 +78,6 @@
 	letter-spacing: 0.06em;
 	display: flex;
 	align-items: center;
-}
-
-.dwl-section-count {
-	font-size: var(--font-ui-smaller);
-	color: var(--dwl-text-faint);
-	font-weight: 400;
-	text-transform: none;
-	letter-spacing: normal;
 }
 
 /* View header (date title + "today's note" button) — slightly darker than
@@ -277,121 +263,6 @@
 .dwl-grid-block:hover {
 	transform: scaleY(1.04);
 	filter: brightness(1.1);
-}
-
-/* To-Do section */
-
-.dwl-todo-header {
-	cursor: pointer;
-}
-
-.dwl-todo-toggle-icon {
-	font-size: 10px;
-	color: var(--dwl-text-faint);
-	transition: transform 0.15s;
-}
-
-.dwl-todo-toggle-icon.is-collapsed {
-	transform: rotate(-90deg);
-}
-
-.dwl-todo-body {
-	display: flex;
-	flex-direction: column;
-	gap: 0.4rem;
-}
-
-.dwl-todo-input-wrap {
-	padding: 0;
-}
-
-.dwl-todo-input.dwl-todo-input {
-	width: 100%;
-	font-size: var(--font-ui-small);
-	padding: 0.3rem 0.5rem;
-	border: 1px solid var(--dwl-border-light);
-	border-radius: var(--radius-s);
-	background: var(--dwl-bg);
-	color: var(--dwl-text);
-	outline: none;
-	box-shadow: none;
-}
-
-.dwl-todo-input.dwl-todo-input:hover {
-	background: var(--dwl-bg);
-	color: var(--dwl-text);
-	border-color: var(--dwl-border-light);
-}
-
-.dwl-todo-input.dwl-todo-input:focus {
-	border-width: 1px;
-	border-color: var(--dwl-accent);
-	outline: none;
-	box-shadow: none;
-}
-
-.dwl-todo-list {
-	display: flex;
-	flex-direction: column;
-	gap: 0.15rem;
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.dwl-todo-item {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.15rem 0.2rem;
-	border-radius: var(--radius-s);
-	font-size: var(--font-ui-small);
-}
-
-.dwl-todo-item:hover {
-	background: var(--dwl-bg-secondary);
-}
-
-.dwl-todo-checkbox {
-	cursor: pointer;
-}
-
-.dwl-todo-text {
-	flex: 1;
-	color: var(--dwl-text);
-}
-
-.dwl-todo-text-checked {
-	color: var(--dwl-text-faint);
-	text-decoration: line-through;
-}
-
-/* Minimal ✕ delete button — design.md §4.1: invisible until item hover,
-   background never changes, only the text color reacts. Class repeated for
-   specificity, same reasoning as .dwl-header-btn above. */
-.dwl-todo-delete-btn.dwl-todo-delete-btn {
-	border: none;
-	background: transparent;
-	box-shadow: none;
-	color: var(--dwl-text-faint);
-	font-size: var(--font-ui-smaller);
-	padding: 0.1rem 0.3rem;
-	cursor: pointer;
-	opacity: 0;
-	transition: opacity 0.15s, color 0.15s;
-}
-
-.dwl-todo-item:hover .dwl-todo-delete-btn.dwl-todo-delete-btn,
-.dwl-todo-delete-btn.dwl-todo-delete-btn:focus {
-	opacity: 1;
-}
-
-.dwl-todo-delete-btn.dwl-todo-delete-btn:hover,
-.dwl-todo-delete-btn.dwl-todo-delete-btn:focus {
-	color: #ef4444;
-	background: transparent;
-	box-shadow: none;
-	outline: none;
 }
 
 /* Modals (ConfirmDeleteModal, TimelineModal) — design.md §3: follow the
@@ -921,11 +792,6 @@
 	background: var(--background-modifier-border);
 	color: var(--text-normal);
 	white-space: nowrap;
-}
-
-.dwl-activity-todo-text {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
 }
 
 .dwl-activity-time {

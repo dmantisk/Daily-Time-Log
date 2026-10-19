@@ -79,7 +79,7 @@ export class DashboardView extends ItemView {
 		const recentParsed: Array<{ date: Date; parsed: ParsedDailyNote }> = await Promise.all(
 			recentNotes.map(async (note) => ({
 				date: note.date,
-				parsed: parseDailyNote(await this.app.vault.cachedRead(note.file)),
+				parsed: parseDailyNote(await this.app.vault.cachedRead(note.file), this.plugin.getEventHeadingConfig()),
 			}))
 		);
 
@@ -188,23 +188,12 @@ export class DashboardView extends ItemView {
 			workColor
 		);
 
-		// Card 2: To-Do Completion Rate
-		const todoPct =
-			stats.recentTodoTotal > 0
-				? `${Math.round((stats.recentTodoCompleted / stats.recentTodoTotal) * 100)}%`
-				: "-";
-		const todoSub =
-			stats.recentTodoTotal > 0
-				? `${stats.recentTodoCompleted} / ${stats.recentTodoTotal}`
-				: t("emptyTodo", language);
-		this.renderMetricCard(grid, t("statTodoRate", language), todoPct, todoSub);
-
-		// Card 3: Event Recording Time & Daily Average
+		// Card 2: Event Recording Time & Daily Average
 		const timeVal = formatMinutes(stats.recentEventMinutes);
 		const avgSub = `${t("statAvgPerDay", language)}: ${formatMinutes(stats.avgEventMinutesPerDay)}`;
 		this.renderMetricCard(grid, t("statEventTime", language), timeVal, avgSub);
 
-		// Card 4: Top Category
+		// Card 3: Top Category
 		const topCat = stats.topCategoryName ?? "-";
 		const topCatSub =
 			stats.categoryBreakdown.length > 0
@@ -299,7 +288,7 @@ export class DashboardView extends ItemView {
 				// Left: Date
 				row.createDiv({ cls: "dwl-activity-date", text: formatDateBasename(summary.date) });
 
-				// Middle: Category Badge & To-Do Progress
+				// Middle: Category Badge
 				const mid = row.createDiv({ cls: "dwl-activity-mid" });
 				if (summary.topCategory) {
 					// Exact match, same as the categoryBreakdown lookup in
@@ -313,14 +302,6 @@ export class DashboardView extends ItemView {
 							color: getTextColorForBackground(catObj.color),
 						});
 					}
-				}
-
-				if (summary.todoTotal > 0) {
-					const pct = Math.round((summary.todoCompleted / summary.todoTotal) * 100);
-					mid.createSpan({
-						cls: "dwl-activity-todo-text",
-						text: `To-Do ${summary.todoCompleted}/${summary.todoTotal} (${pct}%)`,
-					});
 				}
 
 				// Right: Time
@@ -348,15 +329,6 @@ export class DashboardView extends ItemView {
 
 		this.renderSummaryRow(summaryBox, t("statDateRange", language), dateRangeText);
 		this.renderSummaryRow(summaryBox, t("statStreak", language), `${stats.currentStreak} ${t("unitDays", language)}`);
-		this.renderSummaryRow(
-			summaryBox,
-			t("statTodoRate", language),
-			stats.recentTodoTotal > 0
-				? `${stats.recentTodoCompleted} / ${stats.recentTodoTotal} (${Math.round(
-						(stats.recentTodoCompleted / stats.recentTodoTotal) * 100
-				  )}%)`
-				: "-"
-		);
 		this.renderSummaryRow(summaryBox, t("statEventTime", language), formatMinutes(stats.recentEventMinutes));
 		this.renderSummaryRow(summaryBox, t("statAvgPerDay", language), formatMinutes(stats.avgEventMinutesPerDay));
 	}

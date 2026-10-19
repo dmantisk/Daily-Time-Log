@@ -89,6 +89,40 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
+			.setName(t("settingEventHeadingTextName", lang))
+			.setDesc(t("settingEventHeadingTextDesc", lang))
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.eventHeadingText)
+					.onChange(async (value) => {
+						const trimmed = value.trim();
+						if (/[\r\n]/.test(value)) {
+							new Notice(t("alertInvalidEventHeading", lang));
+							text.setValue(this.plugin.settings.eventHeadingText);
+							return;
+						}
+						if (!trimmed) return;
+						this.plugin.settings.eventHeadingText = trimmed;
+						await this.plugin.saveSettings();
+						this.plugin.refreshViews();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(t("settingEventHeadingLevelName", lang))
+			.setDesc(t("settingEventHeadingLevelDesc", lang))
+			.addDropdown((dropdown) => {
+				for (let level = 1; level <= 6; level++) {
+					dropdown.addOption(String(level), `${level}`);
+				}
+				dropdown.setValue(String(this.plugin.settings.eventHeadingLevel)).onChange(async (value) => {
+					this.plugin.settings.eventHeadingLevel = Number(value);
+					await this.plugin.saveSettings();
+					this.plugin.refreshViews();
+				});
+			});
+
+		new Setting(containerEl)
 			.setName(t("settingLanguageName", lang))
 			.setDesc(t("settingLanguageDesc", lang))
 			.addDropdown((dropdown) =>

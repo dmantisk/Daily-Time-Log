@@ -1,8 +1,8 @@
 import { App, Modal } from "obsidian";
 
 /**
- * Generic confirm/cancel dialog reused by both To-Do deletion and Event
- * deletion (design.md §4.3). Callers own the copy (title/message/button
+ * Generic confirm/cancel dialog reused for Event deletion (design.md §4.3).
+ * Callers own the copy (title/message/button
  * labels) so this stays purely presentational and i18n-agnostic.
  */
 export class ConfirmDeleteModal extends Modal {
