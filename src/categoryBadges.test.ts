@@ -37,10 +37,49 @@ describe("CATEGORY_BADGE_REGEX_SOURCE", () => {
 		expect(matches.length).toBe(0);
 	});
 
-	it("matches category badge when on same line as checkbox", () => {
+	it("does not match category badge on a checkbox line", () => {
+		// Not preceded by a time range → not an event line
 		const text = "- [ ] [Work] Follow up with client";
+		const matches = Array.from(text.matchAll(regex()));
+		expect(matches.length).toBe(0);
+	});
+
+	it("matches category badge when directly after a time range", () => {
+		const text = "- 09:00 - 10:30 [Work] Team meeting";
 		const matches = Array.from(text.matchAll(regex()));
 		expect(matches.length).toBe(1);
 		expect(matches[0][1]).toBe("Work");
+	});
+
+	it("matches category badge with `~` time separator", () => {
+		const text = "- 14:00 ~ 15:30 [Reading] Book club";
+		const matches = Array.from(text.matchAll(regex()));
+		expect(matches.length).toBe(1);
+		expect(matches[0][1]).toBe("Reading");
+	});
+
+	it("matches Korean category badge directly after a time range", () => {
+		const text = "- 14:00 - 15:30 [업무] 회의 준비";
+		const matches = Array.from(text.matchAll(regex()));
+		expect(matches.length).toBe(1);
+		expect(matches[0][1]).toBe("업무");
+	});
+
+	it("does not match brackets in prose/diary text", () => {
+		const text = "Met with [John] for lunch";
+		const matches = Array.from(text.matchAll(regex()));
+		expect(matches.length).toBe(0);
+	});
+
+	it("does not match brackets in headings", () => {
+		const text = "# Notes about [Work]";
+		const matches = Array.from(text.matchAll(regex()));
+		expect(matches.length).toBe(0);
+	});
+
+	it("does not match wikilinks after a time range", () => {
+		const text = "- 09:00 - 10:30 [[Work]] Team meeting";
+		const matches = Array.from(text.matchAll(regex()));
+		expect(matches.length).toBe(0);
 	});
 });

@@ -129,10 +129,14 @@ export function buildCategoryBadgeEditorPlugin(
 ) {
 	const matcher = new MatchDecorator({
 		regexp: new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g"),
-		decoration: (match) =>
-			Decoration.replace({
+		decoration: (match) => {
+			// Only render a badge when the token matches a configured category.
+			// Unknown `[...]` tokens (typos, prose, wikilinks) stay as plain text.
+			if (!findCategory(match[1], categories)) return null;
+			return Decoration.replace({
 				widget: new CategoryBadgeWidget(match[1], categories),
-			}),
+			});
+		},
 	});
 
 	return ViewPlugin.define(
@@ -206,7 +210,13 @@ export function processCategoryBadgesInReadingView(
 					document.createTextNode(text.slice(lastIndex, match.index))
 				);
 			}
-			frag.appendChild(makeBadgeSpan(match[1], categories));
+			// Only render a badge when the token matches a configured category.
+			// Unknown `[...]` tokens stay as plain text in the reading view.
+			if (findCategory(match[1], categories)) {
+				frag.appendChild(makeBadgeSpan(match[1], categories));
+			} else {
+				frag.appendChild(document.createTextNode(match[0]));
+			}
 			lastIndex = regex.lastIndex;
 		}
 
