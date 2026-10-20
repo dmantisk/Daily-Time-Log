@@ -56,6 +56,29 @@ export class Notice {
 	hide(): void {}
 }
 
+/**
+ * Debounces a callback. Mirrors the Obsidian helper closely enough for
+ * tests: the call is deferred and only the last argument of a burst is
+ * used. `resetTimer` is accepted for signature parity.
+ */
+export function debounce<T extends unknown[], V>(
+	cb: (...args: [...T]) => V,
+	timeout = 0,
+	_resetTimer = false
+): (...args: [...T]) => void {
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	let lastArgs: [...T] | null = null;
+
+	return (...args: [...T]): void => {
+		lastArgs = args;
+		if (timer !== null) clearTimeout(timer);
+		timer = setTimeout(() => {
+			timer = null;
+			if (lastArgs) cb(...lastArgs);
+		}, timeout);
+	};
+}
+
 // ---------------------------------------------------------------------------
 // Base classes
 // ---------------------------------------------------------------------------
@@ -159,8 +182,36 @@ export class PluginSettingTab {
 	display(): void {}
 }
 
+/**
+ * A functional stand-in for Obsidian's `Setting`.
+ *
+ * The real `Setting` is a builder: `addText` hands the caller a text
+ * component, `addButton` a button component, and so on. The mock keeps
+ * that shape — the callbacks are invoked immediately and the created
+ * components are recorded on the setting, so a test can reach them
+ * through `Setting.created` and drive the setting tab.
+ */
 export class Setting {
-	constructor(public containerEl?: HTMLElement) {}
+	/** Every setting constructed since the last `Setting.reset()`. */
+	static created: Setting[] = [];
+
+	/** Clears the recorded settings. Call this between tests. */
+	static reset(): void {
+		Setting.created = [];
+	}
+
+	settingEl: HTMLElement = document.createElement("div");
+	components: {
+		texts: TextComponent[];
+		dropdowns: DropdownComponent[];
+		colorPickers: ColorComponent[];
+		buttons: ButtonComponent[];
+	} = { texts: [], dropdowns: [], colorPickers: [], buttons: [] };
+
+	constructor(public containerEl?: HTMLElement) {
+		Setting.created.push(this);
+	}
+
 	setName(_name: string): this {
 		return this;
 	}
@@ -170,14 +221,125 @@ export class Setting {
 	setHeading(): this {
 		return this;
 	}
-	addText(_cb: (text: unknown) => void): this {
+
+	addText(cb: (text: TextComponent) => void): this {
+		const component = new TextComponent();
+		this.components.texts.push(component);
+		cb(component);
 		return this;
 	}
-	addDropdown(_cb: (dropdown: unknown) => void): this {
+
+	addDropdown(cb: (dropdown: DropdownComponent) => void): this {
+		const component = new DropdownComponent();
+		this.components.dropdowns.push(component);
+		cb(component);
 		return this;
 	}
-	addToggle(_cb: (toggle: unknown) => void): this {
+
+	addColorPicker(cb: (picker: ColorComponent) => void): this {
+		const component = new ColorComponent();
+		this.components.colorPickers.push(component);
+		cb(component);
 		return this;
+	}
+
+	addButton(cb: (button: ButtonComponent) => void): this {
+		const component = new ButtonComponent();
+		this.components.buttons.push(component);
+		cb(component);
+		return this;
+	}
+
+	addToggle(cb: (toggle: unknown) => void): this {
+		cb({ setValue: () => undefined, onChange: () => undefined });
+		return this;
+	}
+}
+
+/** A text input component. */
+export class TextComponent {
+	inputEl: HTMLInputElement = document.createElement("input");
+	private changeHandler: ((value: string) => void) | null = null;
+
+	setPlaceholder(placeholder: string): this {
+		this.inputEl.placeholder = placeholder;
+		return this;
+	}
+	setValue(value: string): this {
+		this.inputEl.value = value;
+		return this;
+	}
+	getValue(): string {
+		return this.inputEl.value;
+	}
+	onChange(cb: (value: string) => void): this {
+		this.changeHandler = cb;
+		return this;
+	}
+	/** Simulates the user typing a new value. */
+	async setValueFromUser(value: string): Promise<void> {
+		this.inputEl.value = value;
+		await this.changeHandler?.(value);
+	}
+}
+
+/** A dropdown component. */
+export class DropdownComponent {
+	private changeHandler: ((value: string) => void) | null = null;
+
+	addOption(_value: string, _label: string): this {
+		return this;
+	}
+	setValue(_value: string): this {
+		return this;
+	}
+	onChange(cb: (value: string) => void): this {
+		this.changeHandler = cb;
+		return this;
+	}
+	/** Simulates the user picking a different option. */
+	async selectValue(value: string): Promise<void> {
+		await this.changeHandler?.(value);
+	}
+}
+
+/** A colour picker component. */
+export class ColorComponent {
+	private changeHandler: ((value: string) => void) | null = null;
+
+	setValue(_value: string): this {
+		return this;
+	}
+	onChange(cb: (value: string) => void): this {
+		this.changeHandler = cb;
+		return this;
+	}
+	/** Simulates the user picking a different colour. */
+	async pickColor(value: string): Promise<void> {
+		await this.changeHandler?.(value);
+	}
+}
+
+/** A button component. */
+export class ButtonComponent {
+	private clickHandler: (() => void) | null = null;
+
+	setButtonText(_text: string): this {
+		return this;
+	}
+	setWarning(): this {
+		return this;
+	}
+	setCta(): this {
+		return this;
+	}
+	onClick(cb: () => void): this {
+		this.clickHandler = cb;
+		return this;
+	}
+	/** Simulates the user clicking the button. */
+	async click(): Promise<void> {
+		await this.clickHandler?.();
 	}
 }
 
