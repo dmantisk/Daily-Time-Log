@@ -17,7 +17,7 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 
 ## Daily Note Format
 
-Daily notes must be named `YYYY-MM-DD.md`. A new note created through the plugin contains the configured Event heading; by default:
+Daily notes must be named `YYYY-MM-DD.md`. Daily Time Log reads and updates existing notes but does not create or open them — create notes with Obsidian's Daily Notes core plugin or another workflow. The default Event section is:
 
 ```markdown
 # Event
@@ -69,7 +69,7 @@ For active development, use `npm run dev` instead — it rebuilds automatically 
 - **Work Insights**: click the ribbon icon (gauge), or run **"Open Work Insights"** from the Command Palette. Opens as a normal tab in the main workspace.
 - **Sidebar**: click the ribbon icon (calendar-clock), or run **"Open sidebar"** from the Command Palette (`Cmd/Ctrl+P`). You can assign either a hotkey in **Settings → Hotkeys**.
 - Drag across the grid to log a new time block; click an existing block to edit or delete it.
-- Use the **Today** button in the sidebar header to open (or create) today's note. Capture the timeline with a screenshot if you want to keep a visual record.
+- Daily Time Log does not open or create daily notes. Use Obsidian's Daily Notes core plugin or another note-creation workflow. Capture the timeline with a screenshot if you want to keep a visual record.
 
 ### Directly in the note
 
@@ -108,7 +108,7 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 ## Settings
 
 - **Day Start Hour / Day End Hour**: the hour range shown on the grid.
-- **Daily Note Folder**: where new daily notes are created (vault root by default), with folder autocomplete.
+- **Daily Note Folder Filter**: limits Daily Time Log's dashboard and category badge scanning to a folder, with folder autocomplete. Leave empty to scan the whole vault.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
 - **Theme**: the sidebar automatically follows Obsidian's active theme.
@@ -127,7 +127,8 @@ npm run build   # type-check (tsc) + production build
 
 - Removed PDF/HTML export; use a screenshot to capture the timeline.
 - Removed To-Do parsing, sidebar controls, dashboard metrics, and To-Do export; checkbox lines remain ordinary note content.
-- Added settings for the Event heading text and Markdown level, used when parsing and creating daily notes.
+- Removed all Daily Time Log controls for opening or creating daily notes; use Obsidian's Daily Notes core plugin instead.
+- Added settings for the Event heading text and Markdown level, used when parsing daily notes.
 
 ### 0.4.3 (2026-08-15)
 

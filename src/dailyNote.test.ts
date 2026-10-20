@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSkeletonContent, formatDateBasename, formatDateFilename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
+import { formatDateBasename, formatDateFilename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
 
 describe("parseDateFromBasename", () => {
 	it("parses a valid YYYY-MM-DD basename", () => {
@@ -35,13 +35,6 @@ describe("formatDateBasename / formatDateFilename", () => {
 	it("round-trips through parseDateFromBasename", () => {
 		const date = new Date(2026, 6, 13);
 		expect(parseDateFromBasename(formatDateBasename(date))).toEqual(date);
-	});
-});
-
-describe("buildSkeletonContent", () => {
-	it("creates only the configured Event heading followed by a blank line", () => {
-		expect(buildSkeletonContent()).toBe("# Event\n\n");
-		expect(buildSkeletonContent({ text: "이벤트", level: 2 })).toBe("## 이벤트\n\n");
 	});
 });
 

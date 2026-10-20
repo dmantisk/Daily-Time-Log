@@ -27,9 +27,9 @@ export const DEFAULT_CATEGORIES: CustomCategory[] = [
 
 export interface DailyWorkLogSettings {
 	/**
-	 * Only controls which label is inserted into newly scaffolded notes
-	 * (see dailyNote.ts buildSkeletonContent). Parsing always recognizes
-	 * every supported language's marker labels regardless of this setting.
+	 * Controls the plugin interface language and the default Event heading.
+	 * Parsing always recognizes every supported language's Event headings
+	 * regardless of this setting.
 	 * "auto" follows Obsidian's UI language; "en" and "ko" are explicit overrides.
 	 */
 	language: LanguagePreference;
@@ -40,7 +40,7 @@ export interface DailyWorkLogSettings {
 	/** Grid timeline's displayed hour range, inclusive start / exclusive end (0-24). */
 	startHour: number;
 	endHour: number;
-	/** Vault-relative folder for daily notes. Empty string = vault root. */
+	/** Optional vault-relative folder filter for daily-note scanning. Empty string = whole vault. */
 	dailyNoteFolder: string;
 	/** Up to 10 entries; see CustomCategory for how these map into note bodies. */
 	categories: CustomCategory[];

@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import * as React from "react";
 import { useEffect, useState } from "react";
-import { buildSkeletonContent, formatDateBasename, formatDateFilename, isSameDate, parseDateFromBasename } from "../dailyNote";
+import { formatDateBasename, isSameDate, parseDateFromBasename } from "../dailyNote";
 import { t, WEEKDAYS } from "../i18n";
 import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
 import { TimelineModal, type EventEntryValues } from "../modals/TimelineModal";
@@ -172,27 +172,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		).open();
 	};
 
-	// ── Today's note ───────────────────────────────────────────────────
-
-	const openTodayNote = async (): Promise<void> => {
-		const today = new Date();
-		const filename = formatDateFilename(today);
-		const folder = plugin.settings.dailyNoteFolder.trim().replace(/^\/+|\/+$/g, "");
-		const filePath = folder ? `${folder}/${filename}` : filename;
-
-		let file = plugin.app.vault.getAbstractFileByPath(filePath);
-		if (!(file instanceof TFile)) {
-			if (folder && !plugin.app.vault.getAbstractFileByPath(folder)) {
-				await plugin.app.vault.createFolder(folder);
-			}
-			file = await plugin.app.vault.create(filePath, buildSkeletonContent(plugin.getEventHeadingConfig()));
-		}
-		if (file instanceof TFile) {
-			const leaf = plugin.app.workspace.getLeaf(false);
-			await leaf.openFile(file);
-		}
-	};
-
 	// ── Drag-to-select ────────────────────────────────────────────────
 
 	const handleMouseDown = (cellIndex: number): void => {
@@ -228,15 +207,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 					<h3>{t(isNotDailyNote ? "emptyStateTitleNotDaily" : "emptyStateTitleNoNote", language)}</h3>
 					{/* The "not a daily note" case skips the description entirely — the title alone is enough. */}
 					{!isNotDailyNote && <p>{t("emptyStateDescNoNote", language)}</p>}
-					<button
-						type="button"
-						className="dwl-modal-btn-save dwl-empty-state-btn"
-						onClick={() => {
-							void openTodayNote();
-						}}
-					>
-						{t("createTodayNoteButton", language)}
-					</button>
 				</div>
 			</div>
 		);
@@ -251,17 +221,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		<div className="dwl-view">
 			<div className="dwl-view-header">
 				<h2 className="dwl-view-date-title">{formatDateHeader(dateForFile, language)}</h2>
-				<div className="dwl-header-btn-group">
-					<button
-						type="button"
-						className="dwl-header-btn"
-						onClick={() => {
-							void openTodayNote();
-						}}
-					>
-						{t("todayNoteButton", language)}
-					</button>
-				</div>
 			</div>
 
 			<div

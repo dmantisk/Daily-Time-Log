@@ -73,29 +73,7 @@
 	color: var(--dwl-text);
 }
 
-.dwl-header-btn-group {
-	display: flex;
-	gap: 0.4rem;
-}
 
-/* Class repeated to out-specificity the active Obsidian theme's own `button`
-   rule so these buttons keep the sidebar's theme-aware colors. */
-.dwl-header-btn.dwl-header-btn {
-	background: var(--dwl-bg-hover);
-	color: var(--dwl-text);
-	border: 1px solid var(--dwl-border);
-	border-radius: var(--radius-s);
-	padding: 0.25rem 0.6rem;
-	font-size: var(--font-ui-smaller);
-	font-weight: 500;
-	cursor: pointer;
-	box-shadow: none;
-}
-
-.dwl-header-btn.dwl-header-btn:hover {
-	background: var(--dwl-bg-active);
-	color: var(--dwl-text);
-}
 
 /* Empty states (no note open / not a daily note) — deliberately NOT themed
    via --dwl-* tokens like the rest of the sidebar. There's no real content
@@ -123,11 +101,6 @@
 	margin: 0.4rem 0 0;
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
-}
-
-/* "A couple of blank lines" of breathing room before the action button. */
-.dwl-empty-state-btn.dwl-empty-state-btn {
-	margin-top: 2.5rem;
 }
 
 /* Grid timeline (10-minute cells, drag-to-select) — replaces the old

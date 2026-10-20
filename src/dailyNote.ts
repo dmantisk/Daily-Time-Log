@@ -1,10 +1,8 @@
 /**
- * Daily note filename <-> Date helpers and the new-note skeleton template.
+ * Daily note filename <-> Date helpers.
  * Kept separate from parser.ts (which only parses existing content) since
- * this module is about note creation, not parsing.
+ * this module is about daily note identity, not parsing.
  */
-
-import { DEFAULT_EVENT_HEADING, type EventHeadingConfig } from "./parser";
 
 const DAILY_NOTE_BASENAME_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -41,11 +39,6 @@ export function parseDateFromBasename(basename: string): Date | null {
 
 export function isSameDate(a: Date, b: Date): boolean {
 	return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-/** Creates a new note with its configured Event heading ready for entries. */
-export function buildSkeletonContent(config: EventHeadingConfig = DEFAULT_EVENT_HEADING): string {
-	return `${"#".repeat(config.level)} ${config.text}\n\n`;
 }
 
 /**
