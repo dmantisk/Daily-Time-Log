@@ -5,7 +5,7 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 ## Features
 
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
-- **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — plus up to 10 custom), stored as a `[Category]` tag right in the note body.
+- **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — and up to 10 in total), stored as a `[Category]` tag right in the note body.
 - **Configurable daily note folder**: notes don't have to live at the vault root, with folder autocomplete in settings.
 - **Configurable Event heading**: choose its text and Markdown heading level; only the configured heading is recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
@@ -95,7 +95,7 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 - **Daily Note Folder Filter**: limits Daily Time Log's dashboard and category badge scanning to a folder, with folder autocomplete. Leave empty to scan the whole vault.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes. Only this exact heading (at this exact level) is recognized — change it and notes using the old heading stop being parsed as an Event block.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
-- **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults.
+- **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults. Up to 10 categories in total; names must be unique.
 
 ## Development
 
@@ -159,7 +159,7 @@ npm run build   # type-check (tsc) + production build
 ### 0.3.0 (2026-08-05)
 
 - Sidebar rebuilt as a 10-minute grid timeline (drag to select a time range), replacing the old list-and-calendar layout. Calendar date navigation has been removed — use Obsidian's own file explorer or quick switcher to jump to another day's note.
-- Added color-coded categories (5 built-in + up to 10 custom), stored as an optional `[Category]` tag in each Event line.
+- Added color-coded categories (5 built-in, up to 10 in total), stored as an optional `[Category]` tag in each Event line.
 - Simplified the block markers to `Event` / `ToDo` / `Diary` (dropping the leading underscore, which rendered as italics in some viewers). Notes written with the old `_Event` / `_ToDo` / `_Diary` markers keep working.
 - Added PDF/HTML export for a single day's timeline and To-Do list.
 - Added a configurable daily note folder (with autocomplete), instead of always using the vault root.
