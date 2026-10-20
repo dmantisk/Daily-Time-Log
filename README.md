@@ -106,6 +106,25 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.5.2 (2026-10-21)
+
+A batch of correctness fixes found in a full review of the plugin.
+
+- **Fixed non-Markdown files being treated as daily notes.** The sidebar accepted any file whose name looked like a date, whatever its extension. Since the plugin writes to the files it treats as daily notes, a date-named image or CSV could be opened and overwritten with Markdown text. Only `.md` files are accepted now.
+- **Fixed two add-Event modals opening for a single grid drag.** A mouse release fired both the grid cell's handler and a window-level listener, so one drag could open the popup twice. A drag now opens exactly one.
+- **Fixed the last 10 minutes of the day being unsavable.** With the end hour set to 24 the grid's final cell produces an end time of `24:00`, which the popup rejected even though the setting advertises midnight support. `24:00` is now accepted as an end time.
+- **Fixed overnight Events being invisible on the grid.** An Event crossing midnight (e.g. `23:00 - 01:00`) was counted by the dashboard but drew no bar in the sidebar. It is now drawn in both the evening and the early-morning hours.
+- **Fixed future-dated notes being counted in the dashboard.** The 7/30/90-day and All-Time windows now exclude notes dated after today, which recorded no elapsed time.
+- **Fixed duplicate and blank category names.** Renaming a category skipped the checks that adding one enforced. A blank name cannot be written into a note, and two categories sharing a name doubled the time reported by the dashboard. Names must now be unique, and the dashboard also counts a duplicated name only once.
+- **Fixed the default categories being permanently editable.** Resetting the categories copied only the list, not the entries, so editing a category after a reset altered the defaults themselves and a later reset restored the edited values. The list is now copied deeply.
+- **Fixed the "Event Time (30d)" label** — it named a 30-day window even when 7 days, 90 days or All Time was selected. The label now names the selected window.
+- **Fixed category names being matched inconsistently.** The note badge matched a name case-insensitively while the sidebar and the dashboard matched exactly, so a `[work]` token was colored in the note but counted as uncategorized elsewhere. All three now use one rule.
+- **Fixed the daily-note folder filter not refreshing the views.** An open dashboard kept showing the previous folder's notes until it was refreshed by hand, and the note badges kept their old scope until the next reload. The change is now applied immediately.
+- **Fixed a heading written as a link not being recognized.** `# [Event](url)` renders with the visible text "Event", so the note showed badges inside an Event section the parser never opened — the note yielded no Events at all. The parser now matches a linked heading the same way the reader sees it.
+- **Fixed numeric HTML entities not being decoded** in sidebar descriptions, so a description containing `&#39;` showed the raw entity.
+- **Fixed the release check accepting the wrong version** — a `0.5.10` changelog entry passed the check for a `0.5.1` release.
+- **Corrected the README's category count** — the limit has always been 10 categories in total, not 10 on top of the 5 built-in ones.
+
 ### 0.5.1 (2026-10-20)
 
 - **Removed the DayTime Tracker migration script** (`scripts/migrate-from-daytimetracker.mjs`) and the `js-yaml` dependency it needed. The script only ever existed in the source repository, not in the release download, so the plugin itself is unaffected.

@@ -1,6 +1,6 @@
 {
 	"name": "daily-time-log",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"description": "Visualize daily time tracking directly from daily notes with minimal metadata.",
 	"main": "dist/main.js",
 	"scripts": {
