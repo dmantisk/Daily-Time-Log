@@ -1,4 +1,4 @@
-import type { MarkerLanguage } from "./parser";
+import { DEFAULT_EVENT_HEADING, type MarkerLanguage } from "./parser";
 
 export type LanguagePreference = MarkerLanguage | "auto";
 
@@ -27,10 +27,12 @@ export const DEFAULT_CATEGORIES: CustomCategory[] = [
 
 export interface DailyWorkLogSettings {
 	/**
-	 * Controls the plugin interface language and the default Event heading.
-	 * Parsing always recognizes every supported language's Event headings
-	 * regardless of this setting.
+	 * Controls the plugin interface language only.
 	 * "auto" follows Obsidian's UI language; "en" and "ko" are explicit overrides.
+	 *
+	 * The Event heading is deliberately NOT localized — it is part of the note
+	 * FORMAT, not a UI string, so it must not change with the interface
+	 * language. See `resolveEventHeadingText`.
 	 */
 	language: LanguagePreference;
 	/** Markdown heading text that starts the Event block in daily notes. */
@@ -48,10 +50,43 @@ export interface DailyWorkLogSettings {
 
 export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	language: "auto",
-	eventHeadingText: "Event",
-	eventHeadingLevel: 1,
+	// The parser's default heading is the single source of truth, so the
+	// settings UI can never offer something the parser would not accept.
+	eventHeadingText: DEFAULT_EVENT_HEADING.text,
+	eventHeadingLevel: DEFAULT_EVENT_HEADING.level,
 	startHour: 0,
 	endHour: 24,
 	dailyNoteFolder: "",
 	categories: [...DEFAULT_CATEGORIES],
 };
+
+/**
+ * Resolves the Event heading text from persisted settings.
+ *
+ * Falls back to the default when the stored value is missing, not a string,
+ * empty after trimming, or spans more than one line (a heading is a single
+ * line by definition).
+ *
+ * The default is language-INDEPENDENT. The Event heading is part of the
+ * note format, so it must not change when the interface language changes:
+ * a Korean user who never touched the setting still gets the same heading
+ * as everyone else, and the settings UI shows exactly what the parser
+ * looks for.
+ */
+export function resolveEventHeadingText(value: unknown): string {
+	if (typeof value !== "string") return DEFAULT_SETTINGS.eventHeadingText;
+	const trimmed = value.trim();
+	if (!trimmed || /[\r\n]/.test(trimmed)) return DEFAULT_SETTINGS.eventHeadingText;
+	return trimmed;
+}
+
+/**
+ * Resolves the Event heading level from persisted settings.
+ * Falls back to the default unless the value is an integer 1-6.
+ */
+export function resolveEventHeadingLevel(value: unknown): number {
+	if (!Number.isInteger(value)) return DEFAULT_SETTINGS.eventHeadingLevel;
+	const level = value as number;
+	if (level < 1 || level > 6) return DEFAULT_SETTINGS.eventHeadingLevel;
+	return level;
+}

@@ -2,8 +2,11 @@ import type { MarkerLanguage } from "./parser";
 import type { LanguagePreference } from "./settings";
 
 /**
- * UI display strings. The parser recognizes the configured Event heading plus
- * historical Event spellings; this table governs the plugin interface only.
+ * UI display strings. This table governs the plugin interface ONLY — it has
+ * no influence on parsing. The parser recognizes exactly ONE heading, the
+ * one configured in Settings (see `parser.ts` / `settings.ts`); there is no
+ * per-language list of Event headings, and the default heading is not
+ * localized.
  *
  * Values are kept in exact parity with DayTime Tracker's own locale/en.ts
  * and locale/ko.ts wherever a directly corresponding string exists — the
@@ -88,7 +91,6 @@ export type UIStringKey =
 	| "periodSummaryTitle"
 	| "activityNotesTitle"
 	| "todayDateSuffix"
-	| "defaultEventHeading"
 	| "languageAuto"
 	| "languageEnglish"
 	| "languageKorean";
@@ -96,7 +98,6 @@ export type UIStringKey =
 export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 	en: {
 		todayDateSuffix: "(Today)",
-		defaultEventHeading: "Event",
 		languageAuto: "Auto",
 		languageEnglish: "English",
 		languageKorean: "한국어",
@@ -183,7 +184,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 
 	ko: {
 		todayDateSuffix: "(오늘)",
-		defaultEventHeading: "이벤트",
 		languageAuto: "자동",
 		languageEnglish: "English",
 		languageKorean: "한국어",

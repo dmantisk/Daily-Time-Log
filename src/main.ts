@@ -7,7 +7,7 @@ import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
-import { DEFAULT_SETTINGS, type DailyWorkLogSettings } from "./settings";
+import { DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 
 export default class DailyWorkLogPlugin extends Plugin {
@@ -95,17 +95,18 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 		let shouldSave = false;
 
-		if (typeof loadedData?.eventHeadingText !== "string") {
-			this.settings.eventHeadingText = t("defaultEventHeading", this.getUiLanguage());
+		// The Event heading is part of the note FORMAT, not a UI string, so
+		// its default never depends on the interface language. Resolving it
+		// here (rather than from the i18n table) keeps the settings UI and
+		// the parser in agreement for every user, in every language.
+		const resolvedText = resolveEventHeadingText(loadedData?.eventHeadingText);
+		if (resolvedText !== this.settings.eventHeadingText) {
+			this.settings.eventHeadingText = resolvedText;
 			shouldSave = true;
 		}
-		this.settings.eventHeadingText = this.settings.eventHeadingText.trim();
-		if (!this.settings.eventHeadingText || /[\r\n]/.test(this.settings.eventHeadingText)) {
-			this.settings.eventHeadingText = t("defaultEventHeading", this.getUiLanguage());
-			shouldSave = true;
-		}
-		if (!Number.isInteger(this.settings.eventHeadingLevel) || this.settings.eventHeadingLevel < 1 || this.settings.eventHeadingLevel > 6) {
-			this.settings.eventHeadingLevel = DEFAULT_SETTINGS.eventHeadingLevel;
+		const resolvedLevel = resolveEventHeadingLevel(loadedData?.eventHeadingLevel);
+		if (resolvedLevel !== this.settings.eventHeadingLevel) {
+			this.settings.eventHeadingLevel = resolvedLevel;
 			shouldSave = true;
 		}
 		if (shouldSave) await this.saveSettings();
