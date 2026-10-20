@@ -1,4 +1,5 @@
 import type { MarkerLanguage } from "./parser";
+import type { LanguagePreference } from "./settings";
 
 /**
  * UI display strings. The parser recognizes the configured Event heading plus
@@ -93,10 +94,20 @@ export type UIStringKey =
 	| "statTopCategoryPct"
 	| "categoryDistTitle"
 	| "periodSummaryTitle"
-	| "activityNotesTitle";
+	| "activityNotesTitle"
+	| "todayDateSuffix"
+	| "defaultEventHeading"
+	| "languageAuto"
+	| "languageEnglish"
+	| "languageKorean";
 
 export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 	en: {
+		todayDateSuffix: "(Today)",
+		defaultEventHeading: "Event",
+		languageAuto: "Auto",
+		languageEnglish: "English",
+		languageKorean: "한국어",
 		ribbonOpenSidebar: "Open DailyWorkLog",
 		ribbonOpenDashboard: "Open Work Insights",
 		commandOpenSidebar: "Open sidebar",
@@ -151,7 +162,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingEventHeadingLevelName: "Event heading level",
 		settingEventHeadingLevelDesc: "Markdown heading depth used for the Event section (1-6).",
 		alertInvalidEventHeading: "The Event heading must be a single line.",
-		settingLanguageDesc: "Display language for the plugin interface.",
+		settingLanguageDesc: "Follow Obsidian's language, or choose English or Korean.",
 		alertStartBeforeEnd: "Start hour must be earlier than end hour.",
 		alertEndAfterStart: "End hour must be later than start hour.",
 		settingThemeModeName: "Background Theme Mode",
@@ -185,6 +196,11 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 	},
 
 	ko: {
+		todayDateSuffix: "(오늘)",
+		defaultEventHeading: "이벤트",
+		languageAuto: "자동",
+		languageEnglish: "English",
+		languageKorean: "한국어",
 		ribbonOpenSidebar: "DailyWorkLog 열기",
 		ribbonOpenDashboard: "DailyWorkLog 일과 인사이트 열기",
 		commandOpenSidebar: "사이드바 열기",
@@ -239,7 +255,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingEventHeadingLevelName: "이벤트 제목 수준",
 		settingEventHeadingLevelDesc: "Event 섹션에 사용할 마크다운 제목 수준입니다 (1-6).",
 		alertInvalidEventHeading: "Event 제목은 한 줄이어야 합니다.",
-		settingLanguageDesc: "플러그인 인터페이스 표시 언어입니다.",
+		settingLanguageDesc: "Obsidian 언어를 따르거나 영어 또는 한국어를 선택합니다.",
 		alertStartBeforeEnd: "시작 시간은 종료 시간보다 빨라야 합니다.",
 		alertEndAfterStart: "종료 시간은 시작 시간보다 늦어야 합니다.",
 		settingThemeModeName: "배경 테마 설정",
@@ -278,6 +294,14 @@ export const WEEKDAYS: Record<MarkerLanguage, string[]> = {
 	en: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
 	ko: ["일", "월", "화", "수", "목", "금", "토"],
 };
+
+export function resolveLanguage(
+	preference: LanguagePreference,
+	obsidianLanguage: string
+): MarkerLanguage {
+	if (preference === "en" || preference === "ko") return preference;
+	return obsidianLanguage === "ko" ? "ko" : "en";
+}
 
 export function t(key: UIStringKey, language: MarkerLanguage): string {
 	return STRINGS[language][key];

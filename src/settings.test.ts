@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, migrateLoadedSettings } from "./settings";
 
 describe("migrateLoadedSettings", () => {
+	it("defaults the language preference to auto without changing saved overrides", () => {
+		expect(DEFAULT_SETTINGS.language).toBe("auto");
+		expect(migrateLoadedSettings({ language: "ko" }).language).toBe("ko");
+	});
+
 	it("returns an empty object for a brand-new install (loadData() -> null)", () => {
 		expect(migrateLoadedSettings(null)).toEqual({});
 	});

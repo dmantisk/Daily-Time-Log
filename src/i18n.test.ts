@@ -1,10 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { STRINGS, WEEKDAYS, t } from "./i18n";
+import { resolveLanguage, STRINGS, WEEKDAYS, t } from "./i18n";
 
 describe("t", () => {
 	it("returns the string for the given language", () => {
 		expect(t("btnSave", "en")).toBe("Save");
 		expect(t("btnSave", "ko")).toBe("저장");
+	});
+});
+
+describe("resolveLanguage", () => {
+	it("follows Obsidian's Korean UI language in auto mode", () => {
+		expect(resolveLanguage("auto", "ko")).toBe("ko");
+	});
+
+	it("falls back to English for unsupported Obsidian UI languages in auto mode", () => {
+		expect(resolveLanguage("auto", "fr")).toBe("en");
+	});
+
+	it("preserves explicit language overrides", () => {
+		expect(resolveLanguage("en", "ko")).toBe("en");
+		expect(resolveLanguage("ko", "en")).toBe("ko");
 	});
 });
 

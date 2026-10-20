@@ -111,7 +111,7 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 - **Day Start Hour / Day End Hour**: the hour range shown on the grid.
 - **Daily Note Folder**: where new daily notes are created (vault root by default), with folder autocomplete.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes.
-- **Language**: auto-detected from Obsidian's own UI language on first run; controls sidebar and settings text.
+- **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
 - **Background Theme Mode**: Light or Dark, for the sidebar only.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults.
 

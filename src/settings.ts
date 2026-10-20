@@ -1,5 +1,7 @@
 import type { MarkerLanguage } from "./parser";
 
+export type LanguagePreference = MarkerLanguage | "auto";
+
 /**
  * Sidebar-only color scheme, independent of Obsidian's own active theme.
  * Modals intentionally do NOT use this — they always follow the SYSTEM
@@ -37,10 +39,9 @@ export interface DailyWorkLogSettings {
 	 * Only controls which label is inserted into newly scaffolded notes
 	 * (see dailyNote.ts buildSkeletonContent). Parsing always recognizes
 	 * every supported language's marker labels regardless of this setting.
-	 * On first run (no saved value yet), main.ts auto-detects this from
-	 * Obsidian's own UI language before falling back to the "en" default below.
+	 * "auto" follows Obsidian's UI language; "en" and "ko" are explicit overrides.
 	 */
-	language: MarkerLanguage;
+	language: LanguagePreference;
 	/** Markdown heading text that starts the Event block in daily notes. */
 	eventHeadingText: string;
 	/** Markdown heading level (1-6) used for the Event block. */
@@ -57,7 +58,7 @@ export interface DailyWorkLogSettings {
 }
 
 export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
-	language: "en",
+	language: "auto",
 	eventHeadingText: "Event",
 	eventHeadingLevel: 1,
 	themeMode: "light",

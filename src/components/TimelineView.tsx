@@ -48,7 +48,7 @@ function buildTimelineLine(values: EventEntryValues): string {
 function formatDateHeader(date: Date, language: MarkerLanguage): string {
 	const basename = formatDateBasename(date);
 	if (isSameDate(date, new Date())) {
-		return `${basename} ${language === "ko" ? "(오늘)" : "(Today)"}`;
+		return `${basename} ${t("todayDateSuffix", language)}`;
 	}
 	return `${basename} (${WEEKDAYS[language][date.getDay()]})`;
 }
@@ -61,7 +61,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	const [dragStart, setDragStart] = useState<number | null>(null);
 	const [dragEnd, setDragEnd] = useState<number | null>(null);
 
-	const language = plugin.settings.language;
+	const language = plugin.getUiLanguage();
 	const categories = plugin.settings.categories;
 	const { startHour, endHour } = plugin.settings;
 

@@ -5,10 +5,10 @@ import {
 } from "./categoryBadges";
 import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
-import { t } from "./i18n";
+import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
 import { DEFAULT_SETTINGS, migrateLoadedSettings, type DailyWorkLogSettings, type SidebarTheme } from "./settings";
-import type { EventHeadingConfig } from "./parser";
+import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 
 export default class DailyWorkLogPlugin extends Plugin {
 	settings: DailyWorkLogSettings = DEFAULT_SETTINGS;
@@ -27,11 +27,11 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.registerView(VIEW_TYPE_DAILY_WORK_LOG, (leaf) => new DailyWorkLogView(leaf, this));
 		this.registerView(VIEW_TYPE_DASHBOARD, (leaf) => new DashboardView(leaf, this));
 
-		this.dashboardRibbonEl = this.addRibbonIcon("gauge", t("ribbonOpenDashboard", this.settings.language), () => {
+		this.dashboardRibbonEl = this.addRibbonIcon("gauge", t("ribbonOpenDashboard", this.getUiLanguage()), () => {
 			void this.activateDashboard();
 		});
 
-		this.sidebarRibbonEl = this.addRibbonIcon("calendar-clock", t("ribbonOpenSidebar", this.settings.language), () => {
+		this.sidebarRibbonEl = this.addRibbonIcon("calendar-clock", t("ribbonOpenSidebar", this.getUiLanguage()), () => {
 			void this.activateView();
 		});
 
@@ -41,13 +41,13 @@ export default class DailyWorkLogPlugin extends Plugin {
 		// if the user flips the language setting mid-session.
 		this.addCommand({
 			id: "open-sidebar",
-			name: t("commandOpenSidebar", this.settings.language),
+			name: t("commandOpenSidebar", this.getUiLanguage()),
 			callback: () => void this.activateView(),
 		});
 
 		this.addCommand({
 			id: "open-dashboard",
-			name: t("commandOpenDashboard", this.settings.language),
+			name: t("commandOpenDashboard", this.getUiLanguage()),
 			callback: () => void this.activateDashboard(),
 		});
 
@@ -92,21 +92,14 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, migrateLoadedSettings(loadedData));
 
 		let shouldSave = false;
-		// First run only (no saved language yet) — auto-detect from Obsidian's own UI
-		// language, then persist it so this never re-triggers. Purely a nicer default;
-		// the dropdown in SettingTab can always override it afterward (AGENTS.md §2).
-		if (!loadedData || loadedData.language === undefined) {
-			this.settings.language = getLanguage() === "ko" ? "ko" : "en";
-			shouldSave = true;
-		}
 
 		if (typeof loadedData?.eventHeadingText !== "string") {
-			this.settings.eventHeadingText = this.settings.language === "ko" ? "이벤트" : "Event";
+			this.settings.eventHeadingText = t("defaultEventHeading", this.getUiLanguage());
 			shouldSave = true;
 		}
 		this.settings.eventHeadingText = this.settings.eventHeadingText.trim();
 		if (!this.settings.eventHeadingText || /[\r\n]/.test(this.settings.eventHeadingText)) {
-			this.settings.eventHeadingText = this.settings.language === "ko" ? "이벤트" : "Event";
+			this.settings.eventHeadingText = t("defaultEventHeading", this.getUiLanguage());
 			shouldSave = true;
 		}
 		if (!Number.isInteger(this.settings.eventHeadingLevel) || this.settings.eventHeadingLevel < 1 || this.settings.eventHeadingLevel > 6) {
@@ -118,6 +111,10 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+	}
+
+	getUiLanguage(): MarkerLanguage {
+		return resolveLanguage(this.settings.language, getLanguage());
 	}
 
 	getEventHeadingConfig(): EventHeadingConfig {
@@ -156,8 +153,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	/** Public so SettingTab can force a re-render (e.g. after a language/theme change). */
 	refreshViews(): void {
-		setTooltip(this.sidebarRibbonEl, t("ribbonOpenSidebar", this.settings.language));
-		setTooltip(this.dashboardRibbonEl, t("ribbonOpenDashboard", this.settings.language));
+		setTooltip(this.sidebarRibbonEl, t("ribbonOpenSidebar", this.getUiLanguage()));
+		setTooltip(this.dashboardRibbonEl, t("ribbonOpenDashboard", this.getUiLanguage()));
 
 		// Rebuild the category badge editor extension with the latest settings
 		// so colour/folder changes take effect in open editors immediately.

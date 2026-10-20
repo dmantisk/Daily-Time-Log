@@ -34,7 +34,7 @@ export class DashboardView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return t("dashboardTitle", this.plugin.settings.language);
+		return t("dashboardTitle", this.plugin.getUiLanguage());
 	}
 
 	getIcon(): string {
@@ -51,7 +51,7 @@ export class DashboardView extends ItemView {
 
 	async refresh(): Promise<void> {
 		const token = ++this.refreshToken;
-		const language = this.plugin.settings.language;
+		const language = this.plugin.getUiLanguage();
 
 		const container = this.containerEl.children[1] as HTMLElement;
 		container.empty();

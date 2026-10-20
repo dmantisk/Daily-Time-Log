@@ -3,7 +3,7 @@ import { FolderSuggest } from "./FolderSuggest";
 import { t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
-import { DEFAULT_CATEGORIES, type SidebarTheme } from "./settings";
+import { DEFAULT_CATEGORIES, type LanguagePreference, type SidebarTheme } from "./settings";
 
 const MAX_CATEGORIES = 10;
 const MAX_CATEGORY_NAME_LENGTH = 10;
@@ -29,7 +29,7 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		const lang = this.plugin.settings.language;
+		const lang = this.plugin.getUiLanguage();
 
 		new Setting(containerEl).setName(t("settingsTitle", lang)).setHeading();
 		new Setting(containerEl).setName(t("settingGeneralSection", lang)).setHeading();
@@ -127,11 +127,12 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			.setDesc(t("settingLanguageDesc", lang))
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("en", "English")
-					.addOption("ko", "한국어")
+					.addOption("auto", t("languageAuto", lang))
+					.addOption("en", t("languageEnglish", lang))
+					.addOption("ko", t("languageKorean", lang))
 					.setValue(this.plugin.settings.language)
 					.onChange(async (value) => {
-						this.plugin.settings.language = value as MarkerLanguage;
+						this.plugin.settings.language = value as LanguagePreference;
 						await this.plugin.saveSettings();
 						this.plugin.refreshViews();
 						this.display();
