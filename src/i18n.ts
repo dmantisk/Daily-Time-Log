@@ -32,6 +32,8 @@ export type UIStringKey =
 	| "emptyStateTitleNoNote"
 	| "emptyStateDescNoNote"
 	| "emptyStateTitleNotDaily"
+	| "emptyStateTitleNoEventHeading"
+	| "emptyStateDescNoEventHeading"
 	| "invalidTimeFormat"
 	| "multilineContinuationError"
 	| "dashboardTitle"
@@ -118,6 +120,9 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		emptyStateTitleNoNote: "No note open",
 		emptyStateDescNoNote: "Please select an active note to view or edit logs.",
 		emptyStateTitleNotDaily: "Not a daily note",
+		emptyStateTitleNoEventHeading: "No Event section",
+		emptyStateDescNoEventHeading:
+			"Events are only read from under the configured Event heading. Adding an Event here will create it in the note.",
 		invalidTimeFormat: "Invalid time format. (e.g. 09:00)",
 		multilineContinuationError:
 			"Line 2 onward can't start like a time range (e.g. 09:00 - 10:00), checkbox, or heading — please rephrase.",
@@ -202,6 +207,9 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		emptyStateTitleNoNote: "선택된 노트가 없습니다",
 		emptyStateDescNoNote: "일과를 기록하고 조회하려면 활성화된 노트를 선택해 주세요.",
 		emptyStateTitleNotDaily: "날짜 노트가 아닙니다",
+		emptyStateTitleNoEventHeading: "Event 섹션이 없습니다",
+		emptyStateDescNoEventHeading:
+			"일과는 설정된 Event 제목 아래에서만 읽힙니다. 여기서 일과를 추가하면 노트에 해당 제목이 생성됩니다.",
 		invalidTimeFormat: "시간 형식이 올바르지 않습니다. (예: 09:00)",
 		multilineContinuationError:
 			"2번째 줄부터는 시간 범위(예: 09:00 - 10:00), 체크박스 또는 제목 형식으로 시작할 수 없습니다. 문구를 조금 바꿔주세요.",

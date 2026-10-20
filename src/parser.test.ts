@@ -3,7 +3,10 @@ import {
 	appendLineToBlock,
 	DEFAULT_EVENT_HEADING,
 	findEventBlock,
+	findEventBlockInContent,
+	hasEventBlock,
 	isTopLevelOrMarker,
+	isWithinEventHeading,
 	matchMarker,
 	parseDailyNote,
 	parseTimeline,
@@ -18,6 +21,7 @@ import {
 	timeToMinutes,
 	minutesToTime,
 	timelineDurationMinutes,
+	type HeadingInfo,
 } from "./parser";
 
 describe("stripFrontmatter", () => {
@@ -53,38 +57,108 @@ describe("Event heading matching", () => {
 		expect(matchMarker("# Event", { text: " ", level: 1 })).toBe(false);
 	});
 
-	it("finds the configured block and ends it at the next heading", () => {
-		const lines = ["# Intro", "before", "## Activity", "- 09:00 - 10:00 work", "### nested", "- 10:00 - 11:00 ignored"];
-		expect(findEventBlock(lines, 0, { text: "Activity", level: 2 })).toEqual({ start: 2, end: 3 });
+	it("ends the block at the next heading of the same level or above", () => {
+		// Configured at H2: a deeper H3 is a subheading and stays inside the
+		// block; an H1 (above) ends it.
+		const lines = ["# Intro", "before", "## Activity", "- 09:00 - 10:00 work", "### nested", "- 10:00 - 11:00 kept"];
+		expect(findEventBlock(lines, 0, { text: "Activity", level: 2 })).toEqual({ start: 2, end: 5 });
+	});
+
+	it("keeps subheadings and their events inside the block", () => {
+		const content = "## Activity\n- 9:00 - 10:00 working\n### Detail\n- 10:00 - 11:00 nested\n# Other\n- 11:00 - 12:00 excluded";
+		const result = parseDailyNote(content, { text: "Activity", level: 2 });
+		expect(result.timeline.map((item) => item.description)).toEqual(["working", "nested"]);
 	});
 
 	it("does not recognize any heading other than the configured one", () => {
 		// Only the configured heading opens the Event block — there is no
-		// hard-coded fallback list of historical spellings. When the heading
-		// does not match, NO block is opened, so the whole-note fallback scan
-		// picks up event lines from every section.
+		// hard-coded fallback list of historical spellings, and no
+		// whole-body fallback either. A note without the configured heading
+		// yields no events at all.
 		const content = "# _이벤트\n- 9:00 - 10:00 회의\n# Other\n- 10:00 - 11:00 later";
 		const result = parseDailyNote(content, { text: "Activity", level: 2 });
-		expect(result.timeline.map((item) => item.description)).toEqual(["회의", "later"]);
-	});
-
-	it("opens a block (and stops at the next heading) only for the configured heading", () => {
-		// The configured heading ends the block at the next heading, so the
-		// event line under "# Other" is excluded.
-		const content = "## Activity\n- 9:00 - 10:00 working\n# Other\n- 10:00 - 11:00 ignored";
-		const result = parseDailyNote(content, { text: "Activity", level: 2 });
-		expect(result.timeline.map((item) => item.description)).toEqual(["working"]);
+		expect(result.timeline).toEqual([]);
 	});
 
 	it("does not recognize the configured text at a different heading level", () => {
 		const content = "# Event\n- 9:00 - 10:00 work\n# Other\n- 10:00 - 11:00 later";
 		// Configured at level 2, so the H1 "# Event" is not a match — no block
-		// is opened and the whole-body fallback finds both event lines.
-		expect(parseDailyNote(content, { text: "Event", level: 2 }).timeline).toHaveLength(2);
+		// is opened, so nothing is parsed.
+		expect(parseDailyNote(content, { text: "Event", level: 2 }).timeline).toEqual([]);
 
 		// At the configured level, the block is opened and ends at "# Other".
 		const level2 = "## Event\n- 9:00 - 10:00 work\n# Other\n- 10:00 - 11:00 later";
 		expect(parseDailyNote(level2, { text: "Event", level: 2 }).timeline).toHaveLength(1);
+	});
+
+	it("reports whether the note has an Event block", () => {
+		expect(hasEventBlock("# Event\n- 9:00 - 10:00 work")).toBe(true);
+		expect(hasEventBlock("# Other\n- 9:00 - 10:00 work")).toBe(false);
+		expect(hasEventBlock("# Other\n- 9:00 - 10:00 work", { text: "Activity", level: 2 })).toBe(false);
+	});
+});
+
+describe("isWithinEventHeading", () => {
+	const h = (level: number, text: string): HeadingInfo => ({ level, text });
+
+	it("is true directly under the configured heading", () => {
+		expect(isWithinEventHeading([h(1, "Event")])).toBe(true);
+	});
+
+	it("is false when the heading text does not match", () => {
+		expect(isWithinEventHeading([h(1, "Other")])).toBe(false);
+		expect(isWithinEventHeading([h(1, "Event log")])).toBe(false);
+	});
+
+	it("is false when the heading level does not match", () => {
+		expect(isWithinEventHeading([h(2, "Event")])).toBe(false);
+	});
+
+	it("matches the heading text case-insensitively and trimmed", () => {
+		expect(isWithinEventHeading([h(1, "  event  ")])).toBe(true);
+		expect(isWithinEventHeading([h(1, "EVENT")])).toBe(true);
+	});
+
+	it("is false with no preceding heading", () => {
+		expect(isWithinEventHeading([])).toBe(false);
+	});
+
+	it("stays true under a deeper (sub)heading", () => {
+		expect(isWithinEventHeading([h(1, "Event"), h(2, "Detail")])).toBe(true);
+		expect(isWithinEventHeading([h(1, "Event"), h(3, "Detail")])).toBe(true);
+	});
+
+	it("is false after a heading at the same level or above", () => {
+		expect(isWithinEventHeading([h(1, "Event"), h(1, "Other")])).toBe(false);
+		expect(isWithinEventHeading([h(2, "Event"), h(1, "Other")])).toBe(false);
+		expect(isWithinEventHeading([h(2, "Event"), h(2, "Other")])).toBe(false);
+	});
+
+	it("honours a non-default configured heading and level", () => {
+		const config = { text: "Activity", level: 2 };
+		expect(isWithinEventHeading([h(2, "Activity")], config)).toBe(true);
+		expect(isWithinEventHeading([h(1, "Activity")], config)).toBe(false);
+		expect(isWithinEventHeading([h(2, "Activity"), h(3, "Detail")], config)).toBe(true);
+		expect(isWithinEventHeading([h(2, "Activity"), h(1, "Top")], config)).toBe(false);
+		expect(isWithinEventHeading([h(2, "Activity"), h(2, "Other")], config)).toBe(false);
+	});
+
+	it("agrees with the file-based block rule", () => {
+		// The badge renderer works from rendered headings while the parser
+		// works from raw lines — both must agree on what is "inside".
+		const content = "# Intro\n## Event\n- 9:00 - 10:00 work\n### Detail\n- 10:00 - 11:00 nested\n# Other\n- 11:00 - 12:00 outside";
+		const config = { text: "Event", level: 2 };
+		const block = findEventBlockInContent(content, config);
+
+		// Headings preceding each event line, as the DOM walk would see them.
+		expect(isWithinEventHeading([h(1, "Intro"), h(2, "Event")], config)).toBe(true);
+		expect(isWithinEventHeading([h(1, "Intro"), h(2, "Event"), h(3, "Detail")], config)).toBe(true);
+		expect(isWithinEventHeading([h(1, "Intro"), h(2, "Event"), h(3, "Detail"), h(1, "Other")], config)).toBe(false);
+
+		// The same boundaries as the block range: lines 1-4 are inside
+		// (the `### Detail` subheading does not end it), line 5 (`# Other`)
+		// ends it.
+		expect(block).toEqual({ start: 1, end: 4 });
 	});
 });
 
@@ -133,9 +207,11 @@ describe("parseDailyNote", () => {
 		]);
 	});
 
-	it("falls back to scanning the body when no Event heading exists", () => {
+	it("returns no events when no Event heading exists", () => {
+		// Strict scoping: with no configured heading there is no whole-body
+		// fallback, so the note contributes nothing.
 		const result = parseDailyNote("- 09:00 - 10:00 work\n- [ ] task");
-		expect(result.timeline).toHaveLength(1);
+		expect(result.timeline).toEqual([]);
 		expect(result).not.toHaveProperty("todos");
 	});
 
@@ -145,23 +221,29 @@ describe("parseDailyNote", () => {
 	});
 
 	it("does not treat a non-configured heading as the Event block", () => {
-		// A note whose heading doesn't match the configuration falls back to
-		// whole-note scanning, so its event lines are still found.
+		// A note whose heading doesn't match the configuration has no Event
+		// block, so its event lines are not parsed at all.
 		const result = parseDailyNote("# Event\n- 09:00 - 10:00 work", { text: "Activity", level: 2 });
-		expect(result.timeline).toHaveLength(1);
-		expect(result.timeline[0].description).toBe("work");
+		expect(result.timeline).toEqual([]);
 	});
 });
 describe("appendLineToBlock", () => {
-	it("inserts before the next heading in the configured Event block", () => {
+	it("inserts directly under the heading, before any subheading", () => {
 		const content = "# Intro\n## Activity\n- 9:00 - 10:00 work\n### Notes\nother";
 		expect(appendLineToBlock(content, "- 10:00 - 11:00 study", { text: "Activity", level: 2 })).toBe(
 			"# Intro\n## Activity\n- 9:00 - 10:00 work\n- 10:00 - 11:00 study\n### Notes\nother"
 		);
 	});
 
-	it("appends to EOF when no Event block is present and preserves a trailing newline", () => {
-		expect(appendLineToBlock("# Notes\n", "- 9:00 - 10:00 work")).toBe("# Notes\n- 9:00 - 10:00 work\n");
+	it("appends to the end of the block when it has no subheadings", () => {
+		const content = "# Intro\n## Activity\n- 9:00 - 10:00 work\n# Notes\nother";
+		expect(appendLineToBlock(content, "- 10:00 - 11:00 study", { text: "Activity", level: 2 })).toBe(
+			"# Intro\n## Activity\n- 9:00 - 10:00 work\n- 10:00 - 11:00 study\n# Notes\nother"
+		);
+	});
+
+	it("creates the configured heading when the note has no Event block", () => {
+		expect(appendLineToBlock("# Notes\n", "- 9:00 - 10:00 work")).toBe("# Notes\n# Event\n- 9:00 - 10:00 work\n");
 	});
 
 	it("supports the default Event configuration", () => {

@@ -27,7 +27,7 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 
 > [!IMPORTANT]
 > **Only the configured heading is recognized.** The parser has NO hard-coded fallback list of historical spellings — there is no `LEGACY_EVENT_HEADINGS` equivalent. A heading that does not match the configured text *and* level is ordinary note content.
-> - Consequence: if the user changes the Event heading in Settings, notes written with the previous heading stop being treated as an Event block. They fall back to the whole-note scan described below (event lines are still found, but the block boundary is lost). This is intentional — the configured heading is the single source of truth.
+> - Consequence: if the user changes the Event heading in Settings, notes written with the previous heading stop being treated as an Event block **entirely** — they yield zero events (there is NO whole-body fallback; see 1.7). This is intentional — the configured heading is the single source of truth.
 > - Because matching is by exact text, a user's own unrelated heading can only collide if it is literally the configured text at the configured level. The user chose that text, so this is the intended target, not a guess.
 > - This plugin does not scaffold new notes (see 3. Obsidian API Best Practices), so there is no "creation side" to keep in sync. The first line of defense is the user's own Daily Notes template containing the configured heading.
 
@@ -38,8 +38,13 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 
 **Boundary computation**:
 1. Scan the file top to bottom and record the line number of the **first** occurrence of the configured heading only.
-2. The block spans from that recorded position to the next heading of **any** level (H1–H6), or to end-of-file. Subheadings do NOT nest inside the Event block — any heading terminates it.
-3. If the configured heading is not found anywhere in the file, fall back to scanning the **entire body** for time-range lines. This keeps existing notes that have no Event heading at all working.
+2. The block spans from that recorded position to the next heading at the **same level or above** (i.e. a heading whose level is `<=` the configured level), or to end-of-file.
+   - **Deeper headings are subheadings and stay INSIDE the block.** With the heading configured at H2, a `### Sub` heading and its content remain part of the Event block; only an H1 or H2 ends it. This lets a note group events under nested sub-headings.
+3. If the configured heading is not found anywhere in the file, the file has **no Event block** and yields **zero events** — there is no whole-body fallback (see 1.7).
+
+**Inline creation**: `appendLineToBlock` inserts a new Event line at the end of the heading's **own** content — i.e. before the first deeper (sub)heading inside the block — so the Event list stays grouped directly under the configured heading and nested sections keep their own content. When the note has no Event block at all, the configured heading is created at the end of the file and the new line goes right under it (otherwise the event would land outside every block and never be parsed back).
+
+**Category badges are scoped the same way**: `categoryBadges.ts` renders a `[Category]` badge only for tokens inside the configured Event section — in the live editor via the block range from `findEventBlockInContent`, and in the reading view via `isWithinEventHeading` (which takes the rendered `<h1>`–`<h6>` headings preceding the token). A `[Category]` typed outside the Event section stays plain text, matching the parser's strict scoping. `isWithinEventHeading` lives in `parser.ts` (not `categoryBadges.ts`) so it stays unit-testable without the Obsidian API — `parser.test.ts` covers it, including a cross-check that it agrees with the file-based block range.
 
 ### 1.4 Event Block
 - Lines representing time ranges are formatted as: `- HH:mm - HH:mm [description]` (e.g., `- 09:00 - 10:30 Coding session`).
@@ -58,8 +63,8 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 #### 1.4.2 Continuation Lines / Multi-line Text *(2026-08-14 결정)*
 - **Motivating bug**: `TimelineModal`'s description `<textarea>` allows the user to type real newlines. Those got written to the file verbatim (multiple physical lines) but `parseTimeline` only ever read the first line per item — the rest silently vanished from the parsed `description` on the next load, even though the raw text was still sitting in the file. See `imsi.md` (repo root, working notes from the investigation) for the full incident writeup.
 - **Rule**: within a block, a line matching `TIME_RANGE_REGEX` starts a new item. A line matching neither a time range nor a checkbox nor a heading is absorbed **verbatim** (no trim, so it round-trips byte-for-byte) into the immediately preceding item's `description`, joined with `\n`. A line that DOES match a checkbox or a heading (`isTopLevelOrMarker` in `parser.ts`), stops the run **and clears the "current item" pointer** — it is neither absorbed nor treated as a new item.
-  - The "clears the pointer" half is required for the legacy (heading-less) fallback (1.7), where event lines and checkbox lines share one line range. Without the reset, a note line following a checkbox line would get glued onto whatever Event item happened to appear earlier in the file instead of staying orphaned. Regression case: `parser.test.ts` → `"does not absorb headings, time-range lines, or checkboxes as continuation text"`.
-  - It's also required in heading-based (non-legacy) mode so that a heading line (which ends the Event block per 1.3) is never absorbed as if it were a note — see the `isTopLevelOrMarker` JSDoc in `parser.ts`.
+  - The "clears the pointer" half is required so that a checkbox line never inherits an earlier Event item's continuation run. Regression case: `parser.test.ts` → `"does not absorb headings, time-range lines, or checkboxes as continuation text"`.
+  - It's also required so that a heading line (which ends the Event block per 1.3, or is a subheading inside it) is never absorbed as if it were a note — see the `isTopLevelOrMarker` JSDoc in `parser.ts`.
 - **`lineCount`**: every `TimelineItem` carries `lineCount` (>= 1) — the number of physical lines it occupies, including absorbed continuation lines. Range-based `replaceLineRangeAt`/`removeLineRangeAt` must be used for anything touching a possibly-multi-line item, so a note's continuation lines get replaced/removed together with the item that owns them rather than left behind as orphaned text.
 - **Trailing blank lines**: absorbed like any other continuation line for `lineCount` purposes (they still occupy physical lines that must move together with the item on edit/delete), but trimmed off the collected `description`/`text` string itself (`.trimEnd()`) so they don't show up as trailing whitespace when the item is re-edited.
 - **A second consecutive blank line ends the run too** *(2026-08-14 결정, follow-up)*: one blank line absorbs as a meaningful paragraph break, but two-or-more in a row is treated exactly like hitting `isTopLevelOrMarker` — the run stops and `current` is cleared, so the blank line and everything after it become orphaned (excluded from `lineCount`), never deleted, just no longer part of this item. This is the read-side half of a two-layer defense against meaningless/runaway gaps:
@@ -73,11 +78,13 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 
 ### 1.6 Journal Blocks — REMOVED
 > [!NOTE]
-> The reserved Diary/Journal block is gone. Free-form sections in a note are ordinary Markdown and are never structurally parsed. A heading of any level simply ends the Event block (see 1.3).
+> The reserved Diary/Journal block is gone. Free-form sections in a note are ordinary Markdown and are never structurally parsed. A heading at the same level or above the configured Event heading ends the Event block (see 1.3); deeper headings are subheadings inside it.
 
-### 1.7 Legacy Files (No Event Heading Found)
-- If the configured Event heading (1.3) is not found anywhere in the file, fall back to scanning the **entire body** for time-range lines, regardless of position in the file.
-- **Do NOT auto-migrate legacy files** by inserting the Event heading into them. Legacy files are only ever read via this fallback path and are left untouched unless the user manually edits them.
+### 1.7 Notes Without the Event Heading (No Fallback)
+- If the configured Event heading (1.3) is not found anywhere in the file, the file has **no Event block** and the parser returns **zero events**. There is deliberately **no whole-body fallback**: the configured heading is the single source of truth for where events live.
+- The sidebar shows a "No Event section" banner above the grid for such notes (`emptyStateTitleNoEventHeading` / `emptyStateDescNoEventHeading` in `i18n.ts`) instead of silently showing nothing, so the user can tell "no heading" apart from "heading but no events". The grid itself stays usable — creating the first Event writes the configured heading into the note (see 1.3).
+- The Dashboard treats such notes as having zero Event time (they still count as existing notes for streak/total purposes).
+- **Do NOT auto-migrate notes** by inserting the Event heading into them. Notes without the heading are left untouched unless the user (or the sidebar's inline Event creation) adds it explicitly.
 
 ---
 
@@ -123,9 +130,11 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 - **Required parser test coverage** (in addition to existing regex/line-index cases):
   - Files with a leading YAML frontmatter block (frontmatter must be stripped, not mistaken for the Event heading).
   - Files with the configured Event heading present, at various levels and text values.
-  - Files where the configured heading is **absent** (legacy fallback path — whole-body scan).
+  - Files where the configured heading is **absent** (must yield zero events — no whole-body fallback).
   - Files where a heading that is *not* the configured one is present (must NOT open an Event block).
   - Files where the configured text appears at a **different** heading level (must NOT open an Event block — level is part of the match).
+  - Files where the Event block is terminated by a heading at the **same level or above**, and files where a **deeper** heading (subheading) keeps its content inside the block.
+  - `isWithinEventHeading` (the heading-list form of the same rule, used by the category-badge renderer) — including a cross-check that it agrees with the file-based block range.
   - *(§1.4.1)* Event lines with and without the `[Category]` token, including files that mix both within the same block (notes written before and after the category feature shipped).
   - *(§1.4.2)* Continuation-line absorption for Event items, including: `lineCount` tracking, verbatim (untrimmed) preservation of a continuation line's own leading whitespace, trailing-blank-line trimming from the collected text while still counting it in `lineCount`, stopping (and resetting the "current item" pointer) at a line matching a checkbox or a heading, and a single blank line still absorbing normally vs. a SECOND consecutive blank line stopping the run and excluding the rest from `lineCount`.
 - **Required `dailyNote.ts` test coverage** (`src/dailyNote.test.ts`, same pure/no-Obsidian-dependency reasoning as parser.ts):

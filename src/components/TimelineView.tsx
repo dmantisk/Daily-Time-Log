@@ -8,6 +8,7 @@ import { TimelineModal, type EventEntryValues } from "../modals/TimelineModal";
 import type DailyWorkLogPlugin from "../main";
 import {
 	appendLineToBlock,
+	hasEventBlock,
 	minutesToTime,
 	parseDailyNote,
 	removeLineRangeAt,
@@ -50,6 +51,8 @@ function formatDateHeader(date: Date, language: MarkerLanguage): string {
 export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken }) => {
 	const [activeFile, setActiveFile] = useState<TFile | null>(null);
 	const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+	/** True when the active note has no Event block under the configured heading. */
+	const [hasEventSection, setHasEventSection] = useState(true);
 
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragStart, setDragStart] = useState<number | null>(null);
@@ -63,6 +66,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		const content = await plugin.app.vault.read(file);
 		const parsed = parseDailyNote(content, plugin.getEventHeadingConfig());
 		setTimeline(parsed.timeline);
+		setHasEventSection(hasEventBlock(content, plugin.getEventHeadingConfig()));
 	};
 
 	// Re-syncs from the active file whenever refreshToken changes (see the
@@ -82,13 +86,15 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			if (cancelled) return;
 			setActiveFile(resolved);
 			if (!resolved) {
-			setTimeline([]);
-			return;
+				setTimeline([]);
+				setHasEventSection(true);
+				return;
 			}
 			const content = await plugin.app.vault.read(resolved);
 			if (cancelled) return;
 			const parsed = parseDailyNote(content, plugin.getEventHeadingConfig());
 			setTimeline(parsed.timeline);
+			setHasEventSection(hasEventBlock(content, plugin.getEventHeadingConfig()));
 		};
 		void run();
 
@@ -222,6 +228,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			<div className="dwl-view-header">
 				<h2 className="dwl-view-date-title">{formatDateHeader(dateForFile, language)}</h2>
 			</div>
+
+			{/* Strict scoping: Events are read only from under the configured
+			    heading. The grid stays usable — creating the first Event adds
+			    the heading to the note (see appendLineToBlock). */}
+			{!hasEventSection && (
+				<div className="dwl-missing-heading-banner">
+					<strong>{t("emptyStateTitleNoEventHeading", language)}</strong>
+					<span>{t("emptyStateDescNoEventHeading", language)}</span>
+				</div>
+			)}
 
 			<div
 				className="dwl-grid-wrap"

@@ -75,6 +75,26 @@
 
 
 
+/* Banner shown when the note has no Event section under the configured
+   heading. Deliberately NOT themed via --dwl-* tokens: it is a notice about
+   the note's structure, not plugin content, so it uses Obsidian's own
+   theme colors (same reasoning as the empty-state block below). */
+.dwl-missing-heading-banner {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+	padding: 0.5rem 0.6rem;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.dwl-missing-heading-banner strong {
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+}
+
 /* Empty states (no note open / not a daily note) — deliberately NOT themed
    via --dwl-* tokens like the rest of the sidebar. There's no real content
    to show yet, so this should just look like a native part of the vault

@@ -70,7 +70,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.categoryBadgeExtensions.push(
 			buildCategoryBadgeEditorPlugin(
 				this.settings.categories,
-				this.settings.dailyNoteFolder
+				this.settings.dailyNoteFolder,
+				this.getEventHeadingConfig()
 			)
 		);
 		this.registerEditorExtension(this.categoryBadgeExtensions);
@@ -81,7 +82,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 					el,
 					ctx,
 					this.settings.categories,
-					this.settings.dailyNoteFolder
+					this.settings.dailyNoteFolder,
+					this.getEventHeadingConfig()
 				);
 			}
 		);
@@ -185,7 +187,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.categoryBadgeExtensions.push(
 			buildCategoryBadgeEditorPlugin(
 				this.settings.categories,
-				this.settings.dailyNoteFolder
+				this.settings.dailyNoteFolder,
+				this.getEventHeadingConfig()
 			)
 		);
 		// updateOptions is the Obsidian API for updating registered editor extensions at runtime.

@@ -30,7 +30,8 @@ export interface LineRange {
  * Heading configuration for the single recognized block (Event).
  * `text` is the heading label matched case-insensitively (trimmed);
  * `level` is the heading depth (1-6). Only a heading at exactly this level
- * with this text starts the block; any heading of any level ends it.
+ * with this text starts the block; the block ends at the next heading at
+ * the same level or above.
  */
 export interface EventHeadingConfig {
 	text: string;
@@ -85,7 +86,7 @@ function escapeRegExp(value: string): string {
  * ONLY the configured heading is recognized. There is no hard-coded
  * fallback list of historical spellings — if the user changes the Event
  * heading in Settings, notes using the old heading stop being treated as
- * an Event block (they fall back to whole-note scanning).
+ * an Event block and yield no events at all.
  */
 export function matchMarker(line: string, config: EventHeadingConfig): boolean {
 	const trimmed = line.trim();
@@ -125,16 +126,26 @@ export function stripFrontmatter(content: string): { lines: string[]; bodyStart:
 }
 
 /**
+ * Returns the heading level (1-6) of `line`, or null if it isn't a heading.
+ */
+export function headingLevel(line: string): number | null {
+	const match = /^(#{1,6})\s/.exec(line.trim());
+	return match ? match[1].length : null;
+}
+
+/**
  * Finds the single Event block in the file.
  *
  * Rule: the block starts at the first occurrence of the configured event
  * marker heading (exact level + text, case-insensitive). The block ends at
- * the next heading of ANY level (H1–H6), or at EOF — any heading terminates
- * the block (subheadings do not nest inside the Event block).
+ * the next heading at the SAME level or above (i.e. a heading whose level is
+ * less than or equal to the configured level), or at EOF. Deeper headings
+ * (a higher level number) are subheadings of the Event section and stay
+ * INSIDE the block.
  *
  * Returns { start, end } inclusive line indices, or null if no marker found.
- * When null is returned, callers should fall back to legacy mode (scan
- * entire body for time-range lines).
+ * When null is returned the file has no Event block at all — there is no
+ * whole-body fallback.
  */
 export function findEventBlock(
 	lines: string[],
@@ -145,7 +156,6 @@ export function findEventBlock(
 
 	for (let i = bodyStart; i < lines.length; i++) {
 		const line = lines[i];
-		const trimmed = line.trim();
 
 		if (blockStart === null) {
 			if (matchMarker(line, config)) {
@@ -154,7 +164,11 @@ export function findEventBlock(
 			continue;
 		}
 
-		if (/^#{1,6}\s/.test(trimmed)) {
+		const level = headingLevel(line);
+		// A heading at the same level or above ends the block. Deeper
+		// headings (level > config.level) are subheadings of this section
+		// and do NOT terminate it.
+		if (level !== null && level <= config.level) {
 			return { start: blockStart, end: i - 1 };
 		}
 	}
@@ -164,6 +178,72 @@ export function findEventBlock(
 	}
 
 	return null;
+}
+
+/**
+ * True when `content` contains an Event block for the configured heading.
+ * Used by the sidebar to tell the user their note is missing the heading
+ * instead of silently showing an empty timeline.
+ */
+export function hasEventBlock(
+	content: string,
+	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
+): boolean {
+	return findEventBlockInContent(content, config) !== null;
+}
+
+/**
+ * A heading in document order, as seen by the category-badge renderer.
+ */
+export interface HeadingInfo {
+	/** Heading depth, 1-6. */
+	level: number;
+	/** Heading text, trimmed. */
+	text: string;
+}
+
+/**
+ * True when a position that follows `headings` (in document order) is inside
+ * the configured Event block.
+ *
+ * Mirrors `findEventBlock` exactly:
+ * - The Event section ends at the next heading at the SAME level or above,
+ *   so a deeper heading keeps the position inside the section.
+ * - The heading that opens the section must match the configured text and
+ *   level.
+ *
+ * The last heading whose level is <= the configured level decides the
+ * outcome:
+ *   - level < configured level → that heading CLOSED the section → outside.
+ *   - level == configured level → outside unless its text matches.
+ *
+ * Used by the category-badge renderer, which works from the rendered DOM
+ * (headings as `<h1>`–`<h6>` elements) rather than the raw file text.
+ */
+export function isWithinEventHeading(
+	headings: HeadingInfo[],
+	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
+): boolean {
+	for (let i = headings.length - 1; i >= 0; i--) {
+		const heading = headings[i];
+		if (heading.level > config.level) continue; // subheading — stays inside
+		if (heading.level < config.level) return false; // higher heading — section closed
+		return heading.text.trim().toLowerCase() === config.text.trim().toLowerCase();
+	}
+	return false; // no heading at all — not inside an Event section
+}
+
+/**
+ * Convenience wrapper around `stripFrontmatter` + `findEventBlock` for
+ * callers that have the raw file content rather than pre-split lines.
+ * Line indices are relative to the original file (frontmatter included).
+ */
+export function findEventBlockInContent(
+	content: string,
+	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
+): LineRange | null {
+	const { lines, bodyStart } = stripFrontmatter(content);
+	return findEventBlock(lines, bodyStart, config);
 }
 
 /**
@@ -240,9 +320,9 @@ function* linesInRange(lines: string[], range: LineRange): Generator<{ text: str
  * Full pipeline: frontmatter strip -> find configured Event block -> parse
  * timeline items within it.
  *
- * If the configured marker heading is not found anywhere in the file,
- * falls back to legacy mode: scan the whole body for time-range lines
- * (existing notes without the marker keep working).
+ * STRICT SCOPING: if the configured heading is not found anywhere in the
+ * file, there is NO fallback — the result is an empty timeline. Events are
+ * only ever read from under the configured heading.
  */
 export function parseDailyNote(
 	content: string,
@@ -251,15 +331,11 @@ export function parseDailyNote(
 	const { lines, bodyStart } = stripFrontmatter(content);
 	const block = findEventBlock(lines, bodyStart, config);
 
-	let timeline: TimelineItem[];
-
-	if (block) {
-		timeline = parseTimeline(lines, block);
-	} else {
-		timeline = parseTimeline(lines, { start: bodyStart, end: lines.length - 1 });
+	if (!block) {
+		return { timeline: [] };
 	}
 
-	return { timeline };
+	return { timeline: parseTimeline(lines, block) };
 }
 
 /**
@@ -329,11 +405,18 @@ export function timelineRangeMatches(lines: string[], item: TimelineItem): boole
 }
 
 /**
- * Appends `newLine` to the end of the Event block's content (or to the end
- * of the whole file if that block isn't present — e.g. a legacy file,
- * or one missing that particular marker). Used for inline Event creation.
- * Frontmatter and other blocks are left untouched; the new line always
- * lands just before the next block's marker (or EOF).
+ * Appends `newLine` to the end of the Event block's content. Used for
+ * inline Event creation.
+ *
+ * If the note has no Event block yet, the configured heading is added at
+ * the end of the file and the new line goes right under it — otherwise the
+ * event would land outside every block and never be parsed back (the
+ * parser is strictly scoped to the configured heading).
+ *
+ * When the block does exist, the new line is inserted at the end of the
+ * heading's OWN content — i.e. before the first deeper (sub)heading. The
+ * Event list therefore stays grouped directly under the configured
+ * heading, and nested sections keep their own content.
  */
 export function appendLineToBlock(
 	content: string,
@@ -344,15 +427,30 @@ export function appendLineToBlock(
 	const block = findEventBlock(lines, bodyStart, config);
 
 	if (!block) {
-		return appendAtEndOfFile(lines, newLine);
+		const heading = `${"#".repeat(config.level)} ${config.text}`;
+		const base = lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
+		return [...base, heading, newLine, ""].join("\n");
 	}
 
-	const insertAt = block.end + 1;
+	const insertAt = endOfOwnContent(lines, block, config.level);
 	if (insertAt >= lines.length) {
 		return appendAtEndOfFile(lines, newLine);
 	}
 
 	return [...lines.slice(0, insertAt), newLine, ...lines.slice(insertAt)].join("\n");
+}
+
+/**
+ * Index at which the configured heading's own content ends: the line
+ * before the first deeper (sub)heading inside the block, or the end of the
+ * block when the section has no subheadings.
+ */
+function endOfOwnContent(lines: string[], block: LineRange, level: number): number {
+	for (let i = block.start + 1; i <= block.end && i < lines.length; i++) {
+		const heading = headingLevel(lines[i]);
+		if (heading !== null && heading > level) return i;
+	}
+	return block.end + 1;
 }
 
 function appendAtEndOfFile(lines: string[], newLine: string): string {

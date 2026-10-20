@@ -9,7 +9,7 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
 - **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — plus up to 10 custom), stored as a `[Category]` tag right in the note body.
 - **Configurable daily note folder**: notes don't have to live at the vault root, with folder autocomplete in settings.
-- **Configurable Event heading**: choose its text and Markdown heading level; historical English and Korean Event headings remain recognized.
+- **Configurable Event heading**: choose its text and Markdown heading level; only the configured heading is recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
 - **Theme-aware UI**: the sidebar and Work Insights follow Obsidian's active theme; popups follow the system theme.
@@ -26,8 +26,10 @@ Daily notes must be named `YYYY-MM-DD.md`. Daily Time Log reads and updates exis
 ```
 
 - The `[Category]` tag right after the time range is optional — `- 9:00 - 10:30 Team meeting` (no category) still works.
-- Set the Event heading text and level in plugin settings. **Only the configured heading is recognized** — if you change it, notes using the previous heading are no longer treated as an Event block.
-- When the configured heading is present, only its section (up to the next heading) is parsed. Notes without that heading retain legacy whole-note parsing.
+- Category badges are rendered only inside the Event section, same as the Event lines themselves — a `[Category]` token typed elsewhere in the note stays plain text.
+- Set the Event heading text and level in plugin settings. **Only the configured heading is recognized** — if you change it, notes using the previous heading are no longer treated as an Event block and contribute no Events.
+- Events are read **only from under the configured heading**. The section ends at the next heading at the *same level or above* — so with `# Event` (level 1), any `#` heading ends it, while with `## Event` (level 2), a `###` subheading and its content stay inside the Event section.
+- A note without the configured heading has no Event section: the sidebar shows a "No Event section" banner and Work Insights counts it as zero Event time. Adding an Event from the sidebar creates the heading in the note automatically.
 
 ## Installation
 

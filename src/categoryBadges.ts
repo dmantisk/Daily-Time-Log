@@ -15,6 +15,11 @@
  * parseDateFromBasename from dailyNote.ts). Files outside that scope are
  * left completely untouched.
  *
+ * Additionally scoped to the Event block: badges are only rendered for
+ * lines inside the configured Event heading's section (see parser.ts), so
+ * a `[Category]` token typed outside that section stays plain text — the
+ * same strict scoping the parser itself applies to Event lines.
+ *
  * No Obsidian API is called from this module directly — the plugin class
  * in main.ts owns the registration lifecycle.
  */
@@ -32,7 +37,14 @@ import {
 import { editorInfoField } from "obsidian";
 import { parseDateFromBasename, isInDailyNoteFolder } from "./dailyNote";
 import { getTextColorForBackground } from "./components/colorUtils";
-import { CATEGORY_BADGE_REGEX_SOURCE } from "./parser";
+import {
+	CATEGORY_BADGE_REGEX_SOURCE,
+	DEFAULT_EVENT_HEADING,
+	findEventBlockInContent,
+	isWithinEventHeading,
+	type EventHeadingConfig,
+	type HeadingInfo,
+} from "./parser";
 import type { CustomCategory } from "./settings";
 
 export { CATEGORY_BADGE_REGEX_SOURCE };
@@ -120,19 +132,24 @@ class CategoryBadgeWidget extends WidgetType {
 /**
  * Creates (and returns) a CodeMirror ViewPlugin that decorates `[Category]`
  * tokens in the live editor with badge widgets, limited to daily notes in the
- * configured folder. A new plugin instance is created every time the settings
- * change so the category colour lookup is always fresh.
+ * configured folder AND to lines inside the configured Event block. A new
+ * plugin instance is created every time the settings change so the category
+ * colour lookup is always fresh.
  */
 export function buildCategoryBadgeEditorPlugin(
 	categories: CustomCategory[],
-	dailyNoteFolder: string
+	dailyNoteFolder: string,
+	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING
 ) {
 	const matcher = new MatchDecorator({
 		regexp: new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g"),
-		decoration: (match) => {
+		decoration: (match, view, pos) => {
 			// Only render a badge when the token matches a configured category.
 			// Unknown `[...]` tokens (typos, prose, wikilinks) stay as plain text.
 			if (!findCategory(match[1], categories)) return null;
+			// Strict scoping: the token must sit inside the Event block, so a
+			// `[Category]` typed outside the configured heading stays plain text.
+			if (!isInsideEventBlock(view, pos, eventHeading)) return null;
 			return Decoration.replace({
 				widget: new CategoryBadgeWidget(match[1], categories),
 			});
@@ -160,9 +177,87 @@ export function buildCategoryBadgeEditorPlugin(
 	);
 }
 
+/**
+ * True when the character offset `pos` sits inside the configured Event
+ * block of the document currently in the editor.
+ *
+ * The block is recomputed from the document text on every match — the
+ * editor's content changes on every keystroke, so caching a block range
+ * would go stale the moment the user edits a heading. The document is
+ * small (a daily note), so the linear scan is cheap.
+ */
+function isInsideEventBlock(
+	view: EditorView,
+	pos: number,
+	eventHeading: EventHeadingConfig
+): boolean {
+	const text = view.state.doc.toString();
+	const block = findEventBlockInContent(text, eventHeading);
+	if (!block) return false;
+
+	// CodeMirror positions are absolute character offsets; the block range is
+	// expressed in line indices. Convert the match position to a line index
+	// (CodeMirror's `lineAt` is 1-based, the block's is 0-based).
+	const line = view.state.doc.lineAt(pos).number - 1;
+
+	return line >= block.start && line <= block.end;
+}
+
 // ---------------------------------------------------------------------------
 // Reading-view post-processor
 // ---------------------------------------------------------------------------
+
+/**
+ * Collects the headings that precede `node` inside `root`, in document
+ * order.
+ */
+function headingsBefore(root: HTMLElement, node: Node): HeadingInfo[] {
+	const headings: HeadingInfo[] = [];
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+
+	let current: Node | null;
+	while ((current = walker.nextNode())) {
+		if (current === node) break;
+		const level = headingLevelOfElement(current);
+		if (level !== null) {
+			headings.push({ level, text: (current.textContent ?? "").trim() });
+		}
+	}
+
+	return headings;
+}
+
+/**
+ * Returns the heading depth (1-6) of a rendered heading element, or null if
+ * the element is not a heading. Obsidian renders Markdown headings as
+ * `<h1>`–`<h6>` in the reading view.
+ */
+function headingLevelOfElement(el: Node): number | null {
+	if (!(el instanceof HTMLElement)) return null;
+	const match = /^H([1-6])$/i.exec(el.tagName);
+	return match ? Number(match[1]) : null;
+}
+
+/**
+ * True when `node` sits inside the configured Event section of the
+ * rendered document.
+ *
+ * The reading view renders headings as `<h1>`–`<h6>` elements in document
+ * order. The headings that precede `node` are collected and fed through
+ * the same scoping rule the parser uses (see `isWithinEventHeading`), so
+ * a `[Category]` token outside the configured Event section stays plain
+ * text.
+ *
+ * Working from the rendered DOM (rather than the raw file) keeps this
+ * consistent with what the user actually sees.
+ */
+function isInsideEventSection(
+	root: HTMLElement,
+	node: Node,
+	eventHeading: EventHeadingConfig
+): boolean {
+	return isWithinEventHeading(headingsBefore(root, node), eventHeading);
+}
 
 /**
  * Markdown post-processor for the Reading view. Walks all text nodes inside
@@ -174,7 +269,8 @@ export function processCategoryBadgesInReadingView(
 	el: HTMLElement,
 	ctx: MarkdownPostProcessorContext,
 	categories: CustomCategory[],
-	dailyNoteFolder: string
+	dailyNoteFolder: string,
+	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING
 ): void {
 	if (!isDailyNoteFile(ctx.sourcePath, dailyNoteFolder)) return;
 
@@ -190,6 +286,9 @@ export function processCategoryBadgesInReadingView(
 			node.parentElement.classList.contains("dwl-cat-badge")
 		)
 			continue;
+		// Strict scoping: only text inside the configured Event section is
+		// eligible for badge rendering.
+		if (!isInsideEventSection(el, node, eventHeading)) continue;
 		regex.lastIndex = 0;
 		if (regex.test((node as Text).textContent ?? "")) {
 			targets.push(node as Text);
