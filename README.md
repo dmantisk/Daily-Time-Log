@@ -130,7 +130,7 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
-### Unreleased
+### 0.5.0 (2026-10-20)
 
 - **Renamed the plugin** from "Daily Work Log" to "Daily Time Log".
 - **Removed PDF/HTML export**; use a screenshot to capture the timeline.
