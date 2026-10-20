@@ -35,7 +35,8 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 - The heading must have **exactly** the configured level (`#` repeated `eventHeadingLevel` times, 1–6) followed by the configured text. A different level is NOT a match, even with the same text.
 - Matching MUST be tolerant of accidental hand-typing: trim surrounding whitespace and match case-insensitively (e.g. `# event` still matches a configured `Event`).
 - The heading text is matched as a literal string — regex metacharacters in it are escaped, not interpreted.
-- **Heading text is normalized to its RENDERED form before comparison** (`normalizeHeadingText` in `parser.ts`). The reading view renders inline markup, so `# **Event**` becomes `<h1>Event</h1>`; if the parser compared the raw text it would disagree with the DOM. Normalization removes emphasis/strong/strikethrough markers, unwraps inline code, drops the ATX closing sequence (`# Event #`), decodes HTML entities, and collapses whitespace. The *configured* text is normalized the same way, so a setting of `Event` matches a heading written as `**Event**`.
+- **Heading text is normalized to its RENDERED form before comparison** (`normalizeHeadingText` in `parser.ts`). The reading view renders inline markup, so `# **Event**` becomes `<h1>Event</h1>`; if the parser compared the raw text it would disagree with the DOM. Normalization removes emphasis/strong/strikethrough markers, unwraps inline code, **replaces inline links and images with their label text** (`[Event](url)` -> `Event`), drops the ATX closing sequence (`# Event #`), decodes HTML entities, and collapses whitespace. The *configured* text is normalized the same way, so a setting of `Event` matches a heading written as `**Event**`.
+- **Inline code spans are exempt from the markup stripping.** A code span renders its contents literally, so `` `**Event**` `` shows as `**Event**` in the DOM — the markers are part of the visible text and must survive. `normalizeHeadingText` splits the raw text into code and non-code parts and only transforms the non-code parts.
 - Emphasis is only stripped when unambiguous (CommonMark's intraword rule): `_` inside a word is literal, so `foo_bar_baz` stays `foo_bar_baz` and does **not** match a configured `foobarbaz`.
 - The DOM side must NOT re-strip markup: text taken from a rendered heading goes through `normalizeRenderedHeadingText` (whitespace only), because the markup has already been rendered away.
 
@@ -156,6 +157,7 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - A token after a heading at the **same level or above** does **not** render a badge (the Event section has ended).
   - A token in a note with no configured heading does not render a badge.
   - A non-default configured heading text/level is honoured.
+  - A heading whose text is rendered from a link (`<h1><a href="...">Event</a></h1>`) opens the section — the parser must agree, or the note would show badges inside an Event section the parser never opened.
   - Tokens that are not in event-line position (prose, checkboxes) and unknown categories do not render a badge.
   - Files outside the configured daily-note folder, and files that are not `YYYY-MM-DD`-named, are left untouched.
 - **Test environment notes**:

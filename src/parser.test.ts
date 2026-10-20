@@ -8,6 +8,7 @@ import {
 	isTopLevelOrMarker,
 	isWithinEventHeading,
 	matchMarker,
+	normalizeHeadingText,
 	parseDailyNote,
 	parseTimeline,
 	removeLineRangeAt,
@@ -74,6 +75,26 @@ describe("Event heading matching", () => {
 
 	it("matches a configured heading that is itself decorated", () => {
 		expect(matchMarker("# Event", { text: "**Event**", level: 1 })).toBe(true);
+	});
+
+	it("matches a heading whose text is a Markdown link", () => {
+		// The reading view renders `[Event](url)` as a link with the visible
+		// text "Event", so the badge renderer sees "Event" and opens the
+		// section. The parser must agree, or the note would show badges
+		// inside an Event section the parser never opened.
+		expect(matchMarker("# [Event](https://example.com)", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# [Event](/wiki/note)", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# [Event][ref]", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# [**Event**](https://example.com)", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# [Event](https://example.com)", { text: "Other", level: 1 })).toBe(false);
+	});
+
+	it("leaves the contents of an inline code span alone", () => {
+		// A code span renders literally, so `` `**Event**` `` shows as
+		// `**Event**` in the DOM — the markers are part of the visible text
+		// and must not be stripped.
+		expect(normalizeHeadingText("`**Event**`")).toBe("**Event**");
+		expect(normalizeHeadingText("`Event`")).toBe("Event");
 	});
 
 	it("does not match a decorated heading with a different text", () => {

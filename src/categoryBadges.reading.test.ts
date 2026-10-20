@@ -133,6 +133,21 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		expect(badgeTexts(el)).toEqual(["Work"]);
 	});
 
+	it("matches a heading whose text is rendered from a link", () => {
+		// Obsidian renders `# [Event](url)` as a link whose visible text is
+		// "Event", so the renderer opens the section on it — and the parser
+		// must agree, or the note would show badges inside an Event section
+		// the parser never opened.
+		const el = renderEl(
+			'<h1><a href="https://example.com">Event</a></h1><p>- 9:00 - 10:00 [Work] inside</p>' +
+				"<h1>Other</h1><p>- 11:00 - 12:00 [Rest] outside</p>"
+		);
+		process(el);
+
+		expect(badgeCount(el)).toBe(1);
+		expect(badgeTexts(el)).toEqual(["Work"]);
+	});
+
 	it("does NOT render any badge when the configured heading is absent", () => {
 		const el = renderEl("<h1>Other</h1><p>- 9:00 - 10:00 [Work] nowhere</p>");
 		process(el);

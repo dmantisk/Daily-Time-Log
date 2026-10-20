@@ -101,9 +101,13 @@ const FRONTMATTER_DELIMITER = "---";
  * text against the configured heading would therefore disagree with the
  * DOM, so the raw text is normalized to its rendered form:
  *
+ * - Inline links and images are replaced by their label text
+ *   (`[Event](url)` -> `Event`, `![Event](url)` -> `Event`).
  * - Inline emphasis / strong / strikethrough markers are removed
  *   (`**Event**` -> `Event`, `_Event_` -> `Event`, `~~Event~~` -> `Event`).
- * - Inline code spans are unwrapped (`` `Event` `` -> `Event`).
+ * - Inline code spans are unwrapped (`` `Event` `` -> `Event`), but their
+ *   CONTENTS are left alone: a code span renders literally, so
+ *   `` `**Event**` `` shows as `**Event**` and must not be stripped.
  * - ATX closing sequences are dropped (`# Event #` -> `Event`).
  * - Entities are decoded (`&amp;` -> `&`).
  * - Surrounding whitespace is trimmed and internal whitespace is collapsed.
@@ -121,14 +125,73 @@ const FRONTMATTER_DELIMITER = "---";
  */
 export function normalizeHeadingText(text: string): string {
 	const withoutClosing = text.replace(/\s+#+\s*$/, "");
-	const withoutCode = withoutClosing.replace(/`+([^`]*)`+/g, "$1");
-	const withoutStrong = withoutCode.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "$1");
+
+	// Inline code renders its contents literally, so the markup rules
+	// below must not reach inside a code span. The text is split into code
+	// and non-code parts; only the non-code parts are transformed, and the
+	// code contents are put back as they are.
+	const parts = splitOnCodeSpans(withoutClosing);
+	const rendered = parts
+		.map((part) => (part.isCode ? part.text : stripInlineMarkup(part.text)))
+		.join("");
+
+	return decodeEntities(rendered).replace(/\s+/g, " ").trim();
+}
+
+/** A piece of a heading's raw text, either an inline code span or plain text. */
+interface HeadingPart {
+	text: string;
+	/** True when the text came from an inline code span. */
+	isCode: boolean;
+}
+
+/**
+ * Splits raw heading text into inline-code and plain-text parts.
+ *
+ * A code span is a run of backticks, its content, and a run of the same
+ * number of backticks — the content may itself contain backticks as long
+ * as they do not close the span.
+ */
+function splitOnCodeSpans(text: string): HeadingPart[] {
+	const parts: HeadingPart[] = [];
+	const codeSpan = /(`+)([\s\S]*?)\1/g;
+
+	let index = 0;
+	let match: RegExpExecArray | null;
+	while ((match = codeSpan.exec(text)) !== null) {
+		if (match.index > index) {
+			parts.push({ text: text.slice(index, match.index), isCode: false });
+		}
+		parts.push({ text: match[2], isCode: true });
+		index = match.index + match[0].length;
+	}
+	if (index < text.length) {
+		parts.push({ text: text.slice(index), isCode: false });
+	}
+
+	return parts;
+}
+
+/**
+ * Removes the inline markup that the Markdown renderer turns into plain
+ * text: link and image syntax, emphasis, strong, and strikethrough.
+ *
+ * Applied only to the non-code parts of a heading.
+ */
+function stripInlineMarkup(text: string): string {
+	// Links and images render as their label text, so the label is what
+	// the DOM exposes. A destination may contain balanced parentheses.
+	const withoutLinks = text
+		.replace(/!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)/g, "$1")
+		.replace(/!?\[([^\]]*)\]\[[^\]]*\]/g, "$1");
+
+	const withoutStrong = withoutLinks.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "$1");
 	const withoutEmphasis = withoutStrong
 		.replace(/(^|\s)\*(?=\S)([\s\S]*?\S)\*(?=\s|$)/g, "$1$2")
 		.replace(/(^|\s)_(?=\S)([\s\S]*?\S)_(?=\s|$)/g, "$1$2");
 	const withoutStrike = withoutEmphasis.replace(/~~(?=\S)([\s\S]*?\S)~~/g, "$1");
 
-	return decodeEntities(withoutStrike).replace(/\s+/g, " ").trim();
+	return withoutStrike;
 }
 
 /**
