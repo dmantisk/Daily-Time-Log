@@ -145,7 +145,12 @@ export class Modal {
 	constructor(public app?: unknown) {}
 	onOpen(): void {}
 	onClose(): void {}
-	close(): void {}
+	open(): void {
+		this.onOpen();
+	}
+	close(): void {
+		this.onClose();
+	}
 }
 
 export class PluginSettingTab {

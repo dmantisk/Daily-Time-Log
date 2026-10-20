@@ -156,12 +156,17 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 - **Test environment notes**:
   - The published `obsidian` package is **types-only** (`"main": ""`), so it cannot be imported at runtime under Vitest. `vitest.config.ts` aliases `obsidian` to `src/test/obsidian-mock.ts`, a minimal runtime stub, which is what makes DOM-level module testing possible at all. Keep that stub in sync with the production `from "obsidian"` imports.
   - The default Vitest environment stays `node`; a test file opts into a DOM with a `@vitest-environment happy-dom` docblock.
+- **Required `TimelineView` test coverage** (`src/components/TimelineView.test.tsx`): the sidebar grid is React + a native window listener, so it needs a real DOM.
+  - A drag that ends on a grid cell opens **exactly one** add-Event modal. A release fires the cell's React `onMouseUp` AND the window-level `mouseup` listener; both run before React re-renders, so a state-based guard cannot suppress the second one — the component uses a `useRef` latch (`dragHandledRef`) that is released on the next `mousedown`.
+  - A drag that ends outside the grid also opens exactly one modal.
+  - A second, separate drag still opens its own modal — the latch must not stay latched forever.
   - *(§1.4.1)* Event lines with and without the `[Category]` token, including files that mix both within the same block (notes written before and after the category feature shipped).
   - *(§1.4.2)* Continuation-line absorption for Event items, including: `lineCount` tracking, verbatim (untrimmed) preservation of a continuation line's own leading whitespace, trailing-blank-line trimming from the collected text while still counting it in `lineCount`, stopping (and resetting the "current item" pointer) at a line matching a checkbox or a heading, and a single blank line still absorbing normally vs. a SECOND consecutive blank line stopping the run and excluding the rest from `lineCount`.
 - **Required `dailyNote.ts` test coverage** (`src/dailyNote.test.ts`, same pure/no-Obsidian-dependency reasoning as parser.ts):
   - Valid `YYYY-MM-DD` basenames parse and round-trip through `formatDateBasename`.
   - Non-matching basenames (wrong shape, un-padded numbers) return `null`.
   - Calendar-invalid dates (`2026-02-31`, `2026-13-01`, Feb 29 on a non-leap year) return `null` instead of a silently rolled-over `Date`.
+  - `isDailyNoteFileName` accepts a date-named `.md` file and rejects date-named files with any other extension — the plugin WRITES to the files it treats as daily notes, so a non-Markdown file must never be picked up and overwritten.
 - **Version bookkeeping**: `update-version.mjs` (ported from DayTime Tracker's `update-version.js`; kept as `.mjs` since this `package.json` doesn't set `"type": "module"`) syncs `manifest.json`'s version from `package.json` and maintains `versions.json`, which maps each released plugin version to the `minAppVersion` it required at release time — required by Obsidian for correct backward-compatible version resolution. The `package.json` `"version"` script `git add`s both `manifest.json` and `versions.json`.
 
 ---

@@ -1,6 +1,6 @@
 import { TFile } from "obsidian";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatDateBasename, isDailyNoteFileName, isSameDate, parseDateFromBasename } from "../dailyNote";
 import { t, WEEKDAYS } from "../i18n";
 import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
@@ -57,6 +57,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragStart, setDragStart] = useState<number | null>(null);
 	const [dragEnd, setDragEnd] = useState<number | null>(null);
+	/**
+	 * Latch that guarantees a single drag is turned into a single Event.
+	 *
+	 * A release fires TWO handlers: the grid cell's React `onMouseUp` and
+	 * the window-level `mouseup` listener (the native event bubbles from
+	 * the cell up to `window`). Both run within the same event dispatch,
+	 * so no re-render happens in between and `isDragging` is still true
+	 * for both calls — the state-based guard cannot suppress the second
+	 * one. Without this latch a single drag opens two add-Event modals.
+	 */
+	const dragHandledRef = useRef(false);
 
 	const language = plugin.getUiLanguage();
 	const categories = plugin.settings.categories;
@@ -78,6 +89,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		setIsDragging(false);
 		setDragStart(null);
 		setDragEnd(null);
+		dragHandledRef.current = false;
 
 		const run = async (): Promise<void> => {
 			const file = plugin.app.workspace.getActiveFile();
@@ -186,6 +198,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	// ── Drag-to-select ────────────────────────────────────────────────
 
 	const handleMouseDown = (cellIndex: number): void => {
+		dragHandledRef.current = false;
 		setIsDragging(true);
 		setDragStart(cellIndex);
 		setDragEnd(cellIndex);
@@ -197,6 +210,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 	const handleMouseUp = (): void => {
 		if (!isDragging || dragStart === null || dragEnd === null) return;
+		// The window listener runs right after the cell's own handler for
+		// the same release — only the first one may create the Event.
+		if (dragHandledRef.current) return;
+		dragHandledRef.current = true;
 		setIsDragging(false);
 
 		const startIdx = Math.min(dragStart, dragEnd);
