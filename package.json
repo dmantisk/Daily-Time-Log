@@ -23,6 +23,7 @@
 		"esbuild": "^0.28.1",
 		"eslint": "^10.13.0",
 		"eslint-config-prettier": "^10.1.8",
+		"happy-dom": "^21.0.3",
 		"js-yaml": "^4.3.2",
 		"obsidian": "^1.7.2",
 		"tslib": "^2.6.0",

@@ -208,23 +208,39 @@ function isInsideEventBlock(
 // ---------------------------------------------------------------------------
 
 /**
- * Collects the headings that precede `node` inside `root`, in document
- * order.
+ * Walks `root` in document order, reporting every heading element and
+ * every text node in the order they appear in the document.
+ *
+ * A single traversal serves both purposes: the heading sequence is built
+ * incrementally, so at the moment a text node is reported, the accumulated
+ * headings are exactly the ones that PRECEDE it. That is what the scoping
+ * rule needs, and doing it in one pass avoids re-walking the document for
+ * every text node.
+ *
+ * Note that headings and text nodes are interleaved by the walker, so the
+ * heading element is reported before the text it contains.
  */
-function headingsBefore(root: HTMLElement, node: Node): HeadingInfo[] {
-	const headings: HeadingInfo[] = [];
-	const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+function walkDocumentOrder(
+	root: HTMLElement,
+	onHeading: (heading: HeadingInfo) => void,
+	onText: (node: Text) => void
+): void {
+	const walker = document.createTreeWalker(
+		root,
+		NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT
+	);
 
 	let current: Node | null;
 	while ((current = walker.nextNode())) {
-		if (current === node) break;
+		if (current.nodeType === Node.TEXT_NODE) {
+			onText(current as Text);
+			continue;
+		}
 		const level = headingLevelOfElement(current);
 		if (level !== null) {
-			headings.push({ level, text: (current.textContent ?? "").trim() });
+			onHeading({ level, text: (current.textContent ?? "").trim() });
 		}
 	}
-
-	return headings;
 }
 
 /**
@@ -233,30 +249,9 @@ function headingsBefore(root: HTMLElement, node: Node): HeadingInfo[] {
  * `<h1>`–`<h6>` in the reading view.
  */
 function headingLevelOfElement(el: Node): number | null {
-	if (!(el instanceof HTMLElement)) return null;
-	const match = /^H([1-6])$/i.exec(el.tagName);
+	if (el.nodeType !== Node.ELEMENT_NODE) return null;
+	const match = /^H([1-6])$/i.exec((el as Element).tagName);
 	return match ? Number(match[1]) : null;
-}
-
-/**
- * True when `node` sits inside the configured Event section of the
- * rendered document.
- *
- * The reading view renders headings as `<h1>`–`<h6>` elements in document
- * order. The headings that precede `node` are collected and fed through
- * the same scoping rule the parser uses (see `isWithinEventHeading`), so
- * a `[Category]` token outside the configured Event section stays plain
- * text.
- *
- * Working from the rendered DOM (rather than the raw file) keeps this
- * consistent with what the user actually sees.
- */
-function isInsideEventSection(
-	root: HTMLElement,
-	node: Node,
-	eventHeading: EventHeadingConfig
-): boolean {
-	return isWithinEventHeading(headingsBefore(root, node), eventHeading);
 }
 
 /**
@@ -275,25 +270,35 @@ export function processCategoryBadgesInReadingView(
 	if (!isDailyNoteFile(ctx.sourcePath, dailyNoteFolder)) return;
 
 	const regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
-	const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
 	const targets: Text[] = [];
 
-	let node: Node | null;
-	while ((node = walker.nextNode())) {
-		// Skip text already inside a badge span (avoid double-processing).
-		if (
-			node.parentElement &&
-			node.parentElement.classList.contains("dwl-cat-badge")
-		)
-			continue;
-		// Strict scoping: only text inside the configured Event section is
-		// eligible for badge rendering.
-		if (!isInsideEventSection(el, node, eventHeading)) continue;
-		regex.lastIndex = 0;
-		if (regex.test((node as Text).textContent ?? "")) {
-			targets.push(node as Text);
+	// Single document-order pass. `headings` accumulates every heading seen
+	// SO FAR, so when a text node is reached the accumulated list is exactly
+	// the set of headings that precede it — the same "last heading wins"
+	// rule the parser applies to the raw file text.
+	const headings: HeadingInfo[] = [];
+
+	walkDocumentOrder(
+		el,
+		(heading) => {
+			headings.push(heading);
+		},
+		(node) => {
+			// Skip text already inside a badge span (avoid double-processing).
+			if (
+				node.parentElement &&
+				node.parentElement.classList.contains("dwl-cat-badge")
+			)
+				return;
+			// Strict scoping: only text inside the configured Event section is
+			// eligible for badge rendering.
+			if (!isWithinEventHeading(headings, eventHeading)) return;
+			regex.lastIndex = 0;
+			if (regex.test(node.textContent ?? "")) {
+				targets.push(node);
+			}
 		}
-	}
+	);
 
 	targets.forEach((textNode) => {
 		const text = textNode.textContent ?? "";
