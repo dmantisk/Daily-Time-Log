@@ -4,6 +4,7 @@ import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./par
 import { formatDateBasename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
 import { computeDashboardStats, isWithinRecentWindow, type DashboardStats } from "./dashboardCollector";
 import { getTextColorForBackground } from "./components/colorUtils";
+import { findCategoryByDisplayName } from "./settings";
 import { t } from "./i18n";
 
 export const VIEW_TYPE_DASHBOARD = "dwl-dashboard";
@@ -293,7 +294,7 @@ export class DashboardView extends ItemView {
 					// Exact match, same as the categoryBreakdown lookup in
 					// dashboardCollector.ts — summary.topCategory is always either a
 					// configured category's displayName or the uncategorized label.
-					const catObj = this.plugin.settings.categories.find((c) => c.displayName === summary.topCategory);
+					const catObj = findCategoryByDisplayName(this.plugin.settings.categories, summary.topCategory);
 					const badge = mid.createSpan({ cls: "dwl-activity-cat-badge", text: summary.topCategory });
 					if (catObj) {
 						badge.setCssStyles({

@@ -156,7 +156,12 @@ describe("computeDashboardStats", () => {
 		expect(stats.categoryBreakdown.find((item) => item.displayName === "Uncategorized")?.minutes).toBe(60);
 	});
 
-	it("matches category names exactly (case-sensitive), same as TimelineView", () => {
+	it("matches category names case-insensitively, same as the badge renderer", () => {
+		// The badge renderer resolved a token case-insensitively while the
+		// timeline and the dashboard used an exact match, so a `[work]`
+		// token was drawn with the configured `Work` colour in the note but
+		// counted as uncategorized in the dashboard. All three now share
+		// one rule.
 		const today = new Date(2026, 6, 14);
 		const dates = [today];
 		const recentParsed = [
@@ -171,7 +176,7 @@ describe("computeDashboardStats", () => {
 
 		const stats = computeDashboardStats(dates, recentParsed, today, customCategories, "Uncategorized");
 		expect(stats.categoryBreakdown).toEqual([
-			{ displayName: "Uncategorized", color: "#94a3b8", minutes: 60, percentage: 100 },
+			{ displayName: "Work", color: "#d0e1fd", minutes: 60, percentage: 100 },
 		]);
 	});
 

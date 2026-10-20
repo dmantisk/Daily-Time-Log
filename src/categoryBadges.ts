@@ -47,6 +47,7 @@ import {
 	type HeadingInfo,
 } from "./parser";
 import type { CustomCategory } from "./settings";
+import { findCategoryByDisplayName } from "./settings";
 
 export { CATEGORY_BADGE_REGEX_SOURCE };
 
@@ -68,13 +69,15 @@ function isDailyNoteFile(filePath: string, dailyNoteFolder: string): boolean {
  * Finds the configured category whose displayName matches the token text
  * (case-insensitive, trimmed). Returns `undefined` when there's no match —
  * the caller renders a neutral fallback badge.
+ *
+ * Shares `findCategoryByDisplayName` with the sidebar and the dashboard so
+ * all three resolve a category token the same way.
  */
 function findCategory(
 	token: string,
 	categories: CustomCategory[]
 ): CustomCategory | undefined {
-	const lower = token.trim().toLowerCase();
-	return categories.find((c) => c.displayName.trim().toLowerCase() === lower);
+	return findCategoryByDisplayName(categories, token);
 }
 
 /**

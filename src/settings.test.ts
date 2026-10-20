@@ -4,6 +4,7 @@ import {
 	DEFAULT_SETTINGS,
 	copyCategories,
 	createDefaultCategories,
+	findCategoryByDisplayName,
 	resolveEventHeadingLevel,
 	resolveEventHeadingText,
 	validateCategoryName,
@@ -75,6 +76,34 @@ describe("resolveEventHeadingLevel", () => {
 		expect(resolveEventHeadingLevel(2.5)).toBe(DEFAULT_SETTINGS.eventHeadingLevel);
 		expect(resolveEventHeadingLevel(undefined)).toBe(DEFAULT_SETTINGS.eventHeadingLevel);
 		expect(resolveEventHeadingLevel("2")).toBe(DEFAULT_SETTINGS.eventHeadingLevel);
+	});
+});
+
+describe("findCategoryByDisplayName", () => {
+	const categories: CustomCategory[] = [
+		{ name: "Work", displayName: "Work", color: "#d0e1fd" },
+		{ name: "Deep-Work Focus", displayName: "Deep-Work Focus", color: "#ebd3f8" },
+	];
+
+	it("finds a category by its exact display name", () => {
+		expect(findCategoryByDisplayName(categories, "Work")?.name).toBe("Work");
+	});
+
+	it("matches case-insensitively and ignores surrounding whitespace", () => {
+		// The badge renderer, the sidebar and the dashboard must all
+		// resolve a category token the same way — otherwise a `[work]`
+		// token is drawn with the configured `Work` colour in the note but
+		// counted as uncategorized in the dashboard.
+		expect(findCategoryByDisplayName(categories, "work")?.name).toBe("Work");
+		expect(findCategoryByDisplayName(categories, "WORK")?.name).toBe("Work");
+		expect(findCategoryByDisplayName(categories, "  Work  ")?.name).toBe("Work");
+	});
+
+	it("returns undefined for an unknown, empty or missing name", () => {
+		expect(findCategoryByDisplayName(categories, "Unknown")).toBeUndefined();
+		expect(findCategoryByDisplayName(categories, "")).toBeUndefined();
+		expect(findCategoryByDisplayName(categories, "   ")).toBeUndefined();
+		expect(findCategoryByDisplayName(categories, undefined)).toBeUndefined();
 	});
 });
 

@@ -9,7 +9,7 @@
 
 import { formatDateBasename } from "./dailyNote";
 import { timelineDurationMinutes, type ParsedDailyNote } from "./parser";
-import { DEFAULT_CATEGORIES, type CustomCategory } from "./settings";
+import { DEFAULT_CATEGORIES, findCategoryByDisplayName, type CustomCategory } from "./settings";
 
 /** How far back recent Event-time statistics look. */
 export const RECENT_WINDOW_DAYS = 30;
@@ -139,13 +139,14 @@ export function computeDashboardStats(
 			recentEventMinutes += dur;
 			noteEventMinutes += dur;
 
-			// Exact, case-sensitive match on displayName — same semantics as
-			// TimelineView.tsx. A category string that doesn't match
-			// any configured category (renamed/deleted since the line was written,
-			// see settings.ts CustomCategory) is folded into "uncategorized" here
-			// instead of being tracked under its own stale key and silently
-			// excluded from categoryBreakdown below.
-			const cat = item.category ? categories.find((c) => c.displayName === item.category) : undefined;
+			// Case-insensitive match on displayName — the SAME rule the
+			// category-badge renderer and the sidebar use (see
+			// findCategoryByDisplayName). A category string that doesn't
+			// match any configured category (renamed/deleted since the line
+			// was written, see settings.ts CustomCategory) is folded into
+			// "uncategorized" here instead of being tracked under its own
+			// stale key and silently excluded from categoryBreakdown below.
+			const cat = findCategoryByDisplayName(categories, item.category);
 			if (cat) {
 				categoryMinutesMap.set(cat.displayName, (categoryMinutesMap.get(cat.displayName) ?? 0) + dur);
 				noteCategoryMinutesMap.set(cat.displayName, (noteCategoryMinutesMap.get(cat.displayName) ?? 0) + dur);

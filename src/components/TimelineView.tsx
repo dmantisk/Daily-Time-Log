@@ -20,6 +20,7 @@ import {
 	type TimelineItem,
 } from "../parser";
 import { getTextColorForBackground } from "./colorUtils";
+import { findCategoryByDisplayName } from "../settings";
 
 export interface TimelineViewProps {
 	plugin: DailyWorkLogPlugin;
@@ -325,7 +326,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 										const leftPercent = (startCol / CELLS_PER_HOUR) * 100;
 										const widthPercent = ((endCol - startCol) / CELLS_PER_HOUR) * 100;
 
-										const catObj = categories.find((c) => c.displayName === item.category);
+										const catObj = findCategoryByDisplayName(categories, item.category);
 										const bgColor = catObj?.color ?? "var(--dwl-bg-active)";
 										const textColor = catObj ? getTextColorForBackground(catObj.color) : "var(--dwl-text)";
 										const label = item.category ?? t("uncategorized", language);

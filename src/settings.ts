@@ -31,6 +31,29 @@ export interface CustomCategory {
 export type CategoryNameProblem = "empty" | "duplicate";
 
 /**
+ * Finds the configured category whose display name matches the given text.
+ *
+ * Matching is case-insensitive and trims surrounding whitespace, and it is
+ * the SINGLE rule used everywhere a category token is resolved: the
+ * category-badge renderer, the sidebar timeline, and the dashboard. They
+ * must agree — otherwise a token like `[work]` would be drawn with the
+ * configured `Work` colour in the note while being counted as
+ * uncategorized in the sidebar and the dashboard.
+ *
+ * Returns `undefined` when nothing matches, which callers render as an
+ * uncategorized item.
+ */
+export function findCategoryByDisplayName(
+	categories: CustomCategory[],
+	name: string | undefined
+): CustomCategory | undefined {
+	if (!name) return undefined;
+	const lower = name.trim().toLowerCase();
+	if (!lower) return undefined;
+	return categories.find((cat) => cat.displayName.trim().toLowerCase() === lower);
+}
+
+/**
  * Validates a proposed category display name against the other categories.
  *
  * `categories` is the full list and `ignoreIndex` is the index of the
