@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+	DEFAULT_CATEGORIES,
 	DEFAULT_SETTINGS,
+	copyCategories,
+	createDefaultCategories,
 	resolveEventHeadingLevel,
 	resolveEventHeadingText,
 	validateCategoryName,
@@ -75,8 +78,43 @@ describe("resolveEventHeadingLevel", () => {
 	});
 });
 
-describe("validateCategoryName", () => {
-	const categories: CustomCategory[] = [
+describe("category copies", () => {
+	it("copies the default categories deeply, so edits cannot reach the defaults", () => {
+		// The settings screen mutates category objects in place. A shallow
+		// copy would leave the copy sharing the objects in
+		// DEFAULT_CATEGORIES, so renaming a category after a reset would
+		// permanently alter the defaults.
+		const copy = createDefaultCategories();
+		expect(copy).toEqual(DEFAULT_CATEGORIES);
+
+		copy[0].displayName = "Renamed";
+		copy[0].color = "#000000";
+
+		expect(DEFAULT_CATEGORIES[0].displayName).toBe("Work");
+		expect(DEFAULT_CATEGORIES[0].color).toBe("#d0e1fd");
+		expect(createDefaultCategories()[0].displayName).toBe("Work");
+	});
+
+	it("copies an arbitrary category list deeply", () => {
+		const source: CustomCategory[] = [{ name: "Work", displayName: "Work", color: "#d0e1fd" }];
+		const copy = copyCategories(source);
+
+		copy[0].displayName = "Renamed";
+		expect(source[0].displayName).toBe("Work");
+	});
+
+	it("does not let the default settings share the default category objects", () => {
+		const original = DEFAULT_SETTINGS.categories[0].displayName;
+		try {
+			DEFAULT_SETTINGS.categories[0].displayName = "Renamed";
+			expect(DEFAULT_CATEGORIES[0].displayName).toBe("Work");
+		} finally {
+			DEFAULT_SETTINGS.categories[0].displayName = original;
+		}
+	});
+});
+
+describe("validateCategoryName", () => {	const categories: CustomCategory[] = [
 		{ name: "Work", displayName: "Work", color: "#d0e1fd" },
 		{ name: "Study", displayName: "Study", color: "#ebd3f8" },
 	];

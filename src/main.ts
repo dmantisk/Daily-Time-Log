@@ -7,7 +7,7 @@ import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
-import { DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, type DailyWorkLogSettings } from "./settings";
+import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 
 export default class DailyWorkLogPlugin extends Plugin {
@@ -92,6 +92,16 @@ export default class DailyWorkLogPlugin extends Plugin {
 	async loadSettings(): Promise<void> {
 		const loadedData = (await this.loadData()) as Partial<DailyWorkLogSettings> | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+
+		// The settings screen mutates category objects in place, so the
+		// category list must be a deep copy. Without this, a fresh install
+		// would share the very objects held in DEFAULT_CATEGORIES, and
+		// editing a category would permanently alter the defaults.
+		if (Array.isArray(this.settings.categories)) {
+			this.settings.categories = copyCategories(this.settings.categories);
+		} else {
+			this.settings.categories = createDefaultCategories();
+		}
 
 		let shouldSave = false;
 

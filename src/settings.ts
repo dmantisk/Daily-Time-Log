@@ -65,6 +65,30 @@ export const DEFAULT_CATEGORIES: CustomCategory[] = [
 	{ name: "Exercise", displayName: "Exercise", color: "#e2e5e9", isDefault: true },
 ];
 
+/**
+ * Returns a fresh copy of a category list.
+ *
+ * The copy must be DEEP: the settings screen mutates category objects in
+ * place (renaming changes `displayName`, the colour picker changes
+ * `color`), so a shallow copy of the array would leave the copied
+ * entries sharing the very same objects. Editing a category would then
+ * permanently alter the source list, and a later reset would restore the
+ * edited values instead of the originals.
+ */
+export function copyCategories(categories: CustomCategory[]): CustomCategory[] {
+	return categories.map((cat) => ({ ...cat }));
+}
+
+/**
+ * Returns a fresh copy of the default categories.
+ *
+ * See `copyCategories` for why the copy must be deep: `DEFAULT_CATEGORIES`
+ * must never be reachable from the mutable settings state.
+ */
+export function createDefaultCategories(): CustomCategory[] {
+	return copyCategories(DEFAULT_CATEGORIES);
+}
+
 export interface DailyWorkLogSettings {
 	/**
 	 * Controls the plugin interface language only.
@@ -97,7 +121,7 @@ export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	startHour: 0,
 	endHour: 24,
 	dailyNoteFolder: "",
-	categories: [...DEFAULT_CATEGORIES],
+	categories: createDefaultCategories(),
 };
 
 /**

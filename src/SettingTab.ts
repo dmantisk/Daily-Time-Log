@@ -3,7 +3,7 @@ import { FolderSuggest } from "./FolderSuggest";
 import { t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
-import { DEFAULT_CATEGORIES, validateCategoryName, type LanguagePreference } from "./settings";
+import { createDefaultCategories, validateCategoryName, type LanguagePreference } from "./settings";
 
 const MAX_CATEGORIES = 10;
 const MAX_CATEGORY_NAME_LENGTH = 10;
@@ -158,7 +158,7 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 					.setButtonText(t("btnReset", lang))
 					.setWarning()
 					.onClick(async () => {
-						this.plugin.settings.categories = [...DEFAULT_CATEGORIES];
+						this.plugin.settings.categories = createDefaultCategories();
 						await this.plugin.saveSettings();
 						this.plugin.refreshViews();
 						new Notice(t("noticeResetCategories", lang));
