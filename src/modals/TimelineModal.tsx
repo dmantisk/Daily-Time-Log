@@ -3,7 +3,7 @@ import * as React from "react";
 import { useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { t } from "../i18n";
-import { isTopLevelOrMarker, stripHtml, TIME_VALUE_REGEX, type MarkerLanguage, type TimelineItem } from "../parser";
+import { isTopLevelOrMarker, stripHtml, TIME_END_VALUE_REGEX, TIME_VALUE_REGEX, type MarkerLanguage, type TimelineItem } from "../parser";
 import type { CustomCategory } from "../settings";
 
 export interface EventEntryValues {
@@ -46,7 +46,10 @@ function TimelineModalContent({
 	const [description, setDescription] = useState(initial ? stripHtml(initial.description) : "");
 
 	const handleSave = (): void => {
-		if (!TIME_VALUE_REGEX.test(start) || !TIME_VALUE_REGEX.test(end)) {
+		// The end time may be `24:00` (midnight at the end of the day) —
+		// that is what the grid produces when the end hour is 24, and what
+		// the end-hour setting advertises. The start time may not.
+		if (!TIME_VALUE_REGEX.test(start) || !TIME_END_VALUE_REGEX.test(end)) {
 			new Notice(t("invalidTimeFormat", language));
 			return;
 		}

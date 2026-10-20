@@ -17,6 +17,7 @@ import {
 	stripHtml,
 	timelineLineMatches,
 	timelineRangeMatches,
+	TIME_END_VALUE_REGEX,
 	TIME_VALUE_REGEX,
 	timeToMinutes,
 	minutesToTime,
@@ -375,6 +376,23 @@ describe("time helpers", () => {
 		expect(TIME_VALUE_REGEX.test("09:00")).toBe(true);
 		expect(TIME_VALUE_REGEX.test("24:00")).toBe(false);
 		expect(TIME_VALUE_REGEX.test("9:60")).toBe(false);
+	});
+
+	it("accepts 24:00 as an END time only", () => {
+		// The grid produces 24:00 when the end hour is 24 (midnight at the
+		// end of the day), and the end-hour setting advertises that. A
+		// START of 24:00 is never valid — it has no place on the grid.
+		expect(TIME_END_VALUE_REGEX.test("24:00")).toBe(true);
+		expect(TIME_END_VALUE_REGEX.test("23:59")).toBe(true);
+		expect(TIME_END_VALUE_REGEX.test("09:00")).toBe(true);
+		expect(TIME_END_VALUE_REGEX.test("24:30")).toBe(false);
+		expect(TIME_END_VALUE_REGEX.test("9:60")).toBe(false);
+		expect(TIME_END_VALUE_REGEX.test("")).toBe(false);
+	});
+
+	it("measures a 24:00 end time as the end of the day", () => {
+		expect(timeToMinutes("24:00")).toBe(1440);
+		expect(timelineDurationMinutes({ start: "23:50", end: "24:00" })).toBe(10);
 	});
 });
 

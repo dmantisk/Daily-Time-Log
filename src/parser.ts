@@ -61,6 +61,23 @@ const CHECKBOX_REGEX = /^[-*]\s*\[([ xX])\]\s*(.*)$/;
 export const TIME_VALUE_REGEX = /^(?:[01]?\d|2[0-3]):[0-5]\d$/;
 
 /**
+ * The same validation for an END time, which may additionally be `24:00`
+ * (midnight at the end of the day).
+ *
+ * The sidebar's grid can end at midnight: with the end hour set to 24,
+ * dragging the last cell produces `24:00`. The settings screen explicitly
+ * advertises midnight support, and the grid labels that row `12 AM`, so
+ * `24:00` is the intended representation of that end time — it must not
+ * be rejected on save.
+ *
+ * `24:00` is accepted for END times only. As a START time it would mean
+ * midnight at the beginning of the day, which has no place on the grid
+ * (a start of 24:00 is indistinguishable from the end of the day) and
+ * could never be rendered.
+ */
+export const TIME_END_VALUE_REGEX = /^(?:(?:[01]?\d|2[0-3]):[0-5]\d|24:00)$/;
+
+/**
  * Matches `[Category]` only when it sits directly after a time range
  * (`- HH:mm - HH:mm [Category]`), i.e. in exact event-line position. This
  * prevents brackets typed anywhere else in a note (diary prose, headings,
