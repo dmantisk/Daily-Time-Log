@@ -16,6 +16,46 @@ export interface CustomCategory {
 	isDefault?: boolean;
 }
 
+/**
+ * Why a proposed category display name was rejected.
+ *
+ * - `empty`: the name is blank. A blank name cannot be written into a
+ *   note — the category token is `[Name]`, and an empty token would
+ *   produce `- 09:00 - 10:00 [] text`, which the parser reads back as
+ *   "uncategorized" rather than as the category the user just named.
+ * - `duplicate`: another category already uses this display name. The
+ *   dashboard keys its per-category totals by display name, so two
+ *   categories sharing one name would each be credited with the same
+ *   minutes and the totals would be doubled.
+ */
+export type CategoryNameProblem = "empty" | "duplicate";
+
+/**
+ * Validates a proposed category display name against the other categories.
+ *
+ * `categories` is the full list and `ignoreIndex` is the index of the
+ * category being edited — its own current name must not count as a
+ * duplicate of itself, so renaming a category to the name it already has
+ * is allowed.
+ *
+ * Comparison is case-insensitive, matching the "already exists" check the
+ * settings screen has always used when adding a category.
+ */
+export function validateCategoryName(
+	categories: CustomCategory[],
+	name: string,
+	ignoreIndex?: number
+): CategoryNameProblem | null {
+	const trimmed = name.trim();
+	if (!trimmed) return "empty";
+
+	const lower = trimmed.toLowerCase();
+	const duplicate = categories.some(
+		(cat, index) => index !== ignoreIndex && cat.displayName.trim().toLowerCase() === lower
+	);
+	return duplicate ? "duplicate" : null;
+}
+
 /** Ported from DayTime Tracker's DEFAULT_CATEGORIES — colors match design.md §2.1's existing pastel palette exactly. */
 export const DEFAULT_CATEGORIES: CustomCategory[] = [
 	{ name: "Work", displayName: "Work", color: "#d0e1fd", isDefault: true },

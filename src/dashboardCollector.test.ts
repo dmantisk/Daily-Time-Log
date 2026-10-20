@@ -175,6 +175,31 @@ describe("computeDashboardStats", () => {
 		]);
 	});
 
+	it("counts a duplicate category name only once, so the totals are not doubled", () => {
+		// The settings screen refuses to create two categories with the same
+		// display name, but a settings file written by an older version could
+		// still contain one. The breakdown is keyed by display name, so both
+		// would otherwise be credited with the same minutes.
+		const today = new Date(2026, 6, 14);
+		const recentParsed = [
+			{
+				date: today,
+				parsed: {
+					timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" }],
+				} satisfies ParsedDailyNote,
+			},
+		];
+		const duplicateCategories = [
+			{ name: "Work", displayName: "Work", color: "#d0e1fd" },
+			{ name: "Work", displayName: "Work", color: "#ff0000" },
+		];
+
+		const stats = computeDashboardStats([today], recentParsed, today, duplicateCategories, "Uncategorized");
+		expect(stats.categoryBreakdown).toHaveLength(1);
+		expect(stats.categoryBreakdown[0].minutes).toBe(60);
+		expect(stats.categoryBreakdown[0].percentage).toBe(100);
+	});
+
 	it("ignores empty parsed notes without error", () => {
 		const today = new Date(2026, 6, 14);
 		const stats = computeDashboardStats(

@@ -3,7 +3,7 @@ import { FolderSuggest } from "./FolderSuggest";
 import { t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
-import { DEFAULT_CATEGORIES, type LanguagePreference } from "./settings";
+import { DEFAULT_CATEGORIES, validateCategoryName, type LanguagePreference } from "./settings";
 
 const MAX_CATEGORIES = 10;
 const MAX_CATEGORY_NAME_LENGTH = 10;
@@ -177,6 +177,17 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 					.setValue(cat.displayName)
 					.onChange(async (value) => {
 						const trimmed = value.trim();
+						// A rename is held to the same rules as an add: the
+						// name must not be blank (it cannot be written into a
+						// note as `[Name]`) and must not collide with another
+						// category (the dashboard keys its totals by display
+						// name, so a shared name doubles the minutes).
+						const problem = validateCategoryName(categories, trimmed, idx);
+						if (problem) {
+							new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
+							text.setValue(categories[idx].displayName);
+							return;
+						}
 						categories[idx].displayName = trimmed;
 						await this.plugin.saveSettings();
 						this.plugin.refreshViews();
@@ -231,17 +242,13 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 						.setCta()
 						.onClick(async () => {
 							const trimmed = newName.trim();
-							if (!trimmed) {
-								new Notice(t("alertCatNameEmpty", lang));
+							const problem = validateCategoryName(categories, trimmed);
+							if (problem) {
+								new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
 								return;
 							}
 							if (categories.length >= MAX_CATEGORIES) {
 								new Notice(t("alertCatLimitMax", lang));
-								return;
-							}
-							const exists = categories.some((c) => c.displayName.toLowerCase() === trimmed.toLowerCase());
-							if (exists) {
-								new Notice(t("alertCatNameExists", lang));
 								return;
 							}
 

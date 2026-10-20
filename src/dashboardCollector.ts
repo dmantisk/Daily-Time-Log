@@ -171,9 +171,19 @@ export function computeDashboardStats(
 		});
 	}
 
-	// Calculate overall category breakdown
+	// Calculate overall category breakdown.
+	//
+	// Categories are keyed by display name, so two categories sharing a name
+	// would both be credited with the same minutes and the totals would be
+	// doubled. The settings screen refuses to create such a pair, but a
+	// settings file written by an older version could still contain one, so
+	// only the FIRST category with a given name contributes a breakdown row.
 	const categoryBreakdown: CategoryStatItem[] = [];
+	const seenDisplayNames = new Set<string>();
 	for (const cat of categories) {
+		if (seenDisplayNames.has(cat.displayName)) continue;
+		seenDisplayNames.add(cat.displayName);
+
 		const mins = categoryMinutesMap.get(cat.displayName) ?? 0;
 		if (mins > 0) {
 			const percentage = recentEventMinutes > 0 ? Math.round((mins / recentEventMinutes) * 100) : 0;

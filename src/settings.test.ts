@@ -3,6 +3,8 @@ import {
 	DEFAULT_SETTINGS,
 	resolveEventHeadingLevel,
 	resolveEventHeadingText,
+	validateCategoryName,
+	type CustomCategory,
 	type DailyWorkLogSettings,
 } from "./settings";
 import { DEFAULT_EVENT_HEADING } from "./parser";
@@ -70,5 +72,39 @@ describe("resolveEventHeadingLevel", () => {
 		expect(resolveEventHeadingLevel(2.5)).toBe(DEFAULT_SETTINGS.eventHeadingLevel);
 		expect(resolveEventHeadingLevel(undefined)).toBe(DEFAULT_SETTINGS.eventHeadingLevel);
 		expect(resolveEventHeadingLevel("2")).toBe(DEFAULT_SETTINGS.eventHeadingLevel);
+	});
+});
+
+describe("validateCategoryName", () => {
+	const categories: CustomCategory[] = [
+		{ name: "Work", displayName: "Work", color: "#d0e1fd" },
+		{ name: "Study", displayName: "Study", color: "#ebd3f8" },
+	];
+
+	it("accepts a fresh, non-empty name", () => {
+		expect(validateCategoryName(categories, "Reading")).toBeNull();
+	});
+
+	it("rejects a blank name", () => {
+		// A blank name cannot be written into a note as `[Name]`, and the
+		// dashboard keys its totals by display name.
+		expect(validateCategoryName(categories, "")).toBe("empty");
+		expect(validateCategoryName(categories, "   ")).toBe("empty");
+	});
+
+	it("rejects a name already used by another category", () => {
+		// Two categories sharing a display name would each be credited
+		// with the same minutes, doubling the dashboard totals.
+		expect(validateCategoryName(categories, "Work")).toBe("duplicate");
+		expect(validateCategoryName(categories, "work")).toBe("duplicate");
+		expect(validateCategoryName(categories, "  WORK  ")).toBe("duplicate");
+	});
+
+	it("allows a category to keep its own name", () => {
+		// The category being edited must not count as a duplicate of
+		// itself, or renaming a category to the name it already has would
+		// be rejected.
+		expect(validateCategoryName(categories, "Work", 0)).toBeNull();
+		expect(validateCategoryName(categories, "Study", 0)).toBe("duplicate");
 	});
 });
