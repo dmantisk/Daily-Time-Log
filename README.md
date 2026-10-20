@@ -46,30 +46,6 @@ npm run build   # outputs dist/main.js, dist/manifest.json, dist/styles.css
 
 For active development, use `npm run dev` instead — it rebuilds automatically on every change (esbuild watch mode).
 
-> #### **[!TIP]**  
->
-> **Switching from DayTime Tracker?** That plugin stores its data as `timeline-logs` / `timeline-todos` YAML frontmatter properties instead of plain body text. `scripts/migrate-from-daytimetracker.mjs` converts your existing daily notes to this plugin's format.
->
-> This script is only in the source repository, not in the release download (the release only contains `main.js`/`manifest.json`/`styles.css`) — you'll need to clone this repo and run `npm install` first:
->
-> ```bash
-> git clone https://github.com/dmantisk/Daily-Time-Log.git
-> cd Daily-Time-Log
-> npm install
-> node scripts/migrate-from-daytimetracker.mjs <path-to-your-vault>            # dry run — writes nothing, just previews
-> node scripts/migrate-from-daytimetracker.mjs <path-to-your-vault> --write    # actually rewrite the files
-> ```
->
-> The script writes the Event heading the plugin expects. **Only the configured heading is recognized**, so if you've changed the Event heading in Settings, pass it explicitly:
->
-> ```bash
-> node scripts/migrate-from-daytimetracker.mjs <path-to-your-vault> --write --heading "Activity" --level 2
-> ```
->
-> To-Do items are **not** migrated — the plugin no longer parses To-Do blocks, so the script drops them (the `timeline-todos` frontmatter key is still removed). Recover them from your backup if you need them.
->
-> Always run the dry run first and back up your vault before using `--write` — this rewrites daily notes in place and there's no undo. See the comment at the top of the script for exactly what does and doesn't get migrated.
-
 ## Usage
 
 ### From the sidebar
@@ -130,6 +106,10 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.5.1 (2026-10-20)
+
+- **Removed the DayTime Tracker migration script** (`scripts/migrate-from-daytimetracker.mjs`) and the `js-yaml` dependency it needed. The script only ever existed in the source repository, not in the release download, so the plugin itself is unaffected.
+
 ### 0.5.0 (2026-10-20)
 
 - **Renamed the plugin** from "Daily Work Log" to "Daily Time Log".
@@ -160,7 +140,7 @@ npm run build   # type-check (tsc) + production build
 ### 0.4.1 (2026-08-08)
 
 - **Narrowed Work Insights folder scan**: when collecting notes for statistics, the scan is now limited to the configured `dailyNoteFolder` (including subfolders) instead of walking the entire vault. Improves performance in large vaults with a narrow folder set. Falls back to a vault-wide scan when no folder is configured (the fresh-install default).
-- **Removed unused dependency**: dropped the `js-yaml` package, which was never actually imported anywhere in the codebase.
+- **Removed the `js-yaml` package** as part of an Obsidian review fix. *(The migration script did import it, so the script was temporarily broken until the dependency was restored; both are gone as of 0.5.1.)*
 
 ### 0.4.0 (2026-08-07)
 
@@ -174,7 +154,7 @@ npm run build   # type-check (tsc) + production build
 
 ### 0.3.1 (2026-08-07)
 
-- **Added a DayTime Tracker migration script**: `scripts/migrate-from-daytimetracker.mjs` — converts existing daily notes written by DayTime Tracker (stored in `timeline-logs`/`timeline-todos` frontmatter properties) into this plugin's body-text format. Not included in the release download — you need to clone the source repository to use it (see the tip under "Installation" above).
+- **Added a DayTime Tracker migration script** — converts existing daily notes written by DayTime Tracker (stored in `timeline-logs`/`timeline-todos` frontmatter properties) into this plugin's body-text format. *(The script was removed in 0.5.1 — see above.)*
 
 ### 0.3.0 (2026-08-05)
 
