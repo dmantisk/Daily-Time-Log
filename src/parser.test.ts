@@ -134,6 +134,21 @@ describe("isWithinEventHeading", () => {
 		expect(isWithinEventHeading([h(2, "Event"), h(2, "Other")])).toBe(false);
 	});
 
+	it("uses the FIRST matching heading, not the last one", () => {
+		// Two "# Event" headings: the section opens at the first one and
+		// closes at the second one (same level). The last heading wins would
+		// wrongly include content after the second heading.
+		expect(isWithinEventHeading([h(1, "Event"), h(1, "Event")])).toBe(false);
+		expect(isWithinEventHeading([h(1, "Event"), h(2, "Detail"), h(1, "Event")])).toBe(false);
+	});
+
+	it("is true between a duplicate heading and the next same-level heading", () => {
+		// Content directly under the FIRST of two identical headings is
+		// inside the section.
+		expect(isWithinEventHeading([h(1, "Event")])).toBe(true);
+		expect(isWithinEventHeading([h(1, "Event"), h(2, "Detail")])).toBe(true);
+	});
+
 	it("honours a non-default configured heading and level", () => {
 		const config = { text: "Activity", level: 2 };
 		expect(isWithinEventHeading([h(2, "Activity")], config)).toBe(true);
@@ -159,6 +174,23 @@ describe("isWithinEventHeading", () => {
 		// (the `### Detail` subheading does not end it), line 5 (`# Other`)
 		// ends it.
 		expect(block).toEqual({ start: 1, end: 4 });
+	});
+
+	it("agrees with the file-based block rule for duplicate headings", () => {
+		// Two "# Event" headings: the parser takes the FIRST block, so the
+		// badge renderer must scope to the first one too.
+		const content =
+			"# Event\n- 9:00 - 10:00 work\n# Event\n- 11:00 - 12:00 second\n# Other\n- 13:00 - 14:00 third";
+		const config = { text: "Event", level: 1 };
+		const block = findEventBlockInContent(content, config);
+
+		// The parser stops at the second "# Event" (same level).
+		expect(block).toEqual({ start: 0, end: 1 });
+
+		// The badge renderer must agree: only the first block is inside.
+		expect(isWithinEventHeading([h(1, "Event")], config)).toBe(true);
+		expect(isWithinEventHeading([h(1, "Event"), h(1, "Event")], config)).toBe(false);
+		expect(isWithinEventHeading([h(1, "Event"), h(1, "Event"), h(1, "Other")], config)).toBe(false);
 	});
 });
 

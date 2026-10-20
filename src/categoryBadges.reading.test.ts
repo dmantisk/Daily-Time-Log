@@ -105,6 +105,20 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		expect(badgeTexts(el)).toEqual(["Work", "Rest"]);
 	});
 
+	it("scopes to the FIRST of two identical Event headings", () => {
+		// The parser takes the first "# Event" block and stops at the
+		// second one, so the badge renderer must do the same: the token
+		// between the two headings is inside, the one after it is not.
+		const el = renderEl(
+			"<h1>Event</h1><p>- 9:00 - 10:00 [Work] first block</p>" +
+				"<h1>Event</h1><p>- 11:00 - 12:00 [Rest] second block</p>"
+		);
+		process(el);
+
+		expect(badgeCount(el)).toBe(1);
+		expect(badgeTexts(el)).toEqual(["Work"]);
+	});
+
 	it("does NOT render any badge when the configured heading is absent", () => {
 		const el = renderEl("<h1>Other</h1><p>- 9:00 - 10:00 [Work] nowhere</p>");
 		process(el);

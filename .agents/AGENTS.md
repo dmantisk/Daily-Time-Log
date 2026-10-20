@@ -46,6 +46,11 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 
 **Category badges are scoped the same way**: `categoryBadges.ts` renders a `[Category]` badge only for tokens inside the configured Event section — in the live editor via the block range from `findEventBlockInContent`, and in the reading view via `isWithinEventHeading` (which takes the rendered `<h1>`–`<h6>` headings preceding the token). A `[Category]` typed outside the Event section stays plain text, matching the parser's strict scoping. `isWithinEventHeading` lives in `parser.ts` (not `categoryBadges.ts`) so it stays unit-testable without the Obsidian API — `parser.test.ts` covers it, including a cross-check that it agrees with the file-based block range.
 
+**The badge rule MUST mirror the parser's block rule exactly** (boundary computation steps 1–2 above):
+- The section is opened by the **FIRST** heading matching the configured text *and* level — a later heading with the same text does **not** re-open it.
+- It is closed by the next heading at the **same level or above**; deeper headings are subheadings and stay inside.
+- Consequence: with two `# Event` headings, only the content between the first and the second is inside the section — the same range `findEventBlock` returns for that file. The reading view and the live editor must never disagree about which lines belong to the Event block. A "last heading wins" rule is wrong here and was the cause of a real parser/renderer mismatch.
+
 **Reading-view heading walk**: the reading view collects the headings that precede a token with a **single document-order traversal** (`walkDocumentOrder`), walking elements and text nodes together (`SHOW_ELEMENT | SHOW_TEXT`) and accumulating headings as they are met. A `TreeWalker` created with `SHOW_ELEMENT` can never yield a text node, so an element-only walker must **not** be compared against a text node to detect "reached the target" — doing so makes the walk run to the end of the document and silently applies the scoping rule to the whole note. The DOM-level behaviour is covered by `src/categoryBadges.reading.test.ts` (see §4).
 
 ### 1.4 Event Block

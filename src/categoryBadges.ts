@@ -274,8 +274,8 @@ export function processCategoryBadgesInReadingView(
 
 	// Single document-order pass. `headings` accumulates every heading seen
 	// SO FAR, so when a text node is reached the accumulated list is exactly
-	// the set of headings that precede it — the same "last heading wins"
-	// rule the parser applies to the raw file text.
+	// the set of headings that precede it — which is what the scoping rule
+	// needs to locate the Event section and its end.
 	const headings: HeadingInfo[] = [];
 
 	walkDocumentOrder(

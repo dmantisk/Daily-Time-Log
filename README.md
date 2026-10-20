@@ -142,6 +142,7 @@ npm run build   # type-check (tsc) + production build
 - The Event heading is now fully configurable: only the configured heading (at the configured level) is recognized. There is no hard-coded fallback list of historical spellings.
 - Events are read only from under the configured heading, and the section ends at the next heading at the same level or above.
 - **Fixed category badges in the reading view**: badges were being scoped against the whole note instead of the Event section, so a `[Category]` under the configured heading was not rendered and one outside it was. Badges now follow the same rule as Event lines in both the live editor and the reading view.
+- **Fixed a mismatch between the parser and the badge renderer** when a note contains the Event heading more than once: events were read from the first such heading, but badges were drawn around the last one. Both now use the first heading, and the section ends at the next heading of the same level or above.
 
 ### 0.4.3 (2026-08-15)
 

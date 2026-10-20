@@ -207,15 +207,14 @@ export interface HeadingInfo {
  * the configured Event block.
  *
  * Mirrors `findEventBlock` exactly:
- * - The Event section ends at the next heading at the SAME level or above,
- *   so a deeper heading keeps the position inside the section.
- * - The heading that opens the section must match the configured text and
- *   level.
+ * - The section is opened by the FIRST heading that matches the configured
+ *   text AND level. Later headings with the same text do not re-open it.
+ * - The section ends at the next heading at the SAME level or above, so a
+ *   deeper heading keeps the position inside the section.
  *
- * The last heading whose level is <= the configured level decides the
- * outcome:
- *   - level < configured level → that heading CLOSED the section → outside.
- *   - level == configured level → outside unless its text matches.
+ * Consequence: with two `# Event` headings, only the content between the
+ * first one and the second is inside the section — exactly the range the
+ * parser returns for that file.
  *
  * Used by the category-badge renderer, which works from the rendered DOM
  * (headings as `<h1>`–`<h6>` elements) rather than the raw file text.
@@ -224,13 +223,22 @@ export function isWithinEventHeading(
 	headings: HeadingInfo[],
 	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
 ): boolean {
-	for (let i = headings.length - 1; i >= 0; i--) {
-		const heading = headings[i];
-		if (heading.level > config.level) continue; // subheading — stays inside
-		if (heading.level < config.level) return false; // higher heading — section closed
-		return heading.text.trim().toLowerCase() === config.text.trim().toLowerCase();
+	const wanted = config.text.trim().toLowerCase();
+
+	// The section opens at the first heading with the configured text AND level.
+	const start = headings.findIndex(
+		(heading) =>
+			heading.level === config.level &&
+			heading.text.trim().toLowerCase() === wanted
+	);
+	if (start === -1) return false;
+
+	// It closes at the next heading at the same level or above.
+	for (let i = start + 1; i < headings.length; i++) {
+		if (headings[i].level <= config.level) return false;
 	}
-	return false; // no heading at all — not inside an Event section
+
+	return true;
 }
 
 /**
