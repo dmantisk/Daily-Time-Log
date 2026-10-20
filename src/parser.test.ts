@@ -453,4 +453,19 @@ describe("stripHtml", () => {
 	it("leaves plain text untouched", () => {
 		expect(stripHtml("plain text")).toBe("plain text");
 	});
+
+	it("decodes numeric entities", () => {
+		// The digit class in the entity pattern must actually match digits
+		// — written as a single backslash it matched a LITERAL backslash
+		// and no numeric entity was ever decoded.
+		expect(stripHtml("it&#39;s here")).toBe("it's here");
+		expect(stripHtml("&#65;&#66;&#67;")).toBe("ABC");
+		expect(stripHtml("&#x41;&#x42;")).toBe("AB");
+		expect(stripHtml("&#128512;")).toBe("😀");
+	});
+
+	it("leaves an out-of-range or malformed numeric entity untouched", () => {
+		expect(stripHtml("&#x110000;")).toBe("&#x110000;");
+		expect(stripHtml("&#99999999999;")).toBe("&#99999999999;");
+	});
 });

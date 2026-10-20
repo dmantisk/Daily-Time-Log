@@ -186,6 +186,7 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - `copyCategories` / `createDefaultCategories` copy DEEPLY: mutating the copy must not reach the source list or `DEFAULT_CATEGORIES`.
   - `findCategoryByDisplayName` matches case-insensitively and ignores surrounding whitespace, and returns `undefined` for an unknown, empty or missing name.
 - **Version bookkeeping**: `update-version.mjs` (ported from DayTime Tracker's `update-version.js`; kept as `.mjs` since this `package.json` doesn't set `"type": "module"`) syncs `manifest.json`'s version from `package.json` and maintains `versions.json`, which maps each released plugin version to the `minAppVersion` it required at release time — required by Obsidian for correct backward-compatible version resolution. The `package.json` `"version"` script `git add`s both `manifest.json` and `versions.json`.
+- **Watch the backslash level in regexes.** `stripHtml`'s entity pattern used `\\d` inside a regex LITERAL, where it matches a literal backslash followed by `d` — so no numeric entity (`&#39;`) was ever decoded. Numeric entities are now decoded by `NUMERIC_ENTITY_REGEX` (decimal and hexadecimal, with out-of-range code points left untouched).
 
 ---
 
