@@ -132,16 +132,20 @@ npm run build   # type-check (tsc) + production build
 
 ### Unreleased
 
-- Removed PDF/HTML export; use a screenshot to capture the timeline.
-- Removed To-Do parsing, sidebar controls, dashboard metrics, and To-Do export; checkbox lines remain ordinary note content.
-- Removed all Daily Time Log controls for opening or creating daily notes; use Obsidian's Daily Notes core plugin instead.
-- Added settings for the Event heading text and Markdown level, used when parsing daily notes.
-- The Event heading is now fully configurable: only the configured heading (at the configured level) is recognized. There is no hard-coded fallback list of historical spellings.
-- Events are read only from under the configured heading, and the section ends at the next heading at the same level or above.
-- **Fixed category badges in the reading view**: badges were being scoped against the whole note instead of the Event section, so a `[Category]` under the configured heading was not rendered and one outside it was. Badges now follow the same rule as Event lines in both the live editor and the reading view.
+- **Renamed the plugin** from "Daily Work Log" to "Daily Time Log".
+- **Removed PDF/HTML export**; use a screenshot to capture the timeline.
+- **Removed To-Do parsing**, the sidebar To-Do panel, the Work Insights To-Do completion metric, and To-Do export; checkbox lines remain ordinary note content.
+- **Removed all Daily Time Log controls for opening or creating daily notes**; use Obsidian's Daily Notes core plugin instead. The daily-note-folder setting is now a scan filter for the dashboard and category badges, not a destination for new notes.
+- **Removed the sidebar-specific Light/Dark theme toggle.** The sidebar and Work Insights now both follow Obsidian's active theme; popups keep following the system theme.
+- **Added settings for the Event heading text and Markdown level**, used when parsing daily notes.
+- The Event heading is now **fully configurable**: only the configured heading (at the configured level) is recognized. There is no hard-coded fallback list of historical spellings, and the heading is matched in its rendered form, so `# **Event**` and `# Event #` are recognized too.
+- Events are read **only from under the configured heading**, and the section ends at the next heading at the same level or above.
+- **Added category badge rendering** — a `[Category]` token right after a time range is drawn as a colored badge in both the live editor and the reading view. The token is only recognized in event-line position, so brackets typed elsewhere in a note (prose, headings, checkboxes, wikilinks) stay plain text, and badges follow the same Event-section scoping rule as the Event lines themselves.
+- **Added automatic UI language detection**: the plugin interface follows Obsidian's own language by default, and English or Korean can be selected as an override. The language setting no longer affects parsing.
 - **Fixed a mismatch between the parser and the badge renderer** when a note contains the Event heading more than once: events were read from the first such heading, but badges were drawn around the last one. Both now use the first heading, and the section ends at the next heading of the same level or above.
 - **Fixed the Event heading not being recognized when it is decorated**: a heading written as `# **Event**` or `# Event #` is now recognized, the same way the reading view renders it. Previously such a note yielded no events, while the reading view still drew badges — the two disagreed.
 - **Fixed the default Event heading changing with the interface language**: the heading is part of the note format, not a UI string, so it is now always `Event` by default. Previously a Korean user who had never touched the setting silently got a different heading than the settings UI showed.
+- **Removed the Korean README** (`README.ko.md`); the plugin interface is still available in Korean.
 
 ### 0.4.3 (2026-08-15)
 
