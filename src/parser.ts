@@ -38,7 +38,6 @@ export interface EventHeadingConfig {
 }
 
 export const DEFAULT_EVENT_HEADING: EventHeadingConfig = { text: "Event", level: 1 };
-const LEGACY_EVENT_HEADINGS = ["Event", "이벤트", "_Event", "_이벤트"];
 
 /** UI language for strings (EN / KO). Kept here for settings/i18n imports. */
 export type MarkerLanguage = "en" | "ko";
@@ -82,16 +81,17 @@ function escapeRegExp(value: string): string {
 /**
  * True when `line` is the configured event marker heading — exactly
  * `level` `#` characters followed by `text` (case-insensitive, trimmed).
+ *
+ * ONLY the configured heading is recognized. There is no hard-coded
+ * fallback list of historical spellings — if the user changes the Event
+ * heading in Settings, notes using the old heading stop being treated as
+ * an Event block (they fall back to whole-note scanning).
  */
 export function matchMarker(line: string, config: EventHeadingConfig): boolean {
 	const trimmed = line.trim();
 	if (!Number.isInteger(config.level) || config.level < 1 || config.level > 6 || !config.text.trim()) return false;
 	const headingRegex = new RegExp(`^#{${config.level}}\\s+(${escapeRegExp(config.text.trim())})\\s*$`, "i");
 	return headingRegex.test(trimmed);
-}
-
-function matchEventMarker(line: string, config: EventHeadingConfig): boolean {
-	return matchMarker(line, config) || LEGACY_EVENT_HEADINGS.some((text) => matchMarker(line, { text, level: 1 }));
 }
 
 /**
@@ -148,7 +148,7 @@ export function findEventBlock(
 		const trimmed = line.trim();
 
 		if (blockStart === null) {
-			if (matchEventMarker(line, config)) {
+			if (matchMarker(line, config)) {
 				blockStart = i;
 			}
 			continue;

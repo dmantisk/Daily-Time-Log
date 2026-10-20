@@ -58,9 +58,33 @@ describe("Event heading matching", () => {
 		expect(findEventBlock(lines, 0, { text: "Activity", level: 2 })).toEqual({ start: 2, end: 3 });
 	});
 
-	it("recognizes historical Event heading spellings", () => {
-		expect(parseDailyNote("# _이벤트\n- 9:00 - 10:00 회의").timeline).toHaveLength(1);
-		expect(parseDailyNote("# 이벤트\n- 9:00 - 10:00 회의").timeline).toHaveLength(1);
+	it("does not recognize any heading other than the configured one", () => {
+		// Only the configured heading opens the Event block — there is no
+		// hard-coded fallback list of historical spellings. When the heading
+		// does not match, NO block is opened, so the whole-note fallback scan
+		// picks up event lines from every section.
+		const content = "# _이벤트\n- 9:00 - 10:00 회의\n# Other\n- 10:00 - 11:00 later";
+		const result = parseDailyNote(content, { text: "Activity", level: 2 });
+		expect(result.timeline.map((item) => item.description)).toEqual(["회의", "later"]);
+	});
+
+	it("opens a block (and stops at the next heading) only for the configured heading", () => {
+		// The configured heading ends the block at the next heading, so the
+		// event line under "# Other" is excluded.
+		const content = "## Activity\n- 9:00 - 10:00 working\n# Other\n- 10:00 - 11:00 ignored";
+		const result = parseDailyNote(content, { text: "Activity", level: 2 });
+		expect(result.timeline.map((item) => item.description)).toEqual(["working"]);
+	});
+
+	it("does not recognize the configured text at a different heading level", () => {
+		const content = "# Event\n- 9:00 - 10:00 work\n# Other\n- 10:00 - 11:00 later";
+		// Configured at level 2, so the H1 "# Event" is not a match — no block
+		// is opened and the whole-body fallback finds both event lines.
+		expect(parseDailyNote(content, { text: "Event", level: 2 }).timeline).toHaveLength(2);
+
+		// At the configured level, the block is opened and ends at "# Other".
+		const level2 = "## Event\n- 9:00 - 10:00 work\n# Other\n- 10:00 - 11:00 later";
+		expect(parseDailyNote(level2, { text: "Event", level: 2 }).timeline).toHaveLength(1);
 	});
 });
 
@@ -120,12 +144,14 @@ describe("parseDailyNote", () => {
 		expect(result.timeline[0].line).toBe(4);
 	});
 
-	it("keeps legacy Event markers working when a custom heading is configured", () => {
+	it("does not treat a non-configured heading as the Event block", () => {
+		// A note whose heading doesn't match the configuration falls back to
+		// whole-note scanning, so its event lines are still found.
 		const result = parseDailyNote("# Event\n- 09:00 - 10:00 work", { text: "Activity", level: 2 });
 		expect(result.timeline).toHaveLength(1);
+		expect(result.timeline[0].description).toBe("work");
 	});
 });
-
 describe("appendLineToBlock", () => {
 	it("inserts before the next heading in the configured Event block", () => {
 		const content = "# Intro\n## Activity\n- 9:00 - 10:00 work\n### Notes\nother";

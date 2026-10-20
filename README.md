@@ -26,8 +26,8 @@ Daily notes must be named `YYYY-MM-DD.md`. Daily Time Log reads and updates exis
 ```
 
 - The `[Category]` tag right after the time range is optional — `- 9:00 - 10:30 Team meeting` (no category) still works.
-- Set the Event heading text and level in plugin settings. The historical English and Korean Event headings, including underscore-prefixed variants, remain recognized.
-- When the configured heading is present, only its section (up to the next heading) is parsed. Notes without an Event heading retain legacy whole-note parsing.
+- Set the Event heading text and level in plugin settings. **Only the configured heading is recognized** — if you change it, notes using the previous heading are no longer treated as an Event block.
+- When the configured heading is present, only its section (up to the next heading) is parsed. Notes without that heading retain legacy whole-note parsing.
 
 ## Installation
 
@@ -53,12 +53,20 @@ For active development, use `npm run dev` instead — it rebuilds automatically 
 > This script is only in the source repository, not in the release download (the release only contains `main.js`/`manifest.json`/`styles.css`) — you'll need to clone this repo and run `npm install` first:
 >
 > ```bash
-> git clone https://github.com/seongchan/DailyWorkLog.git
-> cd DailyWorkLog
+> git clone https://github.com/dmantisk/Daily-Time-Log.git
+> cd Daily-Time-Log
 > npm install
 > node scripts/migrate-from-daytimetracker.mjs <path-to-your-vault>            # dry run — writes nothing, just previews
 > node scripts/migrate-from-daytimetracker.mjs <path-to-your-vault> --write    # actually rewrite the files
 > ```
+>
+> The script writes the Event heading the plugin expects. **Only the configured heading is recognized**, so if you've changed the Event heading in Settings, pass it explicitly:
+>
+> ```bash
+> node scripts/migrate-from-daytimetracker.mjs <path-to-your-vault> --write --heading "Activity" --level 2
+> ```
+>
+> To-Do items are **not** migrated — the plugin no longer parses To-Do blocks, so the script drops them (the `timeline-todos` frontmatter key is still removed). Recover them from your backup if you need them.
 >
 > Always run the dry run first and back up your vault before using `--write` — this rewrites daily notes in place and there's no undo. See the comment at the top of the script for exactly what does and doesn't get migrated.
 
@@ -109,7 +117,7 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 
 - **Day Start Hour / Day End Hour**: the hour range shown on the grid.
 - **Daily Note Folder Filter**: limits Daily Time Log's dashboard and category badge scanning to a folder, with folder autocomplete. Leave empty to scan the whole vault.
-- **Event Heading Text / Level**: configure the heading that begins the Event section in your notes.
+- **Event Heading Text / Level**: configure the heading that begins the Event section in your notes. Only this exact heading (at this exact level) is recognized — change it and notes using the old heading stop being parsed as an Event block.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
 - **Theme**: the sidebar automatically follows Obsidian's active theme.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults.
@@ -129,6 +137,7 @@ npm run build   # type-check (tsc) + production build
 - Removed To-Do parsing, sidebar controls, dashboard metrics, and To-Do export; checkbox lines remain ordinary note content.
 - Removed all Daily Time Log controls for opening or creating daily notes; use Obsidian's Daily Notes core plugin instead.
 - Added settings for the Event heading text and Markdown level, used when parsing daily notes.
+- The Event heading is now fully configurable: only the configured heading (at the configured level) is recognized. There is no hard-coded fallback list of historical spellings.
 
 ### 0.4.3 (2026-08-15)
 
