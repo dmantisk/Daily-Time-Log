@@ -190,7 +190,7 @@ export class DashboardView extends ItemView {
 		// Card 2: Event Recording Time & Daily Average
 		const timeVal = formatMinutes(stats.recentEventMinutes);
 		const avgSub = `${t("statAvgPerDay", language)}: ${formatMinutes(stats.avgEventMinutesPerDay)}`;
-		this.renderMetricCard(grid, t("statEventTime", language), timeVal, avgSub);
+		this.renderMetricCard(grid, this.eventTimeLabel(language), timeVal, avgSub);
 
 		// Card 3: Top Category
 		const topCat = stats.topCategoryName ?? "-";
@@ -328,8 +328,21 @@ export class DashboardView extends ItemView {
 
 		this.renderSummaryRow(summaryBox, t("statDateRange", language), dateRangeText);
 		this.renderSummaryRow(summaryBox, t("statStreak", language), `${stats.currentStreak} ${t("unitDays", language)}`);
-		this.renderSummaryRow(summaryBox, t("statEventTime", language), formatMinutes(stats.recentEventMinutes));
+		this.renderSummaryRow(summaryBox, this.eventTimeLabel(language), formatMinutes(stats.recentEventMinutes));
 		this.renderSummaryRow(summaryBox, t("statAvgPerDay", language), formatMinutes(stats.avgEventMinutesPerDay));
+	}
+
+	/**
+	 * The label for the "Event Time" metric, naming the window the figures
+	 * actually cover.
+	 *
+	 * The figures come from the selected window, so a fixed "30d" label was
+	 * wrong for every other choice. The "All Time" window has no day count
+	 * and uses the plain label.
+	 */
+	private eventTimeLabel(language: MarkerLanguage): string {
+		if (this.selectedWindowDays <= 0) return t("statEventTime", language);
+		return t("statEventTimeWindow", language).replace("%s", String(this.selectedWindowDays));
 	}
 
 	private renderSummaryRow(container: HTMLElement, label: string, value: string): void {

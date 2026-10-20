@@ -45,6 +45,7 @@ export type UIStringKey =
 	| "statStreak"
 	| "statDateRange"
 	| "statEventTime"
+	| "statEventTimeWindow"
 	| "unitDays"
 	| "recentNotesTitle"
 	| "dashboardEmptyVault"
@@ -133,7 +134,8 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statTotalNotes: "Total Notes",
 		statStreak: "Current Streak",
 		statDateRange: "Date Range",
-		statEventTime: "Event Time (30d)",
+		statEventTime: "Event Time",
+		statEventTimeWindow: "Event Time (%s)",
 		unitDays: " days",
 		recentNotesTitle: "Recent Notes",
 		dashboardEmptyVault: "No daily notes yet.",
@@ -219,7 +221,8 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statTotalNotes: "총 노트 수",
 		statStreak: "연속 작성일",
 		statDateRange: "기록 기간",
-		statEventTime: "최근 30일 기록 시간",
+		statEventTime: "기록 시간",
+		statEventTimeWindow: "기록 시간 (%s)",
 		unitDays: "일",
 		recentNotesTitle: "최근 노트",
 		dashboardEmptyVault: "아직 작성된 일일 노트가 없습니다.",

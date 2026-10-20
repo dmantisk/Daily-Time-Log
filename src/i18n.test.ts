@@ -29,6 +29,13 @@ describe("STRINGS", () => {
 		const koKeys = Object.keys(STRINGS.ko).sort();
 		expect(koKeys).toEqual(enKeys);
 	});
+
+	it("keeps the %s placeholder in the windowed Event Time label", () => {
+		// The label names the selected window, so the placeholder must
+		// survive in both languages.
+		expect(STRINGS.en.statEventTimeWindow).toContain("%s");
+		expect(STRINGS.ko.statEventTimeWindow).toContain("%s");
+	});
 });
 
 describe("WEEKDAYS", () => {
