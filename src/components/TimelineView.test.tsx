@@ -49,7 +49,7 @@ import { TFile } from "obsidian";
 const DAILY_NOTE_CONTENT = "# Event\n- 09:00 - 10:00 [Work] Existing\n";
 
 /** Builds a plugin stub good enough for the sidebar to render a grid. */
-function createPluginStub(): never {
+function createPluginStub(noteContent: string = DAILY_NOTE_CONTENT): never {
 	const file = new TFile();
 	file.path = "2026-10-16.md";
 	file.name = "2026-10-16.md";
@@ -62,7 +62,7 @@ function createPluginStub(): never {
 				getActiveFile: () => file,
 			},
 			vault: {
-				read: async () => DAILY_NOTE_CONTENT,
+				read: async () => noteContent,
 			},
 		},
 		settings: {
@@ -94,9 +94,9 @@ describe("TimelineView — drag-to-select", () => {
 	});
 
 	/** Renders the sidebar and waits for the async file read to settle. */
-	async function renderView(): Promise<void> {
+	async function renderView(noteContent: string = DAILY_NOTE_CONTENT): Promise<void> {
 		await act(async () => {
-			root.render(React.createElement(TimelineView, { plugin: createPluginStub(), refreshToken: 0 }));
+			root.render(React.createElement(TimelineView, { plugin: createPluginStub(noteContent), refreshToken: 0 }));
 		});
 	}
 
@@ -168,5 +168,60 @@ describe("TimelineView — drag-to-select", () => {
 		});
 
 		expect(openModalCalls).toHaveLength(2);
+	});
+});
+
+describe("TimelineView — grid rendering", () => {
+	let container: HTMLDivElement;
+	let root: Root;
+
+	beforeEach(() => {
+		container = document.createElement("div");
+		document.body.appendChild(container);
+		root = createRoot(container);
+	});
+
+	afterEach(() => {
+		act(() => {
+			root.unmount();
+		});
+		container.remove();
+	});
+
+	async function renderView(noteContent: string): Promise<void> {
+		await act(async () => {
+			root.render(React.createElement(TimelineView, { plugin: createPluginStub(noteContent), refreshToken: 0 }));
+		});
+	}
+
+	/** The rendered Event bars, in document order. */
+	function blocks(): HTMLElement[] {
+		return Array.from(container.querySelectorAll<HTMLElement>(".dwl-grid-block"));
+	}
+
+	it("renders a bar for an in-day Event", async () => {
+		await renderView("# Event\n- 09:00 - 10:00 [Work] Morning\n");
+		expect(blocks()).toHaveLength(1);
+	});
+
+	it("renders an overnight Event as a bar in the evening AND in the morning", async () => {
+		// An Event crossing midnight occupies two in-day segments. The
+		// dashboard already counted its full duration, but the grid used
+		// to draw no bar at all, because the raw end time (01:00) is
+		// earlier than the start time (23:00).
+		await renderView("# Event\n- 23:00 - 01:00 [Work] Night shift\n");
+
+		const rendered = blocks();
+		expect(rendered).toHaveLength(2);
+
+		// The grid renders hours in ascending order, so the morning bar
+		// (midnight-01:00) comes first and the evening bar (23:00-midnight)
+		// second.
+		const rows = Array.from(container.querySelectorAll<HTMLElement>(".dwl-grid-row"));
+		const rowOf = (block: HTMLElement): number =>
+			rows.findIndex((row) => row.contains(block));
+
+		expect(rowOf(rendered[0])).toBe(0);
+		expect(rowOf(rendered[1])).toBe(23);
 	});
 });

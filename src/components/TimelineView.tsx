@@ -14,7 +14,7 @@ import {
 	removeLineRangeAt,
 	replaceLineRangeAt,
 	stripHtml,
-	timeToMinutes,
+	timelineDaySegments,
 	timelineRangeMatches,
 	type MarkerLanguage,
 	type TimelineItem,
@@ -271,12 +271,20 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 					{hours.map((hour) => {
 						const hourStartMin = hour * 60;
 						const hourEndMin = (hour + 1) * 60;
+						// An Event that crosses midnight occupies two in-day
+						// segments, so it is drawn as a bar in the evening hours
+						// AND a bar in the early-morning hours.
 						const overlapping = timeline
 							.map((item, index) => ({ item, index }))
-							.filter(({ item }) => {
-								const s = timeToMinutes(item.start);
-								const e = timeToMinutes(item.end);
-								return Math.max(s, hourStartMin) < Math.min(e, hourEndMin);
+							.flatMap(({ item, index }) =>
+								timelineDaySegments(item).map((segment, segmentIndex) => ({
+									item,
+									segment,
+									key: `${index}-${segmentIndex}`,
+								}))
+							)
+							.filter(({ segment }) => {
+								return Math.max(segment.start, hourStartMin) < Math.min(segment.end, hourEndMin);
 							});
 
 						const isPm = hour >= 12;
@@ -309,11 +317,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 										);
 									})}
 
-									{overlapping.map(({ item, index }) => {
-										const s = timeToMinutes(item.start);
-										const e = timeToMinutes(item.end);
-										const overlapStart = Math.max(s, hourStartMin);
-										const overlapEnd = Math.min(e, hourEndMin);
+									{overlapping.map(({ item, segment, key }) => {
+										const overlapStart = Math.max(segment.start, hourStartMin);
+										const overlapEnd = Math.min(segment.end, hourEndMin);
 										const startCol = (overlapStart - hourStartMin) / CELL_MINUTES;
 										const endCol = (overlapEnd - hourStartMin) / CELL_MINUTES;
 										const leftPercent = (startCol / CELLS_PER_HOUR) * 100;
@@ -327,7 +333,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 										return (
 											<div
-												key={index}
+												key={key}
 												className="dwl-grid-block"
 												style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, backgroundColor: bgColor, color: textColor }}
 												title={`${item.start} ~ ${item.end} | ${label}${item.description ? `\n${stripHtml(item.description)}` : ""}`}

@@ -21,6 +21,7 @@ import {
 	TIME_VALUE_REGEX,
 	timeToMinutes,
 	minutesToTime,
+	timelineDaySegments,
 	timelineDurationMinutes,
 	type HeadingInfo,
 } from "./parser";
@@ -393,6 +394,33 @@ describe("time helpers", () => {
 	it("measures a 24:00 end time as the end of the day", () => {
 		expect(timeToMinutes("24:00")).toBe(1440);
 		expect(timelineDurationMinutes({ start: "23:50", end: "24:00" })).toBe(10);
+	});
+});
+
+describe("timelineDaySegments", () => {
+	it("returns a single segment for a normal in-day range", () => {
+		expect(timelineDaySegments({ start: "09:00", end: "10:30" })).toEqual([
+			{ start: 540, end: 630 },
+		]);
+	});
+
+	it("returns a single segment running to the end of the day for a 24:00 end", () => {
+		expect(timelineDaySegments({ start: "23:00", end: "24:00" })).toEqual([
+			{ start: 1380, end: 1440 },
+		]);
+	});
+
+	it("splits an overnight range into an evening and a morning segment", () => {
+		// The grid draws one bar per segment, so an overnight Event shows
+		// up both in the evening hours and in the early-morning hours.
+		expect(timelineDaySegments({ start: "23:00", end: "01:00" })).toEqual([
+			{ start: 1380, end: 1440 },
+			{ start: 0, end: 60 },
+		]);
+	});
+
+	it("returns no segment for a zero-length range", () => {
+		expect(timelineDaySegments({ start: "09:00", end: "09:00" })).toEqual([]);
 	});
 });
 

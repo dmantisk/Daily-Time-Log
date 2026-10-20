@@ -590,6 +590,39 @@ export function timelineDurationMinutes(item: Pick<TimelineItem, "start" | "end"
 	return Math.max(endMinutes - startMinutes + (endMinutes <= startMinutes ? MINUTES_PER_DAY : 0), 0);
 }
 
+/**
+ * The in-day segments an Event occupies, in minutes since midnight.
+ *
+ * A range whose end is not after its start crosses midnight (e.g.
+ * `23:00 - 01:00`), so it occupies TWO segments: `23:00` to midnight and
+ * midnight to `01:00`. A range ending exactly at `24:00` is a single
+ * segment that runs to the end of the day.
+ *
+ * The grid renders one bar per segment, so an overnight Event is drawn
+ * as a bar in the evening hours AND a bar in the early-morning hours.
+ * Without this, comparing the raw start and end values made
+ * `Math.max(start, hourStart) < Math.min(end, hourEnd)` false for every
+ * hour, so an overnight Event was invisible on the grid even though the
+ * dashboard counted its time.
+ */
+export function timelineDaySegments(item: Pick<TimelineItem, "start" | "end">): LineRange[] {
+	const startMinutes = timeToMinutes(item.start);
+	const endMinutes = timeToMinutes(item.end);
+
+	if (endMinutes > startMinutes) {
+		return [{ start: startMinutes, end: endMinutes }];
+	}
+	if (endMinutes === startMinutes) {
+		// A zero-length range has no segment to draw.
+		return [];
+	}
+	// Crosses midnight: the tail of the evening, then the head of the day.
+	return [
+		{ start: startMinutes, end: MINUTES_PER_DAY },
+		{ start: 0, end: endMinutes },
+	];
+}
+
 const HTML_ENTITIES: Record<string, string> = {
 	"&nbsp;": " ",
 	"&amp;": "&",
