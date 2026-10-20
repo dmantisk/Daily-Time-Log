@@ -10,7 +10,8 @@ const MAX_CATEGORY_NAME_LENGTH = 10;
 
 /**
  * DayTime Tracker-parity settings surface (AGENTS.md §2, design.md §14):
- * general (hour range / folder / language), theme, and category management.
+ * general (hour range / folder / language / Event heading) and category
+ * management.
  * Every label goes through i18n.ts (t()) exactly like the sidebar/modal —
  * this tab used to be hardcoded Korean regardless of the language setting,
  * which was an oversight, not a deliberate exception.

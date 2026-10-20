@@ -2,8 +2,6 @@
 
 An Obsidian plugin that visualizes time-tracking Events directly from your daily markdown notes — no YAML frontmatter required.
 
-*[한국어 안내는 README.ko.md를 참고하세요.](./README.ko.md)*
-
 ## Features
 
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
@@ -121,7 +119,6 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 - **Daily Note Folder Filter**: limits Daily Time Log's dashboard and category badge scanning to a folder, with folder autocomplete. Leave empty to scan the whole vault.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes. Only this exact heading (at this exact level) is recognized — change it and notes using the old heading stop being parsed as an Event block.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
-- **Theme**: the sidebar automatically follows Obsidian's active theme.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults.
 
 ## Development

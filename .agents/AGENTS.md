@@ -1,6 +1,6 @@
 # Project Rules & Instructions for AI Agents
 
-Welcome, AI Agent! You are working on the **Daily Work Log** Obsidian Plugin. This project aims to build an Obsidian plugin that visualizes daily time tracking and To-Do lists directly from daily markdown files.
+Welcome, AI Agent! You are working on the **Daily Work Log** Obsidian Plugin. This project aims to build an Obsidian plugin that visualizes daily time tracking directly from daily markdown files.
 
 Please strictly adhere to the following rules and specifications during development.
 
@@ -20,7 +20,7 @@ Please strictly adhere to the following rules and specifications during developm
 - If no closing `---` is found, do not treat it as frontmatter (fall through to normal parsing).
 - **"Exactly `---`" means exactly** — do NOT `.trim()` the line before comparing (a real body line like `" --- "` with actual leading/trailing spaces must NOT be mistaken for a frontmatter delimiter). The only normalization allowed is stripping a trailing `\r` so CRLF-terminated files aren't broken — that's a line-ending encoding detail, not a content difference. This is deliberately stricter than the block-marker matching in 1.3, which DOES trim (hand-typed H1 headings are expected to have stray whitespace; a frontmatter fence is not).
 - This stripping logic MUST be implemented as a pure function inside `src/parser.ts` (no Obsidian API dependency), consistent with the Decoupled Parser Strategy in Section 4.
-- **Line indices must stay relative to the original file.** Do not renumber lines after stripping — downstream To-Do line-index tracking (1.5) depends on original file line numbers.
+- **Line indices must stay relative to the original file.** Do not renumber lines after stripping — downstream line-index tracking (1.4) depends on original file line numbers.
 
 ### 1.3 Event Block Marker (Single Configurable Heading)
 The Event block is identified by **one user-configured heading** (`eventHeadingText` + `eventHeadingLevel` in Settings), not by a generic `---` divider (a `---` divider was rejected because it collides with YAML frontmatter's closing delimiter).
@@ -178,7 +178,7 @@ When implementing or modifying **any UI component** (sidebar view, modals, CSS, 
 
 It defines:
 - Design principles (pastel color palette, desaturated buttons, minimal delete button)
-- Component layouts (To-Do section, Timeline modal, Confirmation popup)
+- Component layouts (Event grid, Timeline modal, Confirmation popup)
 - CSS class naming conventions (`dwl-*`)
 - Color system and button specs
 - File write safety checklist for new write operations

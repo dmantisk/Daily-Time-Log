@@ -1,7 +1,7 @@
 {
 	"name": "daily-time-log",
 	"version": "0.4.3",
-	"description": "Visualize daily time tracking and To-Do lists directly from daily notes with minimal metadata.",
+	"description": "Visualize daily time tracking directly from daily notes with minimal metadata.",
 	"main": "dist/main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

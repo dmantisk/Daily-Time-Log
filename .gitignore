@@ -2,6 +2,10 @@ node_modules/
 dist/
 *.js.map
 
+# Obsidian plugin data file (per-vault plugin state). The plugin's own
+# settings live in the vault's .obsidian/plugins folder, not here.
+data.json
+
 # Internal-only planning docs — not part of the public repo.
 ref_docs/
 imsi_todo.md
