@@ -56,6 +56,27 @@ export function getRecentWindowStart(today: Date, windowDays: number = RECENT_WI
 }
 
 /**
+ * True when a note's date falls inside the selected window.
+ *
+ * The window is bounded on BOTH ends: notes dated after `today` are
+ * excluded. A daily note can legitimately be dated in the future (a
+ * template pre-created for tomorrow, a template with a fixed date, a
+ * note copied from another vault), but such a note records no elapsed
+ * time — counting it would inflate the period totals and put a
+ * not-yet-happened day at the top of the recent-activity list.
+ *
+ * For the "All Time" window (`windowDays <= 0`) the start bound is
+ * dropped but the future bound still applies.
+ */
+export function isWithinRecentWindow(noteDate: Date, today: Date, windowDays: number = RECENT_WINDOW_DAYS): boolean {
+	const noteDay = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+	const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+	if (noteDay.getTime() > todayDay.getTime()) return false;
+	return noteDay.getTime() >= getRecentWindowStart(today, windowDays).getTime();
+}
+
+/**
  * @param allNoteDates every daily note's date, filename-derived only (cheap — no file reads needed).
  * @param recentParsed notes within the selected window, with content already read+parsed.
  * @param today "now", passed in explicitly so this stays a pure, testable function.

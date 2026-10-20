@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDashboardStats, getRecentWindowStart } from "./dashboardCollector";
+import { computeDashboardStats, getRecentWindowStart, isWithinRecentWindow } from "./dashboardCollector";
 import type { ParsedDailyNote } from "./parser";
 
 const EMPTY_NOTE: ParsedDailyNote = { timeline: [] };
@@ -9,6 +9,40 @@ describe("getRecentWindowStart", () => {
 		const today = new Date(2026, 6, 30); // 2026-07-30
 		const start = getRecentWindowStart(today);
 		expect(start).toEqual(new Date(2026, 6, 1)); // 2026-07-01
+	});
+});
+
+describe("isWithinRecentWindow", () => {
+	const today = new Date(2026, 6, 30); // 2026-07-30
+
+	it("includes a note dated today", () => {
+		expect(isWithinRecentWindow(new Date(2026, 6, 30), today)).toBe(true);
+	});
+
+	it("includes a note inside the window", () => {
+		expect(isWithinRecentWindow(new Date(2026, 6, 1), today)).toBe(true);
+	});
+
+	it("excludes a note before the window", () => {
+		expect(isWithinRecentWindow(new Date(2026, 5, 30), today)).toBe(false);
+	});
+
+	it("excludes a note dated in the future", () => {
+		// A future-dated daily note records no elapsed time, so counting it
+		// would inflate the period totals and put a not-yet-happened day
+		// at the top of the recent-activity list.
+		expect(isWithinRecentWindow(new Date(2026, 6, 31), today)).toBe(false);
+		expect(isWithinRecentWindow(new Date(2026, 7, 15), today)).toBe(false);
+	});
+
+	it("excludes future notes even in the all-time window", () => {
+		expect(isWithinRecentWindow(new Date(2026, 6, 31), today, 0)).toBe(false);
+		expect(isWithinRecentWindow(new Date(2020, 0, 1), today, 0)).toBe(true);
+	});
+
+	it("honours a shorter window", () => {
+		expect(isWithinRecentWindow(new Date(2026, 6, 20), today, 7)).toBe(false);
+		expect(isWithinRecentWindow(new Date(2026, 6, 24), today, 7)).toBe(true);
 	});
 });
 

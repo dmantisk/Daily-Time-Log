@@ -2,7 +2,7 @@ import { ItemView, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "
 import type DailyWorkLogPlugin from "./main";
 import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./parser";
 import { formatDateBasename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
-import { computeDashboardStats, getRecentWindowStart, type DashboardStats } from "./dashboardCollector";
+import { computeDashboardStats, isWithinRecentWindow, type DashboardStats } from "./dashboardCollector";
 import { getTextColorForBackground } from "./components/colorUtils";
 import { t } from "./i18n";
 
@@ -68,9 +68,8 @@ export class DashboardView extends ItemView {
 		}
 
 		const today = new Date();
-		const windowStart = getRecentWindowStart(today, this.selectedWindowDays);
 		const recentNotes = allNotes
-			.filter((note) => note.date >= windowStart)
+			.filter((note) => isWithinRecentWindow(note.date, today, this.selectedWindowDays))
 			.sort((a, b) => b.date.getTime() - a.date.getTime());
 
 		// Read in parallel rather than one file at a time — "All Time" can mean
