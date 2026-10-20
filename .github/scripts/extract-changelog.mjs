@@ -44,7 +44,14 @@ if (i >= lines.length) {
 }
 
 const heading = lines[i].replace(/^###\s+/, "").trim();
-if (!heading.startsWith(expectedVersion)) {
+
+// The version must match EXACTLY, not merely as a prefix: with
+// `startsWith`, a changelog entry for "0.5.10" would pass the guard for a
+// release of "0.5.1", and the release notes would describe the wrong
+// version. The heading is expected to be "<version>" optionally followed
+// by a date in parentheses, e.g. "0.5.1 (2026-10-20)".
+const headingVersion = heading.split(" ")[0];
+if (headingVersion !== expectedVersion) {
 	console.error(
 		`::error::README.md's latest changelog entry is "${heading}", but this release is version ` +
 			`"${expectedVersion}". Update the "## Changelog" section in README.md (and README.ko.md) before ` +
