@@ -402,7 +402,7 @@ const HTML_ENTITIES: Record<string, string> = {
  * Strips HTML tags (e.g. from notes edited with a rich-text/formatting
  * plugin like Obsidian's Editing Toolbar) for **display purposes only** —
  * callers must never write the stripped result back to the note file, only
- * use it where raw note text is rendered in the sidebar/export UI. The
+ * use it where raw note text is rendered in the sidebar. The
  * source of truth in the file keeps its original HTML untouched.
  */
 export function stripHtml(text: string): string {

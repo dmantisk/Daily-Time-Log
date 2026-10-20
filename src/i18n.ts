@@ -28,10 +28,6 @@ export type UIStringKey =
 	| "btnDelete"
 	| "todayNoteButton"
 	| "createTodayNoteButton"
-	| "exportPdfButton"
-	| "exportPdfDesc"
-	| "exportSuccess"
-	| "printButton"
 	| "confirmTitle"
 	| "confirmDeleteEvent"
 	| "confirmOk"
@@ -124,10 +120,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		btnDelete: "Delete",
 		todayNoteButton: "Today",
 		createTodayNoteButton: "Create today's daily note",
-		exportPdfButton: "Print",
-		exportPdfDesc: "Export timeline to a printable HTML file.",
-		exportSuccess: "Timeline HTML file has been generated. Open it in a browser to save as PDF!",
-		printButton: "Save as PDF / Print",
 		confirmTitle: "Notice",
 		confirmDeleteEvent: "Delete this event?",
 		confirmOk: "Confirm",
@@ -217,10 +209,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		btnDelete: "삭제",
 		todayNoteButton: "오늘",
 		createTodayNoteButton: "오늘의 데일리 노트 생성",
-		exportPdfButton: "인쇄",
-		exportPdfDesc: "타임라인을 PDF/인쇄용 HTML 파일로 내보냅니다.",
-		exportSuccess: "타임라인 인쇄용 HTML 파일이 생성되었습니다. 브라우저 창에서 PDF로 저장하세요!",
-		printButton: "PDF로 저장 / 인쇄하기",
 		confirmTitle: "알림",
 		confirmDeleteEvent: "이 이벤트를 삭제하시겠습니까?",
 		confirmOk: "확인",

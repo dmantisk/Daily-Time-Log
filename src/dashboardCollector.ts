@@ -119,7 +119,7 @@ export function computeDashboardStats(
 			noteEventMinutes += dur;
 
 			// Exact, case-sensitive match on displayName — same semantics as
-			// TimelineView.tsx/pdfExport.ts. A category string that doesn't match
+			// TimelineView.tsx. A category string that doesn't match
 			// any configured category (renamed/deleted since the line was written,
 			// see settings.ts CustomCategory) is folded into "uncategorized" here
 			// instead of being tracked under its own stale key and silently

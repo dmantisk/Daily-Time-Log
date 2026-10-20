@@ -8,7 +8,6 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
 - **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — plus up to 10 custom), stored as a `[Category]` tag right in the note body.
-- **PDF / HTML export**: turn any day into a standalone, printable HTML file.
 - **Configurable daily note folder**: notes don't have to live at the vault root, with folder autocomplete in settings.
 - **Configurable Event heading**: choose its text and Markdown heading level; historical English and Korean Event headings remain recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
@@ -70,7 +69,7 @@ For active development, use `npm run dev` instead — it rebuilds automatically 
 - **Work Insights**: click the ribbon icon (gauge), or run **"Open Work Insights"** from the Command Palette. Opens as a normal tab in the main workspace.
 - **Sidebar**: click the ribbon icon (calendar-clock), or run **"Open sidebar"** from the Command Palette (`Cmd/Ctrl+P`). You can assign either a hotkey in **Settings → Hotkeys**.
 - Drag across the grid to log a new time block; click an existing block to edit or delete it.
-- Use the **Today** button in the sidebar header to open (or create) today's note; **Print** exports the current day as a printable HTML file.
+- Use the **Today** button in the sidebar header to open (or create) today's note. Capture the timeline with a screenshot if you want to keep a visual record.
 
 ### Directly in the note
 
@@ -104,7 +103,7 @@ Follow-up scheduled for next week.
 
 #### A note on HTML tags
 
-When viewing Event content in the sidebar, HTML tags are stripped out. This uses simple tag-pattern matching (`<...>`), so writing a literal inequality comparison in a description (e.g. `3 < 5`, `10 > 2`) can be misread as a tag and disappear from the sidebar/export. If you need `<`/`>` as literal text, use the HTML entities `&lt;`/`&gt;` instead.
+When viewing Event content in the sidebar, HTML tags are stripped out. This uses simple tag-pattern matching (`<...>`), so writing a literal inequality comparison in a description (e.g. `3 < 5`, `10 > 2`) can be misread as a tag and disappear from the sidebar. If you need `<`/`>` as literal text, use the HTML entities `&lt;`/`&gt;` instead.
 
 ## Settings
 
@@ -126,6 +125,7 @@ npm run build   # type-check (tsc) + production build
 
 ### Unreleased
 
+- Removed PDF/HTML export; use a screenshot to capture the timeline.
 - Removed To-Do parsing, sidebar controls, dashboard metrics, and To-Do export; checkbox lines remain ordinary note content.
 - Added settings for the Event heading text and Markdown level, used when parsing and creating daily notes.
 

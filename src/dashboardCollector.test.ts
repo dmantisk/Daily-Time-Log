@@ -122,7 +122,7 @@ describe("computeDashboardStats", () => {
 		expect(stats.categoryBreakdown.find((item) => item.displayName === "Uncategorized")?.minutes).toBe(60);
 	});
 
-	it("matches category names exactly (case-sensitive), same as TimelineView/pdfExport", () => {
+	it("matches category names exactly (case-sensitive), same as TimelineView", () => {
 		const today = new Date(2026, 6, 14);
 		const dates = [today];
 		const recentParsed = [

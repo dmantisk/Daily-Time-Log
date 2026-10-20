@@ -18,13 +18,7 @@ import {
 	type MarkerLanguage,
 	type TimelineItem,
 } from "../parser";
-import { buildExportHtml } from "../pdfExport";
 import { getTextColorForBackground } from "./colorUtils";
-
-/** Obsidian's "open in default app" API isn't in the public .d.ts — same optional-cast pattern DayTime Tracker uses. */
-interface AppWithOpenDefault {
-	openWithDefaultApp?: (path: string) => void;
-}
 
 export interface TimelineViewProps {
 	plugin: DailyWorkLogPlugin;
@@ -199,39 +193,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		}
 	};
 
-	// ── PDF / HTML export (design.md §13) ───────────────────────────────
-
-	const exportToPdf = async (): Promise<void> => {
-		if (!activeFile) return;
-		const dateForFile = parseDateFromBasename(activeFile.basename);
-		const dateHeader = dateForFile ? formatDateHeader(dateForFile, language) : activeFile.basename;
-
-		const html = buildExportHtml({
-			dateHeader,
-			timeline,
-			categories,
-			themeMode: plugin.settings.themeMode,
-			startHour,
-			endHour,
-			uncategorizedLabel: t("uncategorized", language),
-			printButtonLabel: t("printButton", language),
-		});
-
-		const exportFileName = `Timeline-Export-${activeFile.basename}.html`;
-		let file = plugin.app.vault.getAbstractFileByPath(exportFileName);
-		if (file instanceof TFile) {
-			await plugin.app.vault.modify(file, html);
-		} else {
-			file = await plugin.app.vault.create(exportFileName, html);
-		}
-
-		if (file instanceof TFile) {
-			const appWithOpenDefault = plugin.app as unknown as AppWithOpenDefault;
-			appWithOpenDefault.openWithDefaultApp?.(file.path);
-			new Notice(t("exportSuccess", language));
-		}
-	};
-
 	// ── Drag-to-select ────────────────────────────────────────────────
 
 	const handleMouseDown = (cellIndex: number): void => {
@@ -291,16 +252,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			<div className="dwl-view-header">
 				<h2 className="dwl-view-date-title">{formatDateHeader(dateForFile, language)}</h2>
 				<div className="dwl-header-btn-group">
-					<button
-						type="button"
-						className="dwl-header-btn"
-						title={t("exportPdfDesc", language)}
-						onClick={() => {
-							void exportToPdf();
-						}}
-					>
-						{t("exportPdfButton", language)}
-					</button>
 					<button
 						type="button"
 						className="dwl-header-btn"
