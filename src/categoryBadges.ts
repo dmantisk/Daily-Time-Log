@@ -42,6 +42,7 @@ import {
 	DEFAULT_EVENT_HEADING,
 	findEventBlockInContent,
 	isWithinEventHeading,
+	normalizeRenderedHeadingText,
 	type EventHeadingConfig,
 	type HeadingInfo,
 } from "./parser";
@@ -238,7 +239,13 @@ function walkDocumentOrder(
 		}
 		const level = headingLevelOfElement(current);
 		if (level !== null) {
-			onHeading({ level, text: (current.textContent ?? "").trim() });
+			// The DOM already holds the RENDERED heading text, so only
+			// whitespace is normalized here — inline markup has already been
+			// rendered away by the Markdown renderer.
+			onHeading({
+				level,
+				text: normalizeRenderedHeadingText(current.textContent ?? ""),
+			});
 		}
 	}
 }

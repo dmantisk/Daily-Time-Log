@@ -57,6 +57,34 @@ describe("Event heading matching", () => {
 		expect(matchMarker("# Event", { text: " ", level: 1 })).toBe(false);
 	});
 
+	it("matches decorated headings, because the rendered DOM shows them undecorated", () => {
+		// The reading view renders `# **Event**` as `<h1>Event</h1>`, so the
+		// parser must accept the decorated form too — otherwise the parser
+		// and the badge renderer disagree about the same file.
+		expect(matchMarker("# **Event**", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# *Event*", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# _Event_", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# ~~Event~~", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# `Event`", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("# Event #", { text: "Event", level: 1 })).toBe(true);
+		expect(matchMarker("## **Event** ##", { text: "Event", level: 2 })).toBe(true);
+	});
+
+	it("matches a configured heading that is itself decorated", () => {
+		expect(matchMarker("# Event", { text: "**Event**", level: 1 })).toBe(true);
+	});
+
+	it("does not match a decorated heading with a different text", () => {
+		expect(matchMarker("# **Other**", { text: "Event", level: 1 })).toBe(false);
+		expect(matchMarker("# Event log", { text: "Event", level: 1 })).toBe(false);
+	});
+
+	it("does not strip emphasis markers that are part of the word", () => {
+		// CommonMark's intraword rule: `_` inside a word is literal.
+		expect(matchMarker("# foo_bar_baz", { text: "foo_bar_baz", level: 1 })).toBe(true);
+		expect(matchMarker("# foo_bar_baz", { text: "foobarbaz", level: 1 })).toBe(false);
+	});
+
 	it("ends the block at the next heading of the same level or above", () => {
 		// Configured at H2: a deeper H3 is a subheading and stays inside the
 		// block; an H1 (above) ends it.
@@ -191,6 +219,29 @@ describe("isWithinEventHeading", () => {
 		expect(isWithinEventHeading([h(1, "Event")], config)).toBe(true);
 		expect(isWithinEventHeading([h(1, "Event"), h(1, "Event")], config)).toBe(false);
 		expect(isWithinEventHeading([h(1, "Event"), h(1, "Event"), h(1, "Other")], config)).toBe(false);
+	});
+
+	it("agrees with the file-based block rule for a decorated heading", () => {
+		// `# **Event**` renders as `<h1>Event</h1>`, so the rendered heading
+		// the badge renderer sees is the plain text "Event" — which is what
+		// the parser must match on too.
+		const content = "# **Event**\n- 9:00 - 10:00 work\n# Other\n- 11:00 - 12:00 outside";
+		const config = { text: "Event", level: 1 };
+		const block = findEventBlockInContent(content, config);
+
+		expect(block).toEqual({ start: 0, end: 1 });
+
+		// The rendered heading text (what the DOM exposes).
+		expect(isWithinEventHeading([h(1, "Event")], config)).toBe(true);
+		expect(isWithinEventHeading([h(1, "Event"), h(1, "Other")], config)).toBe(false);
+	});
+
+	it("normalizes a decorated configured heading the same way the parser does", () => {
+		// A setting of "**Event**" describes the same rendered heading as
+		// a setting of "Event", so the badge rule must accept it too.
+		const config = { text: "**Event**", level: 1 };
+		expect(isWithinEventHeading([h(1, "Event")], config)).toBe(true);
+		expect(isWithinEventHeading([h(1, "Other")], config)).toBe(false);
 	});
 });
 

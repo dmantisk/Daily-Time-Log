@@ -35,6 +35,9 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 - The heading must have **exactly** the configured level (`#` repeated `eventHeadingLevel` times, 1–6) followed by the configured text. A different level is NOT a match, even with the same text.
 - Matching MUST be tolerant of accidental hand-typing: trim surrounding whitespace and match case-insensitively (e.g. `# event` still matches a configured `Event`).
 - The heading text is matched as a literal string — regex metacharacters in it are escaped, not interpreted.
+- **Heading text is normalized to its RENDERED form before comparison** (`normalizeHeadingText` in `parser.ts`). The reading view renders inline markup, so `# **Event**` becomes `<h1>Event</h1>`; if the parser compared the raw text it would disagree with the DOM. Normalization removes emphasis/strong/strikethrough markers, unwraps inline code, drops the ATX closing sequence (`# Event #`), decodes HTML entities, and collapses whitespace. The *configured* text is normalized the same way, so a setting of `Event` matches a heading written as `**Event**`.
+- Emphasis is only stripped when unambiguous (CommonMark's intraword rule): `_` inside a word is literal, so `foo_bar_baz` stays `foo_bar_baz` and does **not** match a configured `foobarbaz`.
+- The DOM side must NOT re-strip markup: text taken from a rendered heading goes through `normalizeRenderedHeadingText` (whitespace only), because the markup has already been rendered away.
 
 **Boundary computation**:
 1. Scan the file top to bottom and record the line number of the **first** occurrence of the configured heading only.

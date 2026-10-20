@@ -75,13 +75,79 @@ export const CATEGORY_BADGE_REGEX_SOURCE =
 
 const FRONTMATTER_DELIMITER = "---";
 
-function escapeRegExp(value: string): string {
-	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/**
+ * Normalizes a Markdown heading's TEXT to the form the renderer produces.
+ *
+ * The reading view renders the heading's inline markup, so `# **Event**`
+ * becomes `<h1>Event</h1>` and the badge renderer sees the plain text
+ * `Event`. The raw file still contains the `**` markers. Comparing the raw
+ * text against the configured heading would therefore disagree with the
+ * DOM, so the raw text is normalized to its rendered form:
+ *
+ * - Inline emphasis / strong / strikethrough markers are removed
+ *   (`**Event**` -> `Event`, `_Event_` -> `Event`, `~~Event~~` -> `Event`).
+ * - Inline code spans are unwrapped (`` `Event` `` -> `Event`).
+ * - ATX closing sequences are dropped (`# Event #` -> `Event`).
+ * - Entities are decoded (`&amp;` -> `&`).
+ * - Surrounding whitespace is trimmed and internal whitespace is collapsed.
+ *
+ * Emphasis is only stripped when it is unambiguous, following CommonMark's
+ * intraword rule: `_` never starts or ends emphasis inside a word, so
+ * `foo_bar_baz` is left alone. Anything this function does not understand
+ * simply stays as-is — and therefore does not match, which is the same
+ * behaviour as an undecorated heading that does not match.
+ *
+ * NOTE: apply this to RAW heading text only. Text that has already been
+ * rendered by the Markdown renderer must only be whitespace-normalized
+ * (see `normalizeRenderedHeadingText`), otherwise markers that are part of
+ * the visible text would be stripped a second time.
+ */
+export function normalizeHeadingText(text: string): string {
+	const withoutClosing = text.replace(/\s+#+\s*$/, "");
+	const withoutCode = withoutClosing.replace(/`+([^`]*)`+/g, "$1");
+	const withoutStrong = withoutCode.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "$1");
+	const withoutEmphasis = withoutStrong
+		.replace(/(^|\s)\*(?=\S)([\s\S]*?\S)\*(?=\s|$)/g, "$1$2")
+		.replace(/(^|\s)_(?=\S)([\s\S]*?\S)_(?=\s|$)/g, "$1$2");
+	const withoutStrike = withoutEmphasis.replace(/~~(?=\S)([\s\S]*?\S)~~/g, "$1");
+
+	return decodeEntities(withoutStrike).replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Normalizes heading text that the Markdown renderer has ALREADY produced
+ * (e.g. the `textContent` of a rendered `<h1>`).
+ *
+ * Only whitespace is normalized: the markup has already been rendered away,
+ * so stripping emphasis again would corrupt headings whose visible text
+ * legitimately contains `*` or `_`.
+ */
+export function normalizeRenderedHeadingText(text: string): string {
+	return text.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Decodes the HTML entities Obsidian's Markdown renderer decodes when it
+ * renders a heading.
+ */
+function decodeEntities(text: string): string {
+	return text
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;/g, "'")
+		.replace(/&amp;/g, "&");
 }
 
 /**
  * True when `line` is the configured event marker heading — exactly
  * `level` `#` characters followed by `text` (case-insensitive, trimmed).
+ *
+ * The heading TEXT is normalized with `normalizeHeadingText` before the
+ * comparison, so decorated headings (`# **Event**`, `# Event #`) match the
+ * same way the rendered DOM sees them. The configured text is normalized
+ * the same way, so a setting of `Event` matches a heading written as
+ * `**Event**`.
  *
  * ONLY the configured heading is recognized. There is no hard-coded
  * fallback list of historical spellings — if the user changes the Event
@@ -91,8 +157,14 @@ function escapeRegExp(value: string): string {
 export function matchMarker(line: string, config: EventHeadingConfig): boolean {
 	const trimmed = line.trim();
 	if (!Number.isInteger(config.level) || config.level < 1 || config.level > 6 || !config.text.trim()) return false;
-	const headingRegex = new RegExp(`^#{${config.level}}\\s+(${escapeRegExp(config.text.trim())})\\s*$`, "i");
-	return headingRegex.test(trimmed);
+
+	const headingRegex = new RegExp(`^#{${config.level}}\\s+(.*?)\\s*$`, "i");
+	const match = headingRegex.exec(trimmed);
+	if (!match) return false;
+
+	const headingText = normalizeHeadingText(match[1]);
+	const wanted = normalizeHeadingText(config.text);
+	return headingText.toLowerCase() === wanted.toLowerCase();
 }
 
 /**
@@ -198,7 +270,7 @@ export function hasEventBlock(
 export interface HeadingInfo {
 	/** Heading depth, 1-6. */
 	level: number;
-	/** Heading text, trimmed. */
+	/** Heading text, whitespace-normalized. */
 	text: string;
 }
 
@@ -216,6 +288,12 @@ export interface HeadingInfo {
  * first one and the second is inside the section — exactly the range the
  * parser returns for that file.
  *
+ * The heading texts come from the rendered DOM, so they are already
+ * undecorated (`<h1><strong>Event</strong></h1>` has the text `Event`).
+ * The configured text is normalized to its rendered form with
+ * `normalizeHeadingText`, so a setting of `**Event**` matches the same
+ * rendered heading as a setting of `Event`.
+ *
  * Used by the category-badge renderer, which works from the rendered DOM
  * (headings as `<h1>`–`<h6>` elements) rather than the raw file text.
  */
@@ -223,13 +301,13 @@ export function isWithinEventHeading(
 	headings: HeadingInfo[],
 	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
 ): boolean {
-	const wanted = config.text.trim().toLowerCase();
+	const wanted = normalizeHeadingText(config.text).toLowerCase();
 
 	// The section opens at the first heading with the configured text AND level.
 	const start = headings.findIndex(
 		(heading) =>
 			heading.level === config.level &&
-			heading.text.trim().toLowerCase() === wanted
+			normalizeRenderedHeadingText(heading.text).toLowerCase() === wanted
 	);
 	if (start === -1) return false;
 
