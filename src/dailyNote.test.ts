@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatDateBasename, formatDateFilename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
+import {
+	formatDateBasename,
+	formatDateFilename,
+	isDailyNoteFileName,
+	isInDailyNoteFolder,
+	parseDateFromBasename,
+} from "./dailyNote";
 
 describe("parseDateFromBasename", () => {
 	it("parses a valid YYYY-MM-DD basename", () => {
@@ -38,8 +44,29 @@ describe("formatDateBasename / formatDateFilename", () => {
 	});
 });
 
-describe("isInDailyNoteFolder", () => {
-	it("returns true for any path when folder setting is empty or whitespace", () => {
+describe("isDailyNoteFileName", () => {
+	it("accepts a date-named Markdown file", () => {
+		expect(isDailyNoteFileName("2026-07-13.md")).toBe(true);
+		expect(isDailyNoteFileName("2026-07-13.MD")).toBe(true);
+	});
+
+	it("rejects a date-named file with a non-Markdown extension", () => {
+		// The plugin WRITES to the files it treats as daily notes, so a
+		// date-named non-Markdown file (an image, a CSV export) must never
+		// be picked up as a daily note and overwritten.
+		expect(isDailyNoteFileName("2026-07-13.png")).toBe(false);
+		expect(isDailyNoteFileName("2026-07-13.txt")).toBe(false);
+		expect(isDailyNoteFileName("2026-07-13.canvas")).toBe(false);
+	});
+
+	it("rejects a file with no extension or a malformed date", () => {
+		expect(isDailyNoteFileName("2026-07-13")).toBe(false);
+		expect(isDailyNoteFileName("2026-7-13.md")).toBe(false);
+		expect(isDailyNoteFileName("not-a-date.md")).toBe(false);
+	});
+});
+
+describe("isInDailyNoteFolder", () => {	it("returns true for any path when folder setting is empty or whitespace", () => {
 		expect(isInDailyNoteFolder("2026-07-13.md", "")).toBe(true);
 		expect(isInDailyNoteFolder("Daily Notes/2026-07-13.md", "   ")).toBe(true);
 	});

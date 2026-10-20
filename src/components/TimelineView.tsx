@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import * as React from "react";
 import { useEffect, useState } from "react";
-import { formatDateBasename, isSameDate, parseDateFromBasename } from "../dailyNote";
+import { formatDateBasename, isDailyNoteFileName, isSameDate, parseDateFromBasename } from "../dailyNote";
 import { t, WEEKDAYS } from "../i18n";
 import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
 import { TimelineModal, type EventEntryValues } from "../modals/TimelineModal";
@@ -82,7 +82,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		const run = async (): Promise<void> => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (!file) return;
-			const resolved = parseDateFromBasename(file.basename) ? file : null;
+			// A daily note is a MARKDOWN file with a date-shaped basename.
+			// The extension check keeps date-named non-Markdown files (e.g.
+			// an image named `2026-10-16.png`) out of scope — the plugin
+			// writes to whatever file it considers a daily note, so accepting
+			// them here would corrupt the file's content.
+			const resolved = isDailyNoteFileName(file.name) ? file : null;
 			if (cancelled) return;
 			setActiveFile(resolved);
 			if (!resolved) {

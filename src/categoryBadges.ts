@@ -35,7 +35,7 @@ import {
 	WidgetType,
 } from "@codemirror/view";
 import { editorInfoField } from "obsidian";
-import { parseDateFromBasename, isInDailyNoteFolder } from "./dailyNote";
+import { isDailyNoteFileName, isInDailyNoteFolder } from "./dailyNote";
 import { getTextColorForBackground } from "./components/colorUtils";
 import {
 	CATEGORY_BADGE_REGEX_SOURCE,
@@ -56,12 +56,12 @@ export { CATEGORY_BADGE_REGEX_SOURCE };
 
 /**
  * Returns whether a vault-relative file path corresponds to a daily note
- * (inside the configured folder AND a valid YYYY-MM-DD basename).
+ * (inside the configured folder AND a valid YYYY-MM-DD Markdown file name).
  */
 function isDailyNoteFile(filePath: string, dailyNoteFolder: string): boolean {
 	if (!isInDailyNoteFolder(filePath, dailyNoteFolder)) return false;
-	const basename = filePath.split("/").pop()?.replace(/\.md$/, "") ?? "";
-	return parseDateFromBasename(basename) !== null;
+	const fileName = filePath.split("/").pop() ?? "";
+	return isDailyNoteFileName(fileName);
 }
 
 /**
