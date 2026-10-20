@@ -63,10 +63,6 @@ export type UIStringKey =
 	| "settingLanguageDesc"
 	| "alertStartBeforeEnd"
 	| "alertEndAfterStart"
-	| "settingThemeModeName"
-	| "settingThemeModeDesc"
-	| "themeModeLight"
-	| "themeModeDark"
 	| "settingCategoriesSection"
 	| "settingCategoriesDesc"
 	| "settingResetCategoriesName"
@@ -157,10 +153,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingLanguageDesc: "Follow Obsidian's language, or choose English or Korean.",
 		alertStartBeforeEnd: "Start hour must be earlier than end hour.",
 		alertEndAfterStart: "End hour must be later than start hour.",
-		settingThemeModeName: "Background Theme Mode",
-		settingThemeModeDesc: "Select the background color theme for the sidebar view. (Popups always follow the system theme.)",
-		themeModeLight: "Light",
-		themeModeDark: "Dark",
 		settingCategoriesSection: "Category Management",
 		settingCategoriesDesc: "Customize the categories and colors used in your daily logs.",
 		settingResetCategoriesName: "Reset Default Categories",
@@ -246,10 +238,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingLanguageDesc: "Obsidian 언어를 따르거나 영어 또는 한국어를 선택합니다.",
 		alertStartBeforeEnd: "시작 시간은 종료 시간보다 빨라야 합니다.",
 		alertEndAfterStart: "종료 시간은 시작 시간보다 늦어야 합니다.",
-		settingThemeModeName: "배경 테마 설정",
-		settingThemeModeDesc: "사이드바 화면의 배경색 테마를 선택합니다. (팝업/모달은 항상 시스템 테마를 따릅니다)",
-		themeModeLight: "라이트",
-		themeModeDark: "다크",
 		settingCategoriesSection: "카테고리 설정",
 		settingCategoriesDesc: "일과 기록에 사용할 카테고리와 색상을 관리합니다.",
 		settingResetCategoriesName: "기본 카테고리 색상 재설정",

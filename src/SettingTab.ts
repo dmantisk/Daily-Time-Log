@@ -3,7 +3,7 @@ import { FolderSuggest } from "./FolderSuggest";
 import { t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
-import { DEFAULT_CATEGORIES, type LanguagePreference, type SidebarTheme } from "./settings";
+import { DEFAULT_CATEGORIES, type LanguagePreference } from "./settings";
 
 const MAX_CATEGORIES = 10;
 const MAX_CATEGORY_NAME_LENGTH = 10;
@@ -136,21 +136,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						this.plugin.refreshViews();
 						this.display();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName(t("settingThemeModeName", lang))
-			.setDesc(t("settingThemeModeDesc", lang))
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption("light", t("themeModeLight", lang))
-					.addOption("dark", t("themeModeDark", lang))
-					.setValue(this.plugin.settings.themeMode)
-					.onChange(async (value) => {
-						this.plugin.settings.themeMode = value as SidebarTheme;
-						await this.plugin.saveSettings();
-						this.plugin.refreshViews();
 					})
 			);
 

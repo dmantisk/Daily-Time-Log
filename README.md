@@ -12,7 +12,7 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 - **Configurable Event heading**: choose its text and Markdown heading level; historical English and Korean Event headings remain recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
-- **Two independent themes**: a Light/Dark toggle just for the sidebar (separate from Obsidian's own theme, popups always follow the system theme), and Work Insights that follows Obsidian's theme automatically.
+- **Theme-aware UI**: the sidebar and Work Insights follow Obsidian's active theme; popups follow the system theme.
 - **Work Insights**: a vault summary — total notes in configured folder, current streak, time window filtering (7d/30d/90d/All), total event time and daily average, category time breakdown visualization (Multi-Segment Progress Bar), and recent note activity history.
 
 ## Daily Note Format
@@ -111,7 +111,7 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 - **Daily Note Folder**: where new daily notes are created (vault root by default), with folder autocomplete.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
-- **Background Theme Mode**: Light or Dark, for the sidebar only.
+- **Theme**: the sidebar automatically follows Obsidian's active theme.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults.
 
 ## Development

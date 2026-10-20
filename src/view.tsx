@@ -43,13 +43,9 @@ export class DailyWorkLogView extends ItemView {
 		this.paint();
 	}
 
-	/** Applies the current theme class and (re-)renders the React tree. Safe to call repeatedly — React reconciles, it doesn't remount. */
+	/** Renders the React tree. Safe to call repeatedly — React reconciles, it doesn't remount. */
 	private paint(): void {
 		if (!this.root) return;
-
-		const container = this.containerEl.children[1] as HTMLElement;
-		container.removeClass("dwl-theme-light", "dwl-theme-dark");
-		container.addClass(`dwl-theme-${this.plugin.settings.themeMode}`);
 
 		this.root.render(
 			<React.StrictMode>

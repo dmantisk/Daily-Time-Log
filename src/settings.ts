@@ -3,15 +3,6 @@ import type { MarkerLanguage } from "./parser";
 export type LanguagePreference = MarkerLanguage | "auto";
 
 /**
- * Sidebar-only color scheme, independent of Obsidian's own active theme.
- * Modals intentionally do NOT use this — they always follow the SYSTEM
- * theme (Canvas/CanvasText, design.md §3), and the Dashboard view also
- * doesn't use this — it just follows Obsidian's own theme variables. Only
- * the sidebar/grid view is manually switchable.
- */
-export type SidebarTheme = "light" | "dark";
-
-/**
  * A Timeline category (AGENTS.md 1.4.1) — its `displayName` is what actually
  * gets written into note bodies (`- HH:mm - HH:mm [displayName] ...`), so
  * renaming a category does NOT retroactively relabel already-written lines.
@@ -46,8 +37,6 @@ export interface DailyWorkLogSettings {
 	eventHeadingText: string;
 	/** Markdown heading level (1-6) used for the Event block. */
 	eventHeadingLevel: number;
-	/** Sidebar/grid view color scheme. Renamed from `theme` (see migrateLoadedSettings). */
-	themeMode: SidebarTheme;
 	/** Grid timeline's displayed hour range, inclusive start / exclusive end (0-24). */
 	startHour: number;
 	endHour: number;
@@ -61,42 +50,8 @@ export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	language: "auto",
 	eventHeadingText: "Event",
 	eventHeadingLevel: 1,
-	themeMode: "light",
 	startHour: 0,
 	endHour: 24,
 	dailyNoteFolder: "",
 	categories: [...DEFAULT_CATEGORIES],
 };
-
-/**
- * Shape of settings data as it may have been saved by a pre-2026-08 version
- * of the plugin (before `theme` was renamed to `themeMode`). `loadData()`
- * returns `any`, so this is intentionally loose — it only describes the one
- * field we need to migrate off of.
- */
-interface LegacySavedSettings {
-	theme?: SidebarTheme;
-}
-
-/**
- * Bridges settings saved by older plugin versions onto the current shape,
- * so upgrading never silently discards a user's previous choices. Only
- * handles the `theme` -> `themeMode` rename (Object.assign in main.ts's
- * loadSettings() can't itself rename a key). Every other field — including
- * `categories` — is deliberately left alone here: a missing key already
- * falls back to DEFAULT_SETTINGS via that same Object.assign, and an EMPTY
- * `categories: []` is a real, intentional user state (they deleted every
- * category) that must NOT be silently overwritten back to the defaults.
- */
-export function migrateLoadedSettings(
-	loaded: (Partial<DailyWorkLogSettings> & LegacySavedSettings) | null
-): Partial<DailyWorkLogSettings> {
-	if (!loaded) return {};
-
-	const { theme, ...migrated } = loaded;
-	if (migrated.themeMode === undefined && theme !== undefined) {
-		migrated.themeMode = theme;
-	}
-
-	return migrated;
-}

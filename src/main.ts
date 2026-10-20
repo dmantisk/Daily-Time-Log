@@ -7,7 +7,7 @@ import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
-import { DEFAULT_SETTINGS, migrateLoadedSettings, type DailyWorkLogSettings, type SidebarTheme } from "./settings";
+import { DEFAULT_SETTINGS, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 
 export default class DailyWorkLogPlugin extends Plugin {
@@ -88,8 +88,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		const loadedData = (await this.loadData()) as (Partial<DailyWorkLogSettings> & { theme?: SidebarTheme }) | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, migrateLoadedSettings(loadedData));
+		const loadedData = (await this.loadData()) as Partial<DailyWorkLogSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 
 		let shouldSave = false;
 

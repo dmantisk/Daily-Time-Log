@@ -1,4 +1,4 @@
-import { Notice, TFile } from "obsidian";
+import { TFile } from "obsidian";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { buildSkeletonContent, formatDateBasename, formatDateFilename, isSameDate, parseDateFromBasename } from "../dailyNote";

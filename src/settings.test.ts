@@ -1,43 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS, migrateLoadedSettings } from "./settings";
+import { DEFAULT_SETTINGS, type DailyWorkLogSettings } from "./settings";
 
-describe("migrateLoadedSettings", () => {
-	it("defaults the language preference to auto without changing saved overrides", () => {
+describe("settings defaults", () => {
+	it("defaults the language preference to auto", () => {
 		expect(DEFAULT_SETTINGS.language).toBe("auto");
-		expect(migrateLoadedSettings({ language: "ko" }).language).toBe("ko");
 	});
 
-	it("returns an empty object for a brand-new install (loadData() -> null)", () => {
-		expect(migrateLoadedSettings(null)).toEqual({});
+	it("provides the default categories and timeline range", () => {
+		expect(DEFAULT_SETTINGS.categories).toHaveLength(5);
+		expect(DEFAULT_SETTINGS.startHour).toBe(0);
+		expect(DEFAULT_SETTINGS.endHour).toBe(24);
 	});
 
-	it("migrates the old `theme` field onto `themeMode` when themeMode is absent", () => {
-		const migrated = migrateLoadedSettings({ language: "ko", theme: "dark" });
-		expect(migrated.themeMode).toBe("dark");
-		expect(migrated).not.toHaveProperty("theme");
-	});
-
-	it("prefers an existing themeMode over a stale theme value, instead of overwriting it", () => {
-		const migrated = migrateLoadedSettings({ theme: "dark", themeMode: "light" });
-		expect(migrated.themeMode).toBe("light");
-	});
-
-	it("does not touch categories when the key is simply absent (Object.assign supplies the default later)", () => {
-		const migrated = migrateLoadedSettings({ language: "en" });
-		expect(migrated).not.toHaveProperty("categories");
-	});
-
-	it("preserves an intentionally-emptied categories list instead of resetting it to defaults", () => {
-		const migrated = migrateLoadedSettings({ categories: [] });
-		expect(migrated.categories).toEqual([]);
-	});
-
-	it("full merge onto DEFAULT_SETTINGS backfills every genuinely-missing field", () => {
-		const loaded = { theme: "dark" as const };
-		const merged = Object.assign({}, DEFAULT_SETTINGS, migrateLoadedSettings(loaded));
-		expect(merged.themeMode).toBe("dark");
+	it("fills missing fields while preserving saved overrides", () => {
+		const loaded: Partial<DailyWorkLogSettings> = { language: "ko" };
+		const merged = Object.assign({}, DEFAULT_SETTINGS, loaded);
+		expect(merged.language).toBe("ko");
 		expect(merged.categories).toEqual(DEFAULT_SETTINGS.categories);
-		expect(merged.startHour).toBe(0);
-		expect(merged.endHour).toBe(24);
+	});
+
+	it("preserves an intentionally empty categories list", () => {
+		const loaded: Partial<DailyWorkLogSettings> = { categories: [] };
+		const merged = Object.assign({}, DEFAULT_SETTINGS, loaded);
+		expect(merged.categories).toEqual([]);
 	});
 });
