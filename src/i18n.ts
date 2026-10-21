@@ -48,7 +48,6 @@ export type UIStringKey =
 	| "statEventTime"
 	| "statEventTimeWindow"
 	| "unitDays"
-	| "recentNotesTitle"
 	| "dashboardEmptyVault"
 	| "settingsTitle"
 	| "settingGeneralSection"
@@ -153,7 +152,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statEventTime: "Event Time",
 		statEventTimeWindow: "Event Time (%s)",
 		unitDays: " days",
-		recentNotesTitle: "Recent Notes",
 		dashboardEmptyVault: "No daily notes yet.",
 		settingsTitle: "Daily Time Log Settings",
 		settingGeneralSection: "General",
@@ -248,7 +246,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statEventTime: "기록 시간",
 		statEventTimeWindow: "기록 시간 (%s)",
 		unitDays: "일",
-		recentNotesTitle: "최근 노트",
 		dashboardEmptyVault: "아직 작성된 일일 노트가 없습니다.",
 		settingsTitle: "Daily Time Log 설정",
 		settingGeneralSection: "일반",

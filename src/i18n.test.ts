@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { formatHourLabel, resolveLanguage, STRINGS, WEEKDAYS, t } from "./i18n";
 
@@ -48,6 +50,30 @@ describe("STRINGS", () => {
 		const enKeys = Object.keys(STRINGS.en).sort();
 		const koKeys = Object.keys(STRINGS.ko).sort();
 		expect(koKeys).toEqual(enKeys);
+	});
+
+	it("has no dead keys — every string is actually referenced by the code", () => {
+		// A key that nothing reads is dead weight in both language tables,
+		// and it cannot be dropped from one side alone (the key-set parity
+		// test above would fail). This scans the whole source tree for each
+		// key's use as a quoted literal — `t("key")`, but also the ternary
+		// forms like `t(isDaily ? "a" : "b", lang)`.
+		const srcDir = fileURLToPath(new URL(".", import.meta.url));
+		const sources = readdirSync(srcDir, { recursive: true })
+			.filter((entry) => typeof entry === "string" && /\.tsx?$/.test(entry))
+			.map((entry) => readFileSync(`${srcDir}${entry}`, "utf8"))
+			.join("\n");
+
+		// The `UIStringKey` union declares every key as a quoted literal, so
+		// leaving it in the scan would make every key look "used" by its
+		// own declaration. It is stripped before scanning — the union is
+		// the definition site, not a use.
+		const withoutKeyUnion = sources.replace(/export type UIStringKey\s*=[^;]*;/, "");
+
+		const unused = Object.keys(STRINGS.en).filter(
+			(key) => !new RegExp(`["']${key}["']`).test(withoutKeyUnion)
+		);
+		expect(unused).toEqual([]);
 	});
 
 	it("keeps the %s placeholder in the windowed Event Time label", () => {

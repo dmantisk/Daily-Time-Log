@@ -202,7 +202,7 @@ the rule explicitly.
 
 ### 5. `recentNotesTitle` is a dead translation key — **Low**
 
-- **Status:** open
+- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
 - **Location:** `src/i18n.ts` — `recentNotesTitle` (English and Korean)
 - **Severity:** Low — dead code only
 
@@ -218,6 +218,18 @@ dropped from one side.
 
 Delete the key from the `UIStringKey` union and from both language
 tables, keeping the two key sets in step.
+
+**Resolution**
+
+The key is removed from the `UIStringKey` union and from both the
+English and the Korean tables, so the two key sets stay in step.
+
+A new `i18n.test.ts` case now guards against this class of dead code:
+it scans the source tree for every key's use as a quoted literal and
+fails if any key is declared but never referenced. The `UIStringKey`
+union itself is excluded from that scan — it is the definition site,
+not a use. This makes the dead key impossible to reintroduce unnoticed,
+which is what the "drop it from one side" constraint made hard before.
 
 ---
 
