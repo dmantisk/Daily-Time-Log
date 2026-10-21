@@ -474,6 +474,9 @@
 	border-top: 1px solid var(--background-modifier-border);
 	padding-top: 0.4rem;
 	margin-top: 0.4rem;
+	/* The footer carries the explanation of the metric it summarises
+	   (e.g. the "Daily Avg" sub-line), so it must LOOK hoverable. */
+	cursor: help;
 }
 
 /* Category Distribution Section */
