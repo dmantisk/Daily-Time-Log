@@ -344,7 +344,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 												}}
 												onMouseDown={(evt) => evt.stopPropagation()}
 											>
-												<strong>{label}</strong>
+												{/* The category name carries no emphasis of its own — it sits
+								    at the same weight as the time range beside it. */}
+												{label}
 												{!isShort && ` (${item.start}-${item.end})`}
 											</div>
 										);

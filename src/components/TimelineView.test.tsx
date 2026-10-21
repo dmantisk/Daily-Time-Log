@@ -204,6 +204,20 @@ describe("TimelineView — grid rendering", () => {
 		expect(blocks()).toHaveLength(1);
 	});
 
+	it("renders the category name without emphasis", async () => {
+		// The category name is regular weight on purpose. The weight itself
+		// lives in CSS (not observable in a DOM test), but the <strong> tag
+		// was the other half of it — a bolded name inside the bar.
+		await renderView("# Event\n- 09:00 - 10:00 [Work] Morning\n");
+
+		const rendered = blocks();
+		expect(rendered).toHaveLength(1);
+		expect(rendered[0].querySelector("strong")).toBeNull();
+
+		// The name is still shown — as a plain text node of the bar.
+		expect(rendered[0].textContent).toContain("Work");
+	});
+
 	it("renders an overnight Event as a bar in the evening AND in the morning", async () => {
 		// An Event crossing midnight occupies two in-day segments. The
 		// dashboard already counted its full duration, but the grid used

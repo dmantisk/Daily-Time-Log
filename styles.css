@@ -188,7 +188,9 @@
 	justify-content: center;
 	gap: 0.2em;
 	font-size: 11px;
-	font-weight: 500;
+	/* The category name is regular weight on purpose — the block label reads
+	   as one uniform line, not as an emphasised name plus a time range. */
+	font-weight: normal;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -534,7 +536,9 @@
 	align-items: center;
 	gap: 0.4rem;
 	font-size: var(--font-ui-smaller);
-	font-weight: 500;
+	/* The category name is regular weight on purpose — the legend lists
+	   categories at one level with the other. */
+	font-weight: normal;
 }
 
 .dwl-legend-dot {
@@ -638,7 +642,9 @@
 
 .dwl-activity-cat-badge {
 	font-size: 0.7rem;
-	font-weight: 600;
+	/* The category name is regular weight on purpose — the badge matches
+	   the row's other text instead of standing out from it. */
+	font-weight: normal;
 	padding: 0.15rem 0.45rem;
 	border-radius: var(--radius-s);
 	background: var(--background-modifier-border);
@@ -726,7 +732,9 @@
 	padding: 0.05em 0.45em;
 	border-radius: 0.9em;
 	font-size: 0.78em;
-	font-weight: 600;
+	/* The category name is regular weight on purpose — a bolded pill draws
+	   more attention than the text it is embedded in. */
+	font-weight: normal;
 	line-height: 1.5;
 	letter-spacing: 0.02em;
 	white-space: nowrap;
