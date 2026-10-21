@@ -296,6 +296,35 @@ which is what the "drop it from one side" constraint made hard before.
 
 ## Done
 
+### Dashboard metric tooltips — v0.5.3
+
+Raised as a question rather than a defect: *is there any info on what
+each metric means anywhere in the plugin UI?* There was not — not in the
+dashboard, not in the sidebar, not in the README, and not in
+`.agents/design.md`. Every figure was a bare label ("Total Notes",
+"Current Streak", "Date Range", "Event Time", "Daily Avg", "Top
+Category") with nothing saying how the number beside it was computed.
+That ambiguity is exactly why the "Daily Avg" denominator defect
+(findings #2 and #3 above) stayed invisible to users.
+
+Each metric label now carries a tooltip explaining how it is computed,
+attached with Obsidian's `setTooltip()`. The explanations live in new
+`tipStat*` i18n keys (English and Korean), and the labels get
+`cursor: help` so they look hoverable.
+
+| Commit | Change |
+|--------|--------|
+| `d361c75` | Tooltips on every KPI label and Period Summary row |
+| `d77fa09` | `cursor: help` on the KPI footer, so it looks hoverable too |
+| `e123f9b` | Test DOM mock now matches Obsidian's `DomElementInfo` |
+
+The mock fix came out of rendering the real dashboard to static HTML
+and looking at it: the window dropdown showed "Last 7 Days" while the
+metrics said "Event Time (30)". Production code was correct — it passes
+`value` to `createEl` — but the mock dropped the field, so the select
+fell back to the option's *text*. A test asserting on that dropdown
+would have asserted on the wrong thing.
+
 ### Second review batch — released in v0.5.3
 
 All 5 findings listed above were fixed, each in its own commit:

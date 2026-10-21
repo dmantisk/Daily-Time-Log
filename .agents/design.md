@@ -347,6 +347,8 @@ Every metric label carries an explanation of **how the number is computed**, sho
 
 A bare label ("Daily Avg", "Date Range", "Current Streak") does not say what the number beside it means, so the figure cannot be interpreted on its own. The explanation is a `tipStat*` key in `i18n.ts`, attached with Obsidian's `setTooltip()` to the **label** element — never to the value, which is the number itself. The label gets `cursor: help` so it looks hoverable.
 
+A KPI card's **footer** (the sub-line under the value, e.g. "Daily Avg: 3h 30m") carries the tooltip explaining the metric it summarises, and gets `cursor: help` for the same reason.
+
 | Metric | Tooltip explains |
 |---|---|
 | Total Notes | Counts daily notes dated on or before today; future-dated notes are excluded |
