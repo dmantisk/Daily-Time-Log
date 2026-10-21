@@ -35,9 +35,10 @@ jobs:
       - name: Build plugin
         run: npm run build
 
-      # 개인 계정 소유의 private 저장소에서는 GitHub Artifact Attestation
-      # 기능 자체를 지원하지 않는다. 그래서 attestation은 저장소가 public일
-      # 때만 시도하고, 빌드/릴리즈는 visibility와 무관하게 항상 진행한다.
+      # GitHub Artifact Attestation is not supported at all for private
+      # repositories owned by a personal account. So attestation is only
+      # attempted when the repository is public, while the build/release
+      # always proceeds regardless of visibility.
       - name: Check repo visibility
         id: visibility
         run: |
@@ -59,9 +60,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 태그명은 git ref가 아니라 manifest.json에 커밋되어 있는 버전값에서
-          # 직접 읽는다 (로컬에서 `npm version --no-git-tag-version`으로 갱신되어
-          # 이미 main에 push되어 있는 상태 — 위 on: 주석 참고).
+          # The tag name is read straight from the version committed to
+          # manifest.json rather than from a git ref (it was bumped locally
+          # with `npm version --no-git-tag-version` and pushed to main
+          # already — see the `on:` comment above).
           tag=$(node -p "require('./manifest.json').version")
           echo "Releasing version $tag"
 
@@ -70,15 +72,16 @@ jobs:
             exit 1
           fi
 
-          # 릴리즈 노트는 git log가 아니라 README.md의 "## Changelog" 최신 항목을
-          # 그대로 가져다 쓴다 (raw 커밋 로그 대신 사람이 정리한 문구 사용).
-          # README.md의 최신 항목 버전이 $tag와 다르면 실패한다 — 릴리즈 전
-          # README 갱신을 깜빡하는 걸 막기 위한 안전장치.
+          # The release notes are taken verbatim from the latest "## Changelog"
+          # entry in README.md (hand-written wording rather than the raw
+          # commit log). It fails if that entry's version differs from $tag —
+          # a safeguard against forgetting to update the README before a
+          # release.
           node .github/scripts/extract-changelog.mjs "$tag" README.md changelog.txt
 
-          # 태그가 아직 없으므로 --target으로 지금 이 커밋을 명시해야 gh가 그
-          # 지점에 태그를 새로 만든다 — 이렇게 API로 생성된 태그라야 GitHub
-          # 서명(Verified)이 붙는다.
+          # The tag does not exist yet, so --target must name this commit
+          # explicitly for gh to create the tag at that point — only a tag
+          # created through the API carries the GitHub "Verified" signature.
           gh release create "$tag" \
             --title "$tag" \
             --notes-file changelog.txt \

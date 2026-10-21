@@ -290,7 +290,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 						const isPm = hour >= 12;
 						const displayHour = hour === 0 || hour === 24 ? 12 : hour > 12 ? hour - 12 : hour;
-						const ampm = hour === 24 || !isPm ? "AM" : "PM";
+						const ampm = t(hour === 24 || !isPm ? "hourMarkerAm" : "hourMarkerPm", language);
 
 						return (
 							<div key={hour} className="dwl-grid-row">

@@ -1,6 +1,6 @@
 import { App, debounce, Notice, PluginSettingTab, Setting } from "obsidian";
 import { FolderSuggest } from "./FolderSuggest";
-import { t } from "./i18n";
+import { formatHourLabel, t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
 import { createDefaultCategories, validateCategoryName, type LanguagePreference } from "./settings";
@@ -40,7 +40,7 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			.setDesc(t("settingStartHourDesc", lang))
 			.addDropdown((dropdown) => {
 				for (let h = 0; h <= 23; h++) {
-					dropdown.addOption(String(h), formatHourOption(h, lang));
+					dropdown.addOption(String(h), formatHourLabel(h, lang));
 				}
 				dropdown.setValue(String(this.plugin.settings.startHour)).onChange(async (value) => {
 					const hour = parseInt(value, 10);
@@ -60,7 +60,7 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			.setDesc(t("settingEndHourDesc", lang))
 			.addDropdown((dropdown) => {
 				for (let h = 1; h <= 24; h++) {
-					dropdown.addOption(String(h), formatHourOption(h, lang));
+					dropdown.addOption(String(h), formatHourLabel(h, lang));
 				}
 				dropdown.setValue(String(this.plugin.settings.endHour)).onChange(async (value) => {
 					const hour = parseInt(value, 10);
@@ -278,12 +278,4 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				});
 		}
 	}
-}
-
-function formatHourOption(hour: number, lang: MarkerLanguage): string {
-	if (hour === 0) return lang === "ko" ? "오전 12시 (00:00)" : "12 AM (00:00)";
-	if (hour === 24) return lang === "ko" ? "자정 (24:00)" : "Midnight (24:00)";
-	if (hour === 12) return lang === "ko" ? "오후 12시 (12:00)" : "12 PM (12:00)";
-	if (hour < 12) return lang === "ko" ? `오전 ${hour}시` : `${hour} AM`;
-	return lang === "ko" ? `오후 ${hour - 12}시` : `${hour - 12} PM`;
 }

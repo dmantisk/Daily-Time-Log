@@ -1,7 +1,7 @@
 import { AbstractInputSuggest, App, TFolder } from "obsidian";
 
 /**
- * Folder-path autocomplete for the "일일노트 저장 폴더" setting (AGENTS.md §2),
+ * Folder-path autocomplete for the "Daily Note Folder Filter" setting (AGENTS.md §2),
  * ported from DayTime Tracker's FolderSuggest. Root is offered as "/" but
  * resolves to "" (empty string = vault root, DailyWorkLogSettings.dailyNoteFolder's default).
  */

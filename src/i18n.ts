@@ -19,6 +19,7 @@ export type UIStringKey =
 	| "ribbonOpenDashboard"
 	| "commandOpenSidebar"
 	| "commandOpenDashboard"
+	| "viewTitle"
 	| "modalAddTitle"
 	| "modalEditTitle"
 	| "lblTimeSet"
@@ -94,7 +95,14 @@ export type UIStringKey =
 	| "todayDateSuffix"
 	| "languageAuto"
 	| "languageEnglish"
-	| "languageKorean";
+	| "languageKorean"
+	| "hourMidnight"
+	| "hourMidnightAm"
+	| "hourMidnightPm"
+	| "hourAm"
+	| "hourPm"
+	| "hourMarkerAm"
+	| "hourMarkerPm";
 
 export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 	en: {
@@ -102,10 +110,18 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		languageAuto: "Auto",
 		languageEnglish: "English",
 		languageKorean: "한국어",
+		hourMidnight: "Midnight (24:00)",
+		hourMidnightAm: "12 AM (00:00)",
+		hourMidnightPm: "12 PM (12:00)",
+		hourAm: "%s AM",
+		hourPm: "%s PM",
+		hourMarkerAm: "AM",
+		hourMarkerPm: "PM",
 		ribbonOpenSidebar: "Open DailyWorkLog",
 		ribbonOpenDashboard: "Open Work Insights",
 		commandOpenSidebar: "Open sidebar",
 		commandOpenDashboard: "Open Work Insights",
+		viewTitle: "Daily time log",
 		modalAddTitle: "What did you do?",
 		modalEditTitle: "Edit Daily Activity",
 		lblTimeSet: "Time Setting",
@@ -189,10 +205,18 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		languageAuto: "자동",
 		languageEnglish: "English",
 		languageKorean: "한국어",
+		hourMidnight: "자정 (24:00)",
+		hourMidnightAm: "오전 12시 (00:00)",
+		hourMidnightPm: "오후 12시 (12:00)",
+		hourAm: "오전 %s시",
+		hourPm: "오후 %s시",
+		hourMarkerAm: "오전",
+		hourMarkerPm: "오후",
 		ribbonOpenSidebar: "DailyWorkLog 열기",
 		ribbonOpenDashboard: "DailyWorkLog 일과 인사이트 열기",
 		commandOpenSidebar: "사이드바 열기",
 		commandOpenDashboard: "일과 인사이트 열기",
+		viewTitle: "일과 기록",
 		modalAddTitle: "무엇을 했나요?",
 		modalEditTitle: "일과 수정",
 		lblTimeSet: "시간 설정",
@@ -288,4 +312,19 @@ export function resolveLanguage(
 
 export function t(key: UIStringKey, language: MarkerLanguage): string {
 	return STRINGS[language][key];
+}
+
+/**
+ * The hour label shown in the Day Start / Day End hour dropdowns.
+ *
+ * The three special hours (00:00, 12:00 and 24:00) each get their own
+ * string rather than being assembled from the AM/PM templates — "Midnight"
+ * and "12 AM" are not the same word in every language.
+ */
+export function formatHourLabel(hour: number, language: MarkerLanguage): string {
+	if (hour === 0) return t("hourMidnightAm", language);
+	if (hour === 24) return t("hourMidnight", language);
+	if (hour === 12) return t("hourMidnightPm", language);
+	if (hour < 12) return t("hourAm", language).replace("%s", String(hour));
+	return t("hourPm", language).replace("%s", String(hour - 12));
 }

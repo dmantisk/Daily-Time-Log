@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import * as React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { TimelineView } from "./components/TimelineView";
+import { t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 
 export const VIEW_TYPE_DAILY_WORK_LOG = "daily-work-log-view";
@@ -22,7 +23,7 @@ export class DailyWorkLogView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Daily time log";
+		return t("viewTitle", this.plugin.getUiLanguage());
 	}
 
 	getIcon(): string {

@@ -5,7 +5,7 @@ import fs from "fs";
 // package.json doesn't set "type": "module"; a plain .js file would be
 // parsed as CommonJS and fail on the `import` syntax below.
 
-// 1. package.json에서 업데이트된 새 버전을 읽어옵니다.
+// 1. Read the new version from package.json.
 const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const newVersion = pkg.version;
 
@@ -14,7 +14,7 @@ if (!newVersion) {
 	process.exit(1);
 }
 
-// 2. manifest.json의 버전을 업데이트합니다.
+// 2. Update the version in manifest.json.
 const manifestPath = "manifest.json";
 if (fs.existsSync(manifestPath)) {
 	const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
@@ -27,13 +27,13 @@ if (fs.existsSync(manifestPath)) {
 	process.exit(1);
 }
 
-// 3. versions.json에 새 버전 호환성 맵핑을 추가합니다.
+// 3. Add a new-version compatibility mapping to versions.json.
 const versionsPath = "versions.json";
 if (fs.existsSync(versionsPath)) {
 	const versions = JSON.parse(fs.readFileSync(versionsPath, "utf8"));
 	const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
-	// 새 버전에 현재 manifest의 최소 지원 버전을 맵핑하여 추가합니다.
+	// Map the new version to the minimum supported version from the current manifest.
 	versions[newVersion] = manifest.minAppVersion || "0.15.0";
 
 	fs.writeFileSync(versionsPath, JSON.stringify(versions, null, "\t") + "\n");

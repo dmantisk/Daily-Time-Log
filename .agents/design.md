@@ -1,60 +1,60 @@
-# Daily Work Log — UI/UX 디자인 가이드
+# Daily Work Log — UI/UX Design Guide
 
-> 이 문서는 플러그인 UI 구현 시 참조하는 디자인 원칙과 컴포넌트 스펙을 정리합니다.
-> 코드 구조/아키텍처 결정은 [`implementation_plan.md`](../ref_docs/implementation_plan.md)를 참조하세요.
-> 전체 개발 규칙은 [`AGENTS.md`](./AGENTS.md)를 참조하세요.
-
----
-
-## 디자인 원칙
-
-1. **파스텔톤 컬러** — 쨍한 원색 대신 저채도 소프트 파스텔로 눈의 피로도를 줄입니다.
-2. **Obsidian 기본 컨트롤 우선** — 버튼은 Obsidian 기본 스타일과 의미 클래스(`.mod-cta`, `.mod-warning`)를 사용합니다.
-3. **네이티브 모달 우선** — 제목, 배경, 오버레이, 기본 버튼은 Obsidian Modal의 스타일을 사용합니다.
-4. **팝업은 Obsidian 테마를 따름** — Obsidian의 기본 Modal 스타일과 활성 테마를 사용합니다. 자세한 내용은 §3 참조.
-5. **Obsidian CSS 변수 우선** — 사이드바와 중앙 대시보드 뷰는 `--text-normal`, `--background-secondary` 등 Obsidian 변수를 사용해 활성 테마를 따릅니다.
-6. **다국어 지원 (EN / KO)** *(추가)* — 기본값은 Obsidian UI 언어 자동 감지이며, 플러그인 설정에서 English/Korean을 직접 선택할 수 있습니다. 파서는 항상 두 언어 마커를 동시에 인식하므로(AGENTS.md 1.3) UI 문구도 이와 별개로 설정된 언어에 따라 전환됩니다. 자세한 내용은 §9 참조.
-7. **테마 일관성** — 사이드바, 대시보드, 모달 모두 Obsidian 테마를 따릅니다. 카테고리 색상만 사용자 설정 데이터로 유지합니다.
-8. **카테고리 파스텔 팔레트 = DayTime Tracker 기본값과 동일** *(2026-08-05 확인)* — §2.1의 5색 팔레트가 DayTime Tracker의 `DEFAULT_CATEGORIES`(Work/Study/Rest/Reading/Exercise) 색상값과 정확히 일치함을 확인했습니다. 카테고리 기능 이식 시 이 팔레트를 그대로 기본 카테고리 색상으로 재사용합니다.
+> This document collects the design principles and component specs to consult when implementing the plugin UI.
+> For code structure and architecture decisions, see [`implementation_plan.md`](../ref_docs/implementation_plan.md).
+> For the full set of development rules, see [`AGENTS.md`](./AGENTS.md).
 
 ---
 
-## 1. 사이드바 인라인 입력 기능
+## Design Principles
+
+1. **Pastel colors** — low-saturation soft pastels instead of vivid primary colors, to reduce eye strain.
+2. **Obsidian's native controls first** — buttons use Obsidian's default styling and semantic classes (`.mod-cta`, `.mod-warning`).
+3. **Native modals first** — title, background, overlay and default buttons use Obsidian's `Modal` styling.
+4. **Popups follow the Obsidian theme** — Obsidian's default `Modal` styling and active theme. See §3 for details.
+5. **Obsidian CSS variables first** — the sidebar and the central dashboard view use Obsidian variables such as `--text-normal` and `--background-secondary` so they follow the active theme.
+6. **Multi-language support (EN / KO)** *(added)* — the default follows Obsidian's UI language, and English/Korean can be selected explicitly in the plugin settings. The parser always recognizes both languages' markers at once (AGENTS.md 1.3), so the UI strings switch according to the configured language, independently of that. See §9 for details.
+7. **Theme consistency** — the sidebar, the dashboard and the modals all follow the Obsidian theme. Only the category colors are kept as user-configured data.
+8. **The category pastel palette is identical to DayTime Tracker's defaults** *(confirmed 2026-08-05)* — the 5-color palette in §2.1 was confirmed to match DayTime Tracker's `DEFAULT_CATEGORIES` (Work/Study/Rest/Reading/Exercise) color values exactly. When porting the category feature, reuse this palette as the default category colors as-is.
+
+---
+
+## 1. Sidebar Inline Input
 
 > [!IMPORTANT]
-> *(2026-08-05 결정)* 아래 §1.1의 "목록형 + 모달" 입력 방식은 **그리드 드래그 방식으로 대체됩니다** (DayTime Tracker 이식, `ref_docs/TODO.md` §2.2/§3 참조). 이 섹션은 대체 전까지의 참고용으로 남겨두고, 실제 신규 사양은 §1.2에 정리합니다.
+> *(decided 2026-08-05)* The "list + modal" input approach in §1.1 below **is replaced by the grid drag approach** (port from DayTime Tracker, see `ref_docs/TODO.md` §2.2/§3). This section is kept for reference until the replacement lands; the actual new spec is in §1.2.
 
-> 편집기(마크다운 원본)를 열지 않고도, **오른쪽 사이드바에서 직접** To-Do를 추가하고 타임라인 항목을 기록할 수 있는 인터페이스.
-> 디자인 기준: `DayTimeTracker_internal/ref_docs/designSample/color-palette-mockup.html`
+> An interface for adding To-Dos and recording timeline entries **directly in the right sidebar**, without opening the markdown editor.
+> Design reference: `DayTimeTracker_internal/ref_docs/designSample/color-palette-mockup.html`
 
-### 1.1 기능 범위 *(구 방식 — 대체 예정)*
+### 1.1 Feature scope *(old approach — to be replaced)*
 
-| 기능 | 진입 방법 | 결과 |
+| Feature | How to reach it | Result |
 |---|---|---|
-| **To-Do 항목 추가** | To-Do 섹션 하단 인라인 입력창에서 텍스트 입력 후 Enter | `- [ ] 텍스트` 를 파일 `# _ToDo` 블록 끝에 추가 |
-| **To-Do 항목 삭제** | 항목 hover 시 나타나는 ✕ 버튼 클릭 → 확인 팝업 | 해당 라인을 파일에서 제거 |
-| **타임라인 항목 추가** | 타임라인 섹션의 "+ 추가" 버튼 클릭 → 모달 | `- HH:mm - HH:mm 설명` 을 Event 블록의 자체 내용 끝에 추가 (설정된 Event 제목, 하위 제목 바로 앞) |
-| **타임라인 항목 수정/삭제** | 기존 항목 클릭 → 수정 모달 | 해당 라인을 수정 또는 제거 |
+| **Add a To-Do item** | Type text into the inline input at the bottom of the To-Do section and press Enter | Appends `- [ ] text` to the end of the file's `# _ToDo` block |
+| **Delete a To-Do item** | Click the ✕ button that appears on hover → confirmation popup | Removes that line from the file |
+| **Add a timeline entry** | Click the "+ Add" button in the timeline section → modal | Appends `- HH:mm - HH:mm description` to the end of the Event block's own content (the configured Event heading, just before any subheading) |
+| **Edit/delete a timeline entry** | Click an existing entry → edit modal | Edits or removes that line |
 
 > [!NOTE]
-> 파일 쓰기는 항상 `plugin.writeFile()` (main.ts) 경유 — 자기-수정 이벤트 가드 포함 (AGENTS.md §3)
+> File writes always go through `plugin.writeFile()` (main.ts) — which includes the self-write event guard (AGENTS.md §3)
 
-### 1.2 신규 방식 — 그리드 드래그 입력 *(구현 예정, DayTime Tracker 이식)*
+### 1.2 New approach — grid drag input *(to be implemented, port from DayTime Tracker)*
 
-| 기능 | 진입 방법 | 결과 |
+| Feature | How to reach it | Result |
 |---|---|---|
-| **타임라인 항목 추가** | 그리드(10분 단위 셀)를 마우스 드래그로 선택 → 모달 자동 오픈(시작/종료 시간 미리 채워짐) | 카테고리 선택 + 메모 입력 후 저장 → `- HH:mm - HH:mm [카테고리] 메모` 를 Event 블록의 자체 내용 끝에 추가 (AGENTS.md §1.4.1) |
-| **타임라인 항목 수정/삭제** | 그리드 위 색상 블록 클릭 → 수정 모달 (삭제 버튼 포함) | 해당 라인을 수정 또는 제거 |
-| **To-Do 항목 추가/삭제** | 하단 접이식 To-Do 패널 — §1.1과 동일한 인라인 입력/✕ 삭제 방식 유지 | 동일 (변경 없음) |
+| **Add a timeline entry** | Drag-select cells on the grid (10-minute cells) → the modal opens automatically (start/end times pre-filled) | Pick a category and write a note, then save → appends `- HH:mm - HH:mm [Category] note` to the end of the Event block's own content (AGENTS.md §1.4.1) |
+| **Edit/delete a timeline entry** | Click a colored block on the grid → edit modal (with a delete button) | Edits or removes that line |
+| **Add/delete a To-Do item** | The collapsible To-Do panel at the bottom keeps §1.1's inline input / ✕ delete behaviour | Unchanged |
 
-- 데이터 소스/쓰기 경로는 DayTime Tracker의 frontmatter 방식이 아니라 **기존과 동일하게 `parser.ts` 본문 파싱 + `plugin.writeFile()`** 를 사용합니다 (AGENTS.md §1.1, `ref_docs/TODO.md` §6.1 — 가장 중요한 이식 시 주의사항).
-- 카테고리 칩 UI, 색상 계산(`getTextColorForBackground`), 드래그 셀 선택 로직은 DayTime Tracker `TimelineView.tsx`/`TimelineModal.tsx`에서 그대로 이식.
+- The data source and write path are **the same `parser.ts` body parsing + `plugin.writeFile()` as before**, not DayTime Tracker's frontmatter approach (AGENTS.md §1.1, `ref_docs/TODO.md` §6.1 — the single most important caveat when porting).
+- The category chip UI, the color calculation (`getTextColorForBackground`) and the drag-cell selection logic are ported as-is from DayTime Tracker's `TimelineView.tsx` / `TimelineModal.tsx`.
 
 ---
 
-## 2. 컬러 시스템
+## 2. Color System
 
-### 2.1 카테고리 파스텔 팔레트
+### 2.1 Category Pastel Palette
 
 These are the default category colors stored in `settings.ts`, not theme colors or CSS variables. Users can change them in settings; category blocks and badges intentionally retain their configured colors across Obsidian themes. Text contrast is calculated from each configured color.
 
@@ -64,199 +64,199 @@ Use Obsidian's native styles for modal actions: `.mod-cta` for save/confirm and 
 
 ---
 
-## 3. 모달 스타일 원칙
+## 3. Modal Styling Principles
 
-모달 셸, 제목, 배경, 오버레이, 기본 버튼은 Obsidian `Modal`의 네이티브 스타일을 사용합니다. 추가 CSS는 콘텐츠 레이아웃과 입력 크기 조정에만 사용하며, 색상은 Obsidian CSS 변수를 참조합니다. 저장/삭제 액션은 각각 Obsidian의 `.mod-cta` / `.mod-warning` 스타일을 사용합니다.
+The modal shell, title, background, overlay and default buttons use Obsidian `Modal`'s native styling. Additional CSS is used only for content layout and input sizing, and references Obsidian CSS variables for colors. The save/delete actions use Obsidian's `.mod-cta` / `.mod-warning` styles respectively.
 
 ---
 
-## 4. 컴포넌트 레이아웃
+## 4. Component Layout
 
-### 4.1 To-Do 섹션
-
-```
-┌─────────────────────────────────────────┐
-│ 오늘 할 일   3개                         │  ← 섹션 헤더
-├─────────────────────────────────────────┤
-│ [새로운 할 일 추가... (Enter)]            │  ← 인라인 input (상단 고정)
-│                                         │
-│  ☑  업무 회의 준비하기 (strikethrough)  ✕│  ← 완료 항목
-│  ☐  독서 1시간 하기                     ✕│  ← hover시 ✕ 노출
-│  ☐  가벼운 스트레칭                     ✕│
-└─────────────────────────────────────────┘
-```
-
-**인라인 input 동작**
-- `Enter` → 텍스트가 있으면 `- [ ] 텍스트` 파일에 append → input 초기화
-- `Escape` / blur → 취소, input 초기화
-- 빈 문자열 Enter → 무시
-
-**✕ 삭제 버튼 동작**
-- 평소: `opacity: 0`, 배경 없음
-- item hover: `opacity: 1`, 텍스트 색 `#bfbfbf`
-- 버튼 hover: 텍스트 색 `#ef4444` (배경 변화 없음)
-- 클릭: 확인 팝업 호출
-
-### 4.2 타임라인 항목 추가/수정 모달
+### 4.1 To-Do Section
 
 ```
 ┌─────────────────────────────────────────┐
-│ 무엇을 했나요?                           │  ← 타이틀 (검은색)
+│ Today's To-Dos   3                        │  ← section header
 ├─────────────────────────────────────────┤
-│ 시간 설정                               │
-│ [09:00]           [10:00]              │  ← 시작 / 종료
+│ [Add a new to-do... (Enter)]            │  ← inline input (pinned to top)
 │                                         │
-│ 내용                                    │
-│ [상세 내용을 입력해 주세요.             ]│  ← textarea (세로 resize)
-│                                         │
-│ [삭제]                 [취소]   [저장]  │
+│  ☑  Prepare the work meeting (strikethrough)  ✕│  ← completed item
+│  ☐  Read for 1 hour                     ✕│  ← ✕ appears on hover
+│  ☐  Light stretching                    ✕│
 └─────────────────────────────────────────┘
 ```
 
-| 필드 | 타입 | 형식 | 검증 |
+**Inline input behaviour**
+- `Enter` → if there is text, append `- [ ] text` to the file and reset the input
+- `Escape` / blur → cancel and reset the input
+- Enter on an empty string → ignored
+
+**✕ delete button behaviour**
+- Normally: `opacity: 0`, no background
+- On item hover: `opacity: 1`, text color `#bfbfbf`
+- On button hover: text color `#ef4444` (no background change)
+- On click: open the confirmation popup
+
+### 4.2 Add/Edit Timeline Entry Modal
+
+```
+┌─────────────────────────────────────────┐
+│ What did you do?                         │  ← title (black)
+├─────────────────────────────────────────┤
+│ Time Setting                             │
+│ [09:00]           [10:00]                │  ← start / end
+│                                         │
+│ Content                                  │
+│ [Enter detailed content.                ]│  ← textarea (vertical resize)
+│                                         │
+│ [Delete]                 [Cancel] [Save] │
+└─────────────────────────────────────────┘
+```
+
+| Field | Type | Format | Validation |
 |---|---|---|---|
-| 시작 시간 | `<input type="text">` | `HH:mm` | `parser.ts`의 `TIME_VALUE_REGEX` (시 00-23, 분 00-59 범위까지 확인 — 자릿수만 보는 `/\d{1,2}:\d{2}/`은 `99:99`도 통과시켜서 폐기) |
-| 종료 시간 | `<input type="text">` | `HH:mm` | 위와 동일 |
-| 내용 | `<textarea>` | 자유 텍스트 | 없음 (빈 값 허용) |
+| Start time | `<input type="text">` | `HH:mm` | `TIME_VALUE_REGEX` from `parser.ts` (checks the hour 00-23 and minute 00-59 ranges — the digit-count-only `/\d{1,2}:\d{2}/` was discarded because it also let `99:99` through) |
+| End time | `<input type="text">` | `HH:mm` | Same as above |
+| Content | `<textarea>` | Free text | None (empty values allowed) |
 
-- **삭제 버튼**: 신규 추가 시 숨김, 수정 시 표시
-- **저장 결과**: `- HH:mm - HH:mm 내용` 형식으로 Event 블록의 자체 내용 끝에 추가 (설정된 Event 제목 바로 아래, 하위 제목 앞)
-- **수정**: 해당 라인 in-place 교체 (라인 인덱스 재검증 후)
+- **Delete button**: hidden when adding, shown when editing
+- **Save result**: appended to the end of the Event block's own content in the `- HH:mm - HH:mm content` format (right below the configured Event heading, before any subheading)
+- **Edit**: that line is replaced in place (after re-validating the line index)
 
-### 4.3 확인 팝업
+### 4.3 Confirmation Popup
 
 ```
 ┌────────────────────────────┐
-│ 알림                        │  ← 검은색 타이틀, font-size: 14px
+│ Notice                      │  ← black title, font-size: 14px
 │                            │
-│ '독서 1시간 하기' 할 일을   │  ← font-size: 12px, color: #4a5568
-│ 삭제하시겠습니까?           │
+│ Delete the to-do            │  ← font-size: 12px, color: #4a5568
+│ 'Read for 1 hour'?          │
 │                            │
-│              [취소]  [확인] │
+│              [Cancel]  [OK] │
 └────────────────────────────┘
 ```
 
-- 너비: `280px`
-- Obsidian `Modal` 클래스 상속 → `src/modals/` 하위에 신설
+- Width: `280px`
+- Inherits the Obsidian `Modal` class → newly created under `src/modals/`
 
 ---
 
-## 5. 사이드바 레이아웃 변경
+## 5. Sidebar Layout Changes
 
 > [!IMPORTANT]
-> *(2026-08-05 결정)* Calendar는 완전히 제거됩니다 — 특정 날짜로 점프하는 기능 자체가 없어집니다 (`ref_docs/TODO.md` §4). 아래 "변경 후" 레이아웃은 이 문서 최초 작성 당시(캘린더 유지 전제)의 계획이라 **더 이상 유효하지 않습니다**. 최신 레이아웃은 §5.1을 참조하세요.
+> *(decided 2026-08-05)* The Calendar is removed entirely — the feature of jumping to a specific date is gone (`ref_docs/TODO.md` §4). The "after" layout below was planned when this document was first written (under the assumption that the calendar was kept), so it **is no longer valid**. See §5.1 for the current layout.
 
-**최초(0.1.0 이전)**
+**Initial (before 0.1.0)**
 ```
 Calendar
-├── 타임라인 목록 (읽기 전용)
-└── To-Do 목록 (체크박스 토글만)
+├── Timeline list (read-only)
+└── To-Do list (checkbox toggling only)
 ```
 
-**0.1.0~0.2.x (Calendar 유지, 폐기됨)**
+**0.1.0~0.2.x (calendar kept — obsolete)**
 ```
 Calendar
-├── 타임라인 섹션
-│   ├── 헤더("_Event") + [+ 추가] 버튼
-│   ├── 항목 목록 (클릭 → 수정 모달)
-│   └── 빈 상태 메시지
-└── To-Do 섹션
-    ├── 헤더("_ToDo") + 개수 표시
-    ├── 인라인 입력창 (상단 고정)
-    └── 항목 목록 (체크박스 + ✕ 버튼)
+├── Timeline section
+│   ├── Header ("_Event") + [+ Add] button
+│   ├── Entry list (click → edit modal)
+│   └── Empty-state message
+└── To-Do section
+    ├── Header ("_ToDo") + count
+    ├── Inline input (pinned to top)
+    └── Entry list (checkbox + ✕ button)
 ```
 
-### 5.1 신규 레이아웃 (구현 예정, DayTime Tracker 이식)
+### 5.1 New layout *(to be implemented, port from DayTime Tracker)*
 
 ```
 ┌─────────────────────────────────────────┐
-│ 날짜 헤더 (예: 2026-08-05 (화))            │  [오늘 노트]
+│ Date header (e.g. 2026-08-05 (Tue))      │  [Today]
 ├─────────────────────────────────────────┤
 │ 00 AM │▢▢▢▢▢▢                          │
-│ 01 AM │▢▢▢▢▢▢                          │  ← 10분 단위 그리드, 드래그로 선택
-│  ...  │  [카테고리색 블록]                │     (§1.2)
+│ 01 AM │▢▢▢▢▢▢                          │  ← 10-minute grid, drag to select
+│  ...  │  [category-colored block]        │     (§1.2)
 │ 23 PM │▢▢▢▢▢▢                          │
 ├─────────────────────────────────────────┤
-│ 오늘 할 일  (2/5)                    ▼   │  ← 접이식 To-Do 패널 (하단 고정)
-│  [새 할 일 입력...]                       │
+│ Today's To-Dos  (2/5)                ▼   │  ← collapsible To-Do panel (pinned to bottom)
+│  [Add a new to-do...]                     │
 │  ☑ ...  ☐ ...                          │
 └─────────────────────────────────────────┘
 ```
 
-- Calendar가 없으므로 사이드바는 항상 **현재 활성 파일**만 반영합니다. 활성 파일이 없거나 일일노트가 아니면 빈 상태 문구 + "오늘 노트 열기/만들기" 버튼만 표시 (§1.2, AGENTS.md §3 "New Daily Note Creation & Confirmation Policy").
-- 그리드 표시 범위는 설정의 `startHour`/`endHour`를 따름 (AGENTS.md §2).
+- Without the Calendar, the sidebar always reflects **only the currently active file**. If there is no active file, or it is not a daily note, only the empty-state message and the "open/create today's note" button are shown (§1.2, AGENTS.md §3 "New Daily Note Creation & Confirmation Policy").
+- The grid's display range follows the `startHour`/`endHour` settings (AGENTS.md §2).
 
 ---
 
-## 6. CSS 클래스 네이밍
+## 6. CSS Class Naming
 
-기존 `dwl-*` prefix 유지, 신규 클래스 추가:
+Keep the existing `dwl-*` prefix and add the new classes:
 
-| 클래스 | 설명 |
+| Class | Description |
 |---|---|
-| `dwl-section` | 타임라인/To-Do 공통 섹션 wrapper |
-| `dwl-section-header` | 섹션 헤더 행 (제목 + 버튼) |
-| `dwl-section-add-btn` | "+ 추가" 버튼 |
-| `dwl-todo-input-wrap` | To-Do 인라인 입력창 wrapper |
-| `dwl-todo-input` | 실제 `<input>` 엘리먼트 |
-| `dwl-todo-delete-btn` | ✕ 삭제 버튼 |
-| `dwl-timeline-item` | 타임라인 개별 항목 (클릭 가능) |
-| `dwl-modal-time-input` | 모달 내 시간 입력 필드 |
-| `dwl-modal-btn-save` | 저장/확인 버튼 |
-| `dwl-modal-btn-cancel` | 취소 버튼 |
-| `dwl-modal-btn-delete` | 삭제 버튼 |
+| `dwl-section` | Shared section wrapper for timeline/To-Do |
+| `dwl-section-header` | Section header row (title + button) |
+| `dwl-section-add-btn` | "+ Add" button |
+| `dwl-todo-input-wrap` | To-Do inline input wrapper |
+| `dwl-todo-input` | The actual `<input>` element |
+| `dwl-todo-delete-btn` | ✕ delete button |
+| `dwl-timeline-item` | Individual timeline entry (clickable) |
+| `dwl-modal-time-input` | Time input field inside the modal |
+| `dwl-modal-btn-save` | Save/confirm button |
+| `dwl-modal-btn-cancel` | Cancel button |
+| `dwl-modal-btn-delete` | Delete button |
 
-### 6.1 그리드/카테고리 신규 클래스 *(구현 예정)*
+### 6.1 New grid/category classes *(to be implemented)*
 
-DayTime Tracker의 `timeline-*` 클래스를 이식하되, 이 프로젝트 컨벤션에 맞게 **`dwl-` prefix로 리네임**해서 사용합니다 (예: `.timeline-grid` → `.dwl-grid`, `.timeline-cell` → `.dwl-grid-cell`, `.timeline-log-block` → `.dwl-grid-block`, `.timeline-todos-container` → 기존 `dwl-section` 재사용). 정확한 매핑은 구현 시 CSS 이식하면서 확정.
+Port DayTime Tracker's `timeline-*` classes, but rename them with the **`dwl-` prefix** to match this project's conventions (e.g. `.timeline-grid` → `.dwl-grid`, `.timeline-cell` → `.dwl-grid-cell`, `.timeline-log-block` → `.dwl-grid-block`, `.timeline-todos-container` → reuse the existing `dwl-section`). The exact mapping is finalized when the CSS is ported.
 
 ---
 
-## 7. 파일 쓰기 안전성 체크리스트
+## 7. File-Write Safety Checklist
 
 > [!IMPORTANT]
-> 모든 쓰기 작업(추가/수정/삭제)은 아래 순서를 반드시 따릅니다.
+> Every write operation (add/edit/delete) must follow this order.
 
-1. `app.vault.read(currentFile)` — 최신 내용 재읽기
-2. 라인 인덱스 재검증 — `lines[item.line]`이 기대값과 일치하는지 확인
-3. 불일치 시 → 쓰기 중단, `refresh()` 호출 (UI 재동기화)
-4. `plugin.writeFile(file, newContent)` — self-trigger 가드 포함
-5. `refresh()` 호출
+1. `app.vault.read(currentFile)` — re-read the latest content
+2. Re-validate the line index — check that `lines[item.line]` still matches what was expected
+3. On mismatch → abort the write and call `refresh()` (re-sync the UI)
+4. `plugin.writeFile(file, newContent)` — includes the self-write guard
+5. Call `refresh()`
 
 ---
 
-## 8. 구현 단계 (우선순위 순)
+## 8. Implementation Phases (in priority order)
 
-| 단계 | 작업 | 영향 파일 | 상태 |
+| Phase | Work | Affected files | Status |
 |---|---|---|---|
-| **1** | `src/i18n.ts` — EN/KO 문구 테이블 + `t()` 헬퍼 | `src/i18n.ts` | ✅ 완료 |
-| **2** | To-Do 인라인 추가 입력창 | `components/TodoList.ts`, `view.ts`, `styles.css` | ✅ 완료 |
-| **3** | To-Do ✕ 삭제 + 확인 팝업 | `components/TodoList.ts`, `modals/ConfirmDeleteModal.ts` | ✅ 완료 |
-| **4** | 타임라인 "+ 추가" 모달 | `modals/EventEntryModal.ts`, `components/Timeline.ts` | ✅ 완료 |
-| **5** | 타임라인 항목 클릭 → 수정 모달 | `components/Timeline.ts`, `modals/EventEntryModal.ts` | ✅ 완료 |
-| **6** | CSS 스타일 전체 적용 | `styles.css` | ✅ 완료 |
+| **1** | `src/i18n.ts` — EN/KO string tables + the `t()` helper | `src/i18n.ts` | ✅ done |
+| **2** | To-Do inline add input | `components/TodoList.ts`, `view.ts`, `styles.css` | ✅ done |
+| **3** | To-Do ✕ delete + confirmation popup | `components/TodoList.ts`, `modals/ConfirmDeleteModal.ts` | ✅ done |
+| **4** | Timeline "+ Add" modal | `modals/EventEntryModal.ts`, `components/Timeline.ts` | ✅ done |
+| **5** | Click a timeline entry → edit modal | `components/Timeline.ts`, `modals/EventEntryModal.ts` | ✅ done |
+| **6** | Apply the full CSS styling | `styles.css` | ✅ done |
 
-각 단계는 독립적으로 빌드/테스트 가능합니다. (모달 파일명은 `_TimeTracker Line` → `_Event` 마커 개명과 일관되게 `EventEntryModal.ts`로 통일 — `task.md`에도 이미 이 이름으로 반영되어 있음)
+Each phase builds and tests independently. (The modal filename is unified as `EventEntryModal.ts`, consistent with the `_TimeTracker Line` → `_Event` marker rename — `task.md` already reflects this name)
 
 > [!NOTE]
-> 코드 구현 시 §7 체크리스트(재읽기 → 라인 재검증 → 불일치 시 중단 → 쓰기 → refresh)를 재사용 가능한 순수 함수로 뽑아냈습니다: `parser.ts`의 `todoLineMatches` / `timelineLineMatches`(2번 항목: 라인 재검증)와 `appendLineToBlock` / `replaceLineAt` / `removeLineAt`(추가/수정/삭제 자체). 전부 Obsidian API 의존성 없이 유닛 테스트됩니다 (`parser.test.ts`).
+> The §7 checklist (re-read → re-validate the line → abort on mismatch → write → refresh) was extracted into reusable pure functions during implementation: `todoLineMatches` / `timelineLineMatches` (item 2: line re-validation) and `appendLineToBlock` / `replaceLineAt` / `removeLineAt` (the add/edit/delete themselves) in `parser.ts`. All are unit-tested without any Obsidian API dependency (`parser.test.ts`).
 
 > [!IMPORTANT]
-> *(2026-08-05)* 위 표는 0.1.0~0.2.x(목록형+캘린더) 구현 당시의 단계 기록입니다. **그리드+카테고리 이식 작업의 단계별 계획은 이 표를 갱신하지 않고 [`ref_docs/TODO.md`](../ref_docs/TODO.md) §3에서 관리합니다** (중복된 소스 오브 트루스를 피하기 위함 — 코드 구조/아키텍처 결정 문서 원칙은 문서 상단 안내와 동일).
+> *(2026-08-05)* The table above is the phase record from the 0.1.0~0.2.x (list + calendar) implementation. **The phased plan for the grid + category port is managed in [`ref_docs/TODO.md`](../ref_docs/TODO.md) §3 instead of updating this table** (to avoid duplicated sources of truth — the same principle as the document header's note about code structure/architecture decisions).
 
 ---
 
-## 9. 다국어(i18n) UI 문구
+## 9. Multi-language (i18n) UI Strings
 
-> 파서의 마커 다국어 인식(AGENTS.md 1.3)과는 **별개의 관심사**입니다. 파서는 항상 EN/KO 마커를 동시에 인식하지만, 여기서 다루는 건 사이드바에 표시되는 **화면 문구**(버튼 라벨, 섹션 제목, 플레이스홀더, 모달 문구 등)이며 이건 설정된 언어 하나만 따라갑니다.
+> This is a **separate concern** from the parser's multi-language marker recognition (AGENTS.md 1.3). The parser always recognizes EN/KO markers at once, but what is covered here are the **on-screen strings** shown in the sidebar (button labels, section titles, placeholders, modal text, etc.), which follow the single configured language.
 
-### 9.1 구조
+### 9.1 Structure
 
-- `src/i18n.ts`: `STRINGS: Record<"en" | "ko", Record<string, string>>` 상수와 `t(key: string): string` 헬퍼를 정의. `t()`는 `plugin.settings.language`를 참조해 현재 언어의 문자열을 반환.
-- 언어 설정(`SettingTab.ts`)이 바뀌면 사이드바가 재렌더링되어야 함 (`view.ts`의 설정 변경 리스너 또는 `refresh()` 재사용).
-- `%s` 같은 자리표시자가 있는 문구(`confirmDeleteTask`)는 `t(key).replace('%s', value)` 형태로 치환.
+- `src/i18n.ts` defines the `STRINGS: Record<"en" | "ko", Record<string, string>>` constant and the `t(key: string): string` helper. `t()` returns the current language's string for the given key.
+- When the language setting (`SettingTab.ts`) changes, the sidebar must re-render (reuse the settings-change listener in `view.ts` or `refresh()`).
+- Strings with a placeholder like `%s` (`confirmDeleteTask`) are substituted with `t(key).replace('%s', value)`.
 
-### 9.2 문구 키 테이블 (mockup 기준)
+### 9.2 String key table (based on the mockup)
 
 | Key | EN | KO |
 |---|---|---|
@@ -280,95 +280,95 @@ DayTime Tracker의 `timeline-*` 클래스를 이식하되, 이 프로젝트 컨�
 | `emptyEvent` | No events recorded. | 기록이 없습니다. |
 | `headerToday` | Today | 오늘 |
 
-기본 언어는 English(`"en"`, `settings.ts`의 `DEFAULT_SETTINGS`와 동일).
+The default language is `"auto"` (the same as `DEFAULT_SETTINGS` in `settings.ts`), which resolves to Obsidian's UI language; `"en"` and `"ko"` are explicit overrides that are preserved as saved.
 
 > [!NOTE]
-> 실제 구현 시 위 표에 없던 항목(`emptyTodo`, `noActiveNote`, `noDescription`, `noteNotFoundConfirm`, `btnCreate`, `invalidTimeFormat`, `dashboardTitle` 등 §11 대시보드 관련 키 포함)이 추가로 필요해 `i18n.ts`에 보강했습니다. 이 표는 mockup 기준 최초 스펙이고, 실제 소스 오브 트루스는 `src/i18n.ts`의 `STRINGS`입니다.
+> During the actual implementation, items that were not in the table above (`emptyTodo`, `noActiveNote`, `noDescription`, `noteNotFoundConfirm`, `btnCreate`, `invalidTimeFormat`, `dashboardTitle`, and the §11 dashboard-related keys) turned out to be needed as well, and were added to `i18n.ts`. This table is the original spec based on the mockup; the source of truth is the `STRINGS` map in `src/i18n.ts`.
 
 ---
 
-## 10. 테마 동작
+## 10. Theme Behaviour
 
-사이드바는 Obsidian의 활성 테마를 따라갑니다. CSS 색상 토큰은 `--background-primary`, `--background-secondary`, `--background-modifier-hover`, `--background-modifier-border`, `--text-normal`, `--text-muted`, `--text-faint`, `--interactive-accent`를 참조합니다. 별도의 사이드바 테마 설정은 없습니다.
+The sidebar follows Obsidian's active theme. The CSS color tokens reference `--background-primary`, `--background-secondary`, `--background-modifier-hover`, `--background-modifier-border`, `--text-normal`, `--text-muted`, `--text-faint` and `--interactive-accent`. There is no separate sidebar theme setting.
 
-### 10.1 테마 적용 범위
+### 10.1 Scope of Theming
 
-| 대상 | 테마 소스 | 설정 위치 |
+| Target | Theme source | Setting |
 |---|---|---|
-| 사이드바 (`view.ts`) | Obsidian 활성 테마 변수 | 없음 — Obsidian 테마를 그대로 따름 |
-| 모달/팝업 (이벤트/확인) | Obsidian `Modal` 기본 스타일 및 테마 변수 | 없음 — Obsidian 테마를 그대로 따름 |
-| 대시보드 (`DashboardView.ts`) | Obsidian 자체 테마 변수 | 없음 — Obsidian 테마를 그대로 따름 |
+| Sidebar (`view.ts`) | Obsidian active theme variables | None — follows the Obsidian theme as-is |
+| Modals/popups (event/confirm) | Obsidian `Modal` default styling and theme variables | None — follows the Obsidian theme as-is |
+| Dashboard (`DashboardView.ts`) | Obsidian's own theme variables | None — follows the Obsidian theme as-is |
 
-### 10.2 사용자 지정 카테고리 색상
+### 10.2 Custom Category Colors
 
-카테고리 색상은 설정으로 저장되는 사용자 데이터이며, 타임라인 블록과 해당 카테고리 배지에 적용됩니다. 다른 화면 색상은 Obsidian 테마 변수를 사용합니다.
+Category colors are user data stored in settings, and are applied to the timeline blocks and to the matching category badges. All other on-screen colors use Obsidian theme variables.
 
 ---
 
-## 11. 대시보드(Dashboard) 뷰
+## 11. Dashboard View
 
-> 볼트 내 전체 데일리 노트를 스캔·요약하는 화면. **사이드바가 아니라 메인 워크스페이스의 일반 탭**으로 엽니다 (`activateDashboard()` → `workspace.getLeaf("tab")`).
+> A screen that scans and summarizes every daily note in the vault. **It opens as a regular tab in the main workspace, not in the sidebar** (`activateDashboard()` → `workspace.getLeaf("tab")`).
 
-### 11.1 통계 항목
+### 11.1 Statistics
 
-| 통계 | 계산 범위 | 비고 |
+| Statistic | Calculation scope | Notes |
 |---|---|---|
-| 총 노트 수 | 전체 볼트 | 파일명(날짜)만 스캔, 내용 읽지 않음 |
-| 기록 기간 (가장 오래된 ~ 최근) | 전체 볼트 | 위와 동일 |
-| 연속 작성일(스트릭) | 전체 볼트 | 오늘부터 거꾸로, 끊기는 지점까지. 오늘 노트가 없으면 0 |
-| 최근 30일 To-Do 완료율 | 최근 30일 | **이 통계만** 실제 파일 내용을 읽음 (`app.vault.cachedRead`) |
-| 최근 30일 총 이벤트 기록 시간 | 최근 30일 | 위와 동일, `timelineDurationMinutes` 재사용 (자정 넘는 이벤트 처리 동일) |
+| Total notes | Whole vault | Scans filenames (dates) only, does not read contents |
+| Recording period (oldest ~ most recent) | Whole vault | Same as above |
+| Current streak (consecutive days) | Whole vault | Counting back from today until a break. 0 if there is no note for today |
+| To-Do completion rate over the last 30 days | Last 30 days | **Only this statistic** reads actual file contents (`app.vault.cachedRead`) |
+| Total event time recorded over the last 30 days | Last 30 days | Same as above, reusing `timelineDurationMinutes` (the overnight-event handling is the same) |
 
-**성능 고려**: 파일 내용을 읽어야 하는 통계는 최근 30일로 범위를 제한합니다(`dashboardCollector.ts`의 `getRecentWindowStart`). 볼트에 몇 년 치 노트가 쌓여 있어도, 대시보드를 열 때마다 전체를 다시 읽지 않습니다.
+**Performance consideration**: statistics that need to read file contents are limited to the last 30 days (`getRecentWindowStart` in `dashboardCollector.ts`). Even if the vault has accumulated years of notes, opening the dashboard does not re-read everything.
 
-### 11.2 레이아웃
+### 11.2 Layout
 
 ```
 ┌─────────────────────────────────────────┐
-│ 대시보드                        [새로고침] │
+│ Dashboard                       [Refresh] │
 ├─────────────────────────────────────────┤
-│ [총 노트 수]  [연속 작성일]  [기록 기간]   │
-│ [최근 30일 완료율]  [최근 30일 기록 시간]  │
+│ [Total Notes]  [Current Streak]  [Date Range]   │
+│ [Last 30d Completion]  [Last 30d Event Time]  │
 ├─────────────────────────────────────────┤
-│ 최근 노트                                │
+│ Recent Notes                                │
 │  2026-07-14                              │
 │  2026-07-13                              │
 │  ...                                     │
 └─────────────────────────────────────────┘
 ```
 
-- 통계 카드: `dwl-dashboard-stat-card` (라벨 + 값)
-- 최근 노트 목록 항목 클릭 → `workspace.openLinkText(file.path, "", false)`로 해당 노트 열기
-- 데일리 노트가 하나도 없으면 빈 상태 문구(`dashboardEmptyVault`)만 표시
+- Statistic cards: `dwl-dashboard-stat-card` (label + value)
+- Clicking a recent-note list item opens that note via `workspace.openLinkText(file.path, "", false)`
+- If there is not a single daily note, only the empty-state message (`dashboardEmptyVault`) is shown
 
-### 11.3 테마
+### 11.3 Theming
 
-Obsidian 자체 테마 변수를 사용해 활성 테마를 따릅니다.
+It follows the active theme using Obsidian's own theme variables.
 
 > [!NOTE]
-> *(2026-08-05 확인)* Dashboard는 이번 재구성에서 **기능·구현 방식 모두 변경 없이 유지**됩니다. React 전환 대상도 아닙니다 (`ref_docs/TODO.md` §2.1).
+> *(confirmed 2026-08-05)* The Dashboard is **kept unchanged in both feature and implementation** through this restructuring. It is not a target of the React conversion either (`ref_docs/TODO.md` §2.1).
 
 ---
 
-## 12. 리본 메뉴 *(구현 예정)*
+## 12. Ribbon Menu *(to be implemented)*
 
-두 개의 리본 아이콘을 유지합니다 (`main.ts`):
+Keep the two ribbon icons (`main.ts`):
 
-| 아이콘 | 툴팁 | 동작 |
+| Icon | Tooltip | Action |
 |---|---|---|
-| `calendar-clock | DailyWorkLog 열기 | `activateView()` |
-| `gauge` | DailyWorkLog 대시보드 열기 | `activateDashboard()` |
+| `calendar-clock` | Open DailyWorkLog | `activateView()` |
+| `gauge` | Open the DailyWorkLog dashboard | `activateDashboard()` |
 
 > [!IMPORTANT]
-> 사이드바를 여는 진입점이 사라지는 문제(리본 아이콘 없이는 커맨드 팔레트로만 접근 가능했음)가 있었기 때문에 명시적으로 요구된 항목입니다. 그리드 UI로 재구성하면서 실수로 누락되지 않도록 주의 — `ref_docs/TODO.md` Phase 6에서 별도로 확인합니다.
+> This was explicitly requested because the entry point for opening the sidebar had disappeared (without a ribbon icon it was reachable only through the command palette). Be careful not to drop it by accident while restructuring the UI onto the grid — it is checked separately in `ref_docs/TODO.md` Phase 6.
 
 ---
 
-## 13. 설정 화면 재구성 *(구현 예정)*
+## 13. Settings Screen Restructure *(to be implemented)*
 
-`SettingTab.ts`를 DayTime Tracker의 필드 구성 기준으로 확장합니다. 섹션 구분(`.setHeading()`)을 사용해 아래 순서로 배치:
+Expand `SettingTab.ts` to match DayTime Tracker's field layout. Use section dividers (`.setHeading()`) and arrange the fields in this order:
 
-1. **일반**: 시작 시간 / 종료 시간(그리드 표시 범위, 드롭다운), 일일노트 저장 폴더(텍스트 + 폴더 자동완성), 언어(드롭다운, 최초값은 자동 감지)
-2. **카테고리 관리**: 기본값 리셋 버튼 + 카테고리별 행(표시 이름 텍스트 입력 최대 10자, 색상 피커, 기본 카테고리가 아니면 삭제 버튼) + 새 카테고리 추가 행(최대 10개 제한)
+1. **General**: start hour / end hour (grid display range, dropdowns), daily-note folder (text + folder autocomplete), language (dropdown, defaults to Auto)
+2. **Category management**: reset-to-defaults button + a row per category (display-name text input up to 10 chars, color picker, delete button for non-default categories) + an "add category" row (max 10 categories)
 
-설정 탭에는 일반 설정과 카테고리 관리가 표시됩니다. 사이드바 색상은 Obsidian 테마 변수를 사용하며 별도 설정은 없습니다.
+The settings tab shows the general settings and the category management. Sidebar colors use Obsidian theme variables; there is no separate setting for them.
