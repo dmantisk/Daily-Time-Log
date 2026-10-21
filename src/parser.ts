@@ -797,18 +797,61 @@ function appendAtEndOfFile(lines: string[], newLine: string, content: string): s
 }
 
 const MINUTES_PER_DAY = 24 * 60;
+const MAX_HOUR = 24;
+const MAX_MINUTE = 59;
 
-/** Parses "HH:mm" into minutes-since-midnight. */
+/**
+ * Parses "HH:mm" into minutes-since-midnight.
+ *
+ * The parsed hours and minutes are CLAMPED to their valid ranges: hours
+ * to 0-24 and minutes to 0-59. `TIME_RANGE_REGEX` is deliberately
+ * shape-only (AGENTS.md 1.4 — it is not a validator), so it happily
+ * matches a typo like `99:99`. Without the clamp, `timeToMinutes("99:99")`
+ * returned 6039 and a single mistyped line contributed 5499 minutes
+ * (91.6 hours) to the dashboard's totals.
+ *
+ * The clamping happens HERE, in the duration arithmetic, rather than in
+ * the regex: the shape of an Event line stays permissive (a note that
+ * already contains a typo still parses and still shows up in the
+ * sidebar), and only the numbers it contributes are bounded.
+ *
+ * `24:00` is a legitimate END time (midnight at the end of the day), so
+ * hour 24 is allowed through and maps to 1440 minutes.
+ */
 export function timeToMinutes(hhmm: string): number {
 	const [hours, minutes] = hhmm.split(":").map(Number);
-	return hours * 60 + minutes;
+	const safeHours = clamp(hours, 0, MAX_HOUR);
+	const safeMinutes = clamp(minutes, 0, MAX_MINUTE);
+	// Hour 24 is only meaningful with minute 0 — that is 24:00, midnight
+	// at the end of the day. Anything past it (24:30, 99:99) is a typo,
+	// and clamping it to the end of the day keeps every duration within
+	// a single day.
+	return Math.min(safeHours * 60 + safeMinutes, MINUTES_PER_DAY);
 }
 
-/** Inverse of `timeToMinutes` — formats minutes-since-midnight as zero-padded "HH:mm". Used by the grid's drag-to-select. */
+/**
+ * Inverse of `timeToMinutes` — formats minutes-since-midnight as
+ * zero-padded "HH:mm". Used by the grid's drag-to-select.
+ *
+ * The value is clamped to a single day, so a caller can never produce an
+ * "HH:mm" outside the 00:00-24:00 range the grid and the end-time
+ * setting understand.
+ */
 export function minutesToTime(minutes: number): string {
-	const hours = Math.floor(minutes / 60);
-	const mins = minutes % 60;
+	const safeMinutes = clamp(minutes, 0, MINUTES_PER_DAY);
+	const hours = Math.floor(safeMinutes / 60);
+	const mins = safeMinutes % 60;
 	return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+}
+
+/**
+ * Clamps `value` into the inclusive range [min, max]. A value that is
+ * not a finite number (e.g. `NaN` from a malformed time string) falls
+ * back to `min`.
+ */
+function clamp(value: number, min: number, max: number): number {
+	if (!Number.isFinite(value)) return min;
+	return Math.min(Math.max(value, min), max);
 }
 
 /**

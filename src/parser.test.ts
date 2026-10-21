@@ -596,6 +596,26 @@ describe("time helpers", () => {
 		expect(timeToMinutes("24:00")).toBe(1440);
 		expect(timelineDurationMinutes({ start: "23:50", end: "24:00" })).toBe(10);
 	});
+
+	it("clamps an out-of-range time to a single day", () => {
+		// TIME_RANGE_REGEX is deliberately shape-only, so a typo like
+		// "99:99" still parses as an Event line. Without the clamp it
+		// contributed 6039 - 540 = 5499 minutes (91.6 hours) to the
+		// dashboard from a single line.
+		expect(timeToMinutes("99:99")).toBe(1440);
+		expect(timeToMinutes("25:00")).toBe(1440);
+		expect(timeToMinutes("24:30")).toBe(1440);
+		expect(timeToMinutes("09:99")).toBe(599);
+		expect(minutesToTime(6039)).toBe("24:00");
+		expect(minutesToTime(-30)).toBe("00:00");
+	});
+
+	it("keeps an out-of-range time from inflating a duration", () => {
+		// The shape of the line stays permissive - a note with a typo still
+		// parses - but the numbers it contributes are bounded.
+		expect(timelineDurationMinutes({ start: "09:00", end: "99:99" })).toBe(900);
+		expect(timelineDurationMinutes({ start: "99:99", end: "09:00" })).toBe(540);
+	});
 });
 
 describe("timelineDaySegments", () => {

@@ -14,14 +14,14 @@ Conventions used below:
 - **Status** — `open` until a fix is committed, then `done` with the
   commit hash.
 
-> **One finding is open** — see *Open findings* below. It comes from
-> the repository review that followed the v0.5.3 release. The first two
+> **No findings are open** — every finding from the review that followed
+> v0.5.3 is recorded in the resolved section below. The first two
 > review batches are complete and released: the first (14 findings) in
 > v0.5.2, the second (5 findings) in v0.5.3. The dashboard metric
 > tooltips followed in the same release. The third review batch (the one
-> that followed v0.5.4) is being worked through one finding at a time;
-> the CRLF, fenced-code-block and indented-checkbox findings are already
-> fixed and recorded below.
+> that followed v0.5.4) is also complete: the CRLF, fenced-code-block,
+> indented-checkbox and out-of-range-time findings are all fixed and
+> recorded below.
 >
 > The resolved findings below are kept as the **record** of what was wrong
 > and why the fix looks the way it does — each one states the
@@ -32,45 +32,8 @@ Conventions used below:
 
 ## Open findings
 
-### 3. An out-of-range time inflates the dashboard — **Low**
-
-- **Status:** open
-- **Location:** `src/parser.ts` — `timeToMinutes()`, `minutesToTime()`
-- **Severity:** Low — a typo in a note produces a nonsense figure, but
-  nothing is lost
-
-**What happens**
-
-`TIME_RANGE_REGEX` is deliberately shape-only (`.agents/AGENTS.md` §1.4
-says it is not a validator), and `timeToMinutes()` does no range check:
-`timeToMinutes("99:99")` returns `6039`. A note containing
-`- 09:00 - 99:99 [Work] typo` therefore contributes **5499 minutes**
-(91.6 hours) to the dashboard, and `minutesToTime(6039)` renders back as
-`"100:39"`.
-
-**Reproduction**
-
-```ts
-const content = "# Event\n- 09:00 - 99:99 [Work] typo\n";
-const date = new Date(2026, 6, 14);
-const stats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(content) }], date);
-
-stats.recentEventMinutes;  // 5499  — 91.6 hours from one line
-```
-
-**Fix**
-
-Clamp the parsed hours and minutes to their valid ranges (or reject an
-out-of-range time when computing a duration) so a typo cannot dominate
-the totals. The shape of the Event line stays permissive — the fix
-belongs in the duration arithmetic, not in the regex.
-
-**Test to add**
-
-In `src/parser.test.ts`: `timeToMinutes("99:99")` and
-`minutesToTime(6039)` produce the clamped values. In
-`src/dashboardCollector.test.ts`: a note containing an out-of-range time
-does not report a duration larger than 24 hours.
+_Nothing is open — every finding from the review that followed v0.5.4 has
+been fixed and is recorded in the section below._
 
 ---
 
@@ -387,7 +350,88 @@ appearance.
 
 ---
 
-### 3. Image headings: the parser and the badge renderer disagree — **High**
+### 3. An out-of-range time inflates the dashboard — **Low**
+
+- **Status:** done — fixed in the v0.5.5 review batch
+- **Location:** `src/parser.ts` — `timeToMinutes()`, `minutesToTime()`
+- **Severity:** Low — a typo in a note produces a nonsense figure, but
+  nothing is lost
+
+**What happens**
+
+`TIME_RANGE_REGEX` is deliberately shape-only (`.agents/AGENTS.md` §1.4
+says it is not a validator), and `timeToMinutes()` does no range check:
+`timeToMinutes("99:99")` returns `6039`. A note containing
+`- 09:00 - 99:99 [Work] typo` therefore contributes **5499 minutes**
+(91.6 hours) to the dashboard, and `minutesToTime(6039)` renders back as
+`"100:39"`.
+
+**Reproduction**
+
+```ts
+const content = "# Event\n- 09:00 - 99:99 [Work] typo\n";
+const date = new Date(2026, 6, 14);
+const stats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(content) }], date);
+
+stats.recentEventMinutes;  // 5499  — 91.6 hours from one line
+```
+
+**Fix**
+
+Clamp the parsed hours and minutes to their valid ranges (or reject an
+out-of-range time when computing a duration) so a typo cannot dominate
+the totals. The shape of the Event line stays permissive — the fix
+belongs in the duration arithmetic, not in the regex.
+
+**Test to add**
+
+In `src/parser.test.ts`: `timeToMinutes("99:99")` and
+`minutesToTime(6039)` produce the clamped values. In
+`src/dashboardCollector.test.ts`: a note containing an out-of-range time
+does not report a duration larger than 24 hours.
+
+**Resolution**
+
+`timeToMinutes()` now clamps the parsed hours (0-24) and minutes (0-59)
+and caps the result at one day (1440 minutes), so `timeToMinutes("99:99")`
+is 1440 rather than 6039. `minutesToTime()` — the inverse — clamps to the
+same single-day range, so it can never render a `"100:39"`.
+
+The clamp happens in the **duration arithmetic**, not in the regex, and
+that is the point: `TIME_RANGE_REGEX` stays shape-only, so a note that
+already contains a typo still parses and its event is still visible in
+the sidebar. Only the numbers it contributes are bounded. Tightening the
+regex instead would have made the whole line disappear from the note,
+which trades a nonsense figure for a silent loss.
+
+Two boundary cases are handled deliberately:
+
+- `24:00` is still a legitimate END time (midnight at the end of the
+  day) and still maps to 1440 minutes — the grid produces it and the
+  end-hour setting advertises it (AGENTS.md §1.4).
+- A value that is not a finite number (a malformed time string) falls
+  back to the minimum rather than propagating `NaN` into the totals.
+
+Tests added:
+
+- `src/parser.test.ts`, in the `describe("time helpers")` block — an
+  out-of-range time is clamped to a single day (`"99:99"`, `"25:00"` and
+  `"24:30"` all give 1440; `"09:99"` gives 599), `minutesToTime(6039)`
+  gives `"24:00"`, and a negative value gives `"00:00"`; plus a case
+  asserting that an out-of-range time cannot inflate a duration
+  (`09:00 - 99:99` is 900 minutes, and the reverse order is 540 — the
+  overnight branch still applies).
+- `src/dashboardCollector.test.ts` — a note containing an out-of-range
+  time reports 900 minutes through `computeDashboardStats()`, and never
+  more than a single day.
+
+`.agents/AGENTS.md` §1.4 now states the rule explicitly: an out-of-range
+time is clamped in the duration arithmetic, not rejected by the regex,
+and the regex must not be tightened to validate the shape.
+
+---
+
+### 4. Image headings: the parser and the badge renderer disagree — **High**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `285316b`)
 - **Location:** `src/parser.ts` — `normalizeHeadingText()`
@@ -458,7 +502,7 @@ new required reading-view coverage.
 
 ---
 
-### 4. "Daily Avg" divides by notes, not by days in the window — **Medium**
+### 5. "Daily Avg" divides by notes, not by days in the window — **Medium**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `8f53ee3`)
 - **Location:** `src/dashboardCollector.ts` — `avgEventMinutesPerDay`
@@ -523,7 +567,7 @@ carrying the same date as one day"`, and the zero case), and
 
 ---
 
-### 5. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
+### 6. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `05afe8f`)
 - **Location:** `src/dashboardCollector.ts` — `computeDashboardStats()`,
@@ -590,7 +634,7 @@ rule.
 
 ---
 
-### 6. A zero-length range counts as a full day — **Low**
+### 7. A zero-length range counts as a full day — **Low**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `78b0aeb`)
 - **Location:** `src/parser.ts` — `timelineDurationMinutes()`
@@ -628,7 +672,7 @@ the rule explicitly.
 
 ---
 
-### 7. `recentNotesTitle` is a dead translation key — **Low**
+### 8. `recentNotesTitle` is a dead translation key — **Low**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `5f035d4`)
 - **Location:** `src/i18n.ts` — `recentNotesTitle` (English and Korean)
@@ -672,7 +716,7 @@ dashboard, not in the sidebar, not in the README, and not in
 "Current Streak", "Date Range", "Event Time", "Daily Avg", "Top
 Category") with nothing saying how the number beside it was computed.
 That ambiguity is exactly why the "Daily Avg" denominator defect
-(findings #4 and #5 above) stayed invisible to users.
+(findings #5 and #6 above) stayed invisible to users.
 
 Each metric label now carries a tooltip explaining how it is computed,
 attached with Obsidian's `setTooltip()`. The explanations live in new
