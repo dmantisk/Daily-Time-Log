@@ -205,7 +205,7 @@ does not report a duration larger than 24 hours.
 
 ### 0. CRLF line endings silently destroy Events — **High**
 
-- **Status:** done — fixed in the v0.5.5 review batch
+- **Status:** done — fixed in the v0.5.5 review batch (commit `9549c19`)
 - **Location:** `src/parser.ts` — `TIME_RANGE_REGEX`, and the write path
   in `replaceLineRangeAt()` / `appendLineToBlock()`
 - **Severity:** High — events vanish from the dashboard without any
