@@ -336,7 +336,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 											<div
 												key={key}
 												className="dwl-grid-block"
-												style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, backgroundColor: bgColor, color: textColor }}
+												style={{
+										/* The gutter between neighbouring bars is applied here, as
+										   geometry rather than as a border: Chrome floors fractional
+										   border widths to whole pixels, so a border-based gutter
+										   could not be matched exactly against the vertical gutter
+										   in styles.css. Both read the same --dwl-block-gap. */
+										left: `calc(${leftPercent}% + var(--dwl-block-gap, 5px) / 2)`,
+										width: `calc(${widthPercent}% - var(--dwl-block-gap, 5px))`,
+										backgroundColor: bgColor,
+										color: textColor,
+									}}
 												title={`${item.start} ~ ${item.end} | ${label}${item.description ? `\n${stripHtml(item.description)}` : ""}`}
 												onClick={(evt) => {
 													evt.stopPropagation();

@@ -238,4 +238,28 @@ describe("TimelineView — grid rendering", () => {
 		expect(rowOf(rendered[0])).toBe(0);
 		expect(rowOf(rendered[1])).toBe(23);
 	});
+
+	it("offsets each bar by the shared gap so the horizontal and vertical gutters match", async () => {
+		// The gap between bars used to be 4px horizontally (two 2px
+		// transparent borders) but 6px vertically (calc(100% - 6px) with
+		// top: 3px). The gutters are now geometry driven by the single
+		// --dwl-block-gap custom property: the vertical gutter halves the
+		// gap above and below each bar, and the horizontal gutter insets
+		// each bar by half a gap on either side.
+		//
+		// The inline style must therefore carry the calc() offsets — a
+		// plain percentage would restore the uneven 4px gap.
+		await renderView("# Event\n- 09:00 - 10:00 [Work] Morning\n");
+
+		const rendered = blocks();
+		expect(rendered).toHaveLength(1);
+
+		const style = rendered[0].style;
+		expect(style.left).toContain("var(--dwl-block-gap, 5px) / 2");
+		expect(style.width).toContain("var(--dwl-block-gap, 5px)");
+		// The bar must still start at the same grid position, just nudged
+		// right by half a gap.
+		expect(style.left).toMatch(/^calc\([\d.]+% \+ var\(--dwl-block-gap, 5px\) \/ 2\)$/);
+		expect(style.width).toMatch(/^calc\([\d.]+% - var\(--dwl-block-gap, 5px\)\)$/);
+	});
 });

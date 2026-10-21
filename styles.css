@@ -120,6 +120,12 @@
 	border-left: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
 	overflow: hidden;
+	/* The gutter between neighbouring Event bars. The bars are separated by
+	   geometry (position + size), not by borders, because Chrome floors
+	   fractional border widths to whole pixels — which would make the
+	   horizontal and vertical gaps disagree. Every gap in the grid is
+	   exactly this wide on both axes. */
+	--dwl-block-gap: 5px;
 }
 
 .dwl-grid-row {
@@ -180,8 +186,12 @@
 
 .dwl-grid-block {
 	position: absolute;
-	height: calc(100% - 6px);
-	top: 3px;
+	/* The vertical gutter is split evenly above and below the bar, and the
+	   horizontal gutter is applied by the inline left/width offsets in
+	   TimelineView.tsx. Both read the same --dwl-block-gap, so the grid's
+	   horizontal and vertical gaps always match. */
+	height: calc(100% - var(--dwl-block-gap, 5px));
+	top: calc(var(--dwl-block-gap, 5px) / 2);
 	border-radius: 4px;
 	display: flex;
 	align-items: center;
@@ -200,9 +210,7 @@
 	box-shadow: var(--shadow-s);
 	cursor: pointer;
 	transition: transform 0.1s ease, filter 0.1s ease;
-	border-left: 2px solid transparent;
-	border-right: 2px solid transparent;
-	background-clip: padding-box;
+	background-clip: border-box;
 }
 
 .dwl-grid-block:hover {

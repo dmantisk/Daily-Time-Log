@@ -233,6 +233,8 @@ DayTime Tracker's `timeline-*` classes were ported with the **`dwl-` prefix** to
 | `dwl-grid-cell` | A single 10-minute cell; `.is-selecting` marks it during a drag |
 | `dwl-grid-block` | A rendered Event block on the grid |
 
+**Grid gutter.** The gap between neighbouring Event blocks is set by the `--dwl-block-gap` custom property on `.dwl-grid` (default `5px`). It is applied as **geometry**, not as borders: the vertical gutter splits the gap above and below each block (`height: calc(100% - var(--dwl-block-gap))`, `top: calc(var(--dwl-block-gap) / 2)`), and the horizontal gutter insets each block by half a gap on either side (the inline `left`/`width` `calc()` offsets in `TimelineView.tsx`). Both axes read the same property, so the horizontal and vertical gutters always match. Borders are deliberately avoided here, because Chrome floors fractional border widths to whole pixels and the two axes would drift apart.
+
 ---
 
 ## 7. File-Write Safety Checklist
