@@ -14,9 +14,18 @@ Conventions used below:
 - **Status** — `open` until a fix is committed, then `done` with the
   commit hash.
 
+> **There are no open findings.** Both review batches are complete and
+> released: the first (14 findings) in v0.5.2, the second (5 findings) in
+> v0.5.3. The dashboard metric tooltips followed in the same release.
+>
+> The findings below are kept as the **record** of what was wrong and why
+> the fix looks the way it does — each one states the reproduction, the
+> reasoning and the commit that fixed it. A future review should read them
+> before changing the areas they touch.
+
 ---
 
-## Open findings
+## Findings (all resolved)
 
 ### 1. Image headings: the parser and the badge renderer disagree — **High**
 
@@ -289,8 +298,6 @@ fails if any key is declared but never referenced. The `UIStringKey`
 union itself is excluded from that scan — it is the definition site,
 not a use. This makes the dead key impossible to reintroduce unnoticed,
 which is what the "drop it from one side" constraint made hard before.
-
----
 
 ---
 
