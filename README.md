@@ -106,6 +106,17 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.5.3 (2026-10-21)
+
+A second batch of correctness fixes found in a full review of the plugin.
+
+- **Fixed a heading written as an image being recognized.** `# ![Event](y.png)` renders as a heading containing only an image, so the reading view shows no heading text at all — but the parser substituted the image's alt text and opened an Event section the reading view never opened. The parser now strips the image, matching what the reader actually sees. A link heading still works, because a link's label really is its rendered text.
+- **Fixed a zero-length Event counting as a full day.** `09:00 - 09:00` was treated as an Event crossing midnight and reported as 24 hours of recorded time, while the timeline grid correctly drew nothing for it. It now counts as zero minutes.
+- **Fixed the "Daily Avg" figure dividing by the wrong thing.** It divided the recorded time by the number of notes rather than by the number of days that recorded time, so a note that recorded nothing counted as a zero-minute day and dragged the average down, and two files carrying the same date were counted as two separate days. A daily note is a day, so the average is now taken over the days that actually recorded something.
+- **Fixed future-dated notes still being counted in the dashboard totals.** The period totals excluded notes dated after today, but "Total Notes" and "Date Range" still counted them, so the dashboard could report two notes and a date range ending next month while ignoring that note's time. Both now use the same rule.
+- **Fixed a vault containing only future-dated notes showing an unexplained empty dashboard.** It now shows a notice explaining that those days have not arrived yet.
+- **Removed a dead translation key** that was declared in both languages but never used.
+
 ### 0.5.2 (2026-10-21)
 
 A batch of correctness fixes found in a full review of the plugin.
