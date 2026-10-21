@@ -352,7 +352,7 @@ appearance.
 
 ### 3. An out-of-range time inflates the dashboard — **Low**
 
-- **Status:** done — fixed in the v0.5.5 review batch
+- **Status:** done — fixed in the v0.5.5 review batch (commit `859367f`)
 - **Location:** `src/parser.ts` — `timeToMinutes()`, `minutesToTime()`
 - **Severity:** Low — a typo in a note produces a nonsense figure, but
   nothing is lost
