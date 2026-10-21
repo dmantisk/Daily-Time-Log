@@ -156,7 +156,7 @@ carrying the same date as one day"`, and the zero case), and
 
 ### 3. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
 
-- **Status:** open
+- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
 - **Location:** `src/dashboardCollector.ts` — `computeDashboardStats()`,
   `src/DashboardView.ts` — the empty-vault check
 - **Related to:** the v0.5.2 fix "exclude future-dated notes from the
@@ -190,6 +190,34 @@ computeDashboardStats(dates, [{ date: dates[0], parsed: { timeline: [] } }], dat
 Apply the same future-date bound to the vault-wide counts, or make the
 difference explicit in the labels. Also decide what the dashboard should
 show when a vault contains only future-dated notes.
+
+**Resolution**
+
+*Decided:* future-dated notes are **excluded** from the vault-wide
+figures, and a vault holding only future-dated notes shows a **notice**
+rather than a dashboard of unexplained zeros.
+
+- The future bound is now ONE shared rule — `isOnOrBeforeToday()` in
+  `src/dashboardCollector.ts` — applied to the period window
+  (`isWithinRecentWindow`), to the vault-wide figures (`totalNotes`,
+  `oldestDate`, `newestDate`, the streak), and to `recentParsed` inside
+  `computeDashboardStats` itself. Applying it inside the collector as
+  well makes the function self-consistent whatever the caller passes in,
+  so the period figures and the vault-wide figures can never disagree
+  about which notes count.
+- The bound is a **calendar-day** bound — the time of day is irrelevant.
+- The streak is now computed from the same filtered set, so a
+  future-dated note cannot extend it either.
+- `DashboardView` distinguishes the two empty-ish states: a vault with no
+  daily notes at all keeps the "No daily notes yet." state, while a
+  vault with only future-dated notes shows the new
+  `dashboardFutureOnlyNotice` message, explaining that those days have
+  not arrived yet so nothing is counted until they do.
+
+Tests added in `src/dashboardCollector.test.ts` (a new
+`"computeDashboardStats — future-dated notes"` block plus the
+`isOnOrBeforeToday` block), and `.agents/AGENTS.md` §1.8 now states the
+rule.
 
 ---
 

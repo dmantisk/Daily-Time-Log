@@ -2,7 +2,7 @@ import { ItemView, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "
 import type DailyWorkLogPlugin from "./main";
 import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./parser";
 import { formatDateBasename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
-import { computeDashboardStats, isWithinRecentWindow, type DashboardStats } from "./dashboardCollector";
+import { computeDashboardStats, isOnOrBeforeToday, isWithinRecentWindow, type DashboardStats } from "./dashboardCollector";
 import { getTextColorForBackground } from "./components/colorUtils";
 import { findCategoryByDisplayName } from "./settings";
 import { t } from "./i18n";
@@ -73,6 +73,13 @@ export class DashboardView extends ItemView {
 			.filter((note) => isWithinRecentWindow(note.date, today, this.selectedWindowDays))
 			.sort((a, b) => b.date.getTime() - a.date.getTime());
 
+		// A vault can hold daily notes that are all dated in the future (a
+		// pre-created template, a fixed-date template). Those days have not
+		// happened yet, so they record no time and are excluded from every
+		// figure — but the dashboard is still worth showing, with a notice
+		// explaining why it is empty.
+		const hasPastOrPresentNotes = allNotes.some((note) => isOnOrBeforeToday(note.date, today));
+
 		// Read in parallel rather than one file at a time — "All Time" can mean
 		// every daily note in the vault, and cachedRead() calls don't depend on
 		// each other, so there's no reason to serialize them.
@@ -84,6 +91,11 @@ export class DashboardView extends ItemView {
 		);
 
 		if (token !== this.refreshToken) return; // superseded by a newer refresh() call meanwhile
+
+		if (!hasPastOrPresentNotes) {
+			container.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardFutureOnlyNotice", language) });
+			return;
+		}
 
 		const uncategorizedLabel = t("uncategorized", language);
 		const stats = computeDashboardStats(

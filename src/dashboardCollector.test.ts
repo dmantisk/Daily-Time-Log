@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDashboardStats, getRecentWindowStart, isWithinRecentWindow } from "./dashboardCollector";
+import { computeDashboardStats, getRecentWindowStart, isOnOrBeforeToday, isWithinRecentWindow } from "./dashboardCollector";
 import type { ParsedDailyNote } from "./parser";
 
 const EMPTY_NOTE: ParsedDailyNote = { timeline: [] };
@@ -43,6 +43,77 @@ describe("isWithinRecentWindow", () => {
 	it("honours a shorter window", () => {
 		expect(isWithinRecentWindow(new Date(2026, 6, 20), today, 7)).toBe(false);
 		expect(isWithinRecentWindow(new Date(2026, 6, 24), today, 7)).toBe(true);
+	});
+});
+
+describe("isOnOrBeforeToday", () => {
+	const today = new Date(2026, 6, 30); // 2026-07-30
+
+	it("accepts today and every earlier day", () => {
+		expect(isOnOrBeforeToday(new Date(2026, 6, 30), today)).toBe(true);
+		expect(isOnOrBeforeToday(new Date(2026, 6, 1), today)).toBe(true);
+		expect(isOnOrBeforeToday(new Date(2020, 0, 1), today)).toBe(true);
+	});
+
+	it("rejects a future day", () => {
+		expect(isOnOrBeforeToday(new Date(2026, 6, 31), today)).toBe(false);
+		expect(isOnOrBeforeToday(new Date(2026, 7, 15), today)).toBe(false);
+	});
+
+	it("ignores the time of day", () => {
+		// A note dated today is "today" even if its file was written at a
+		// different hour — the bound is a CALENDAR-day bound.
+		expect(isOnOrBeforeToday(new Date(2026, 6, 30, 23, 59), today)).toBe(true);
+		expect(isOnOrBeforeToday(new Date(2026, 6, 30, 0, 0), today)).toBe(true);
+	});
+});
+
+describe("computeDashboardStats — future-dated notes", () => {
+	const today = new Date(2026, 6, 14); // 2026-07-14
+
+	it("excludes a future-dated note from the vault-wide totals", () => {
+		// The period totals already excluded future-dated notes, but
+		// `totalNotes` and `newestDate` still counted them — so the
+		// dashboard could report "Total Notes: 2" with a date range
+		// ending 2026-07-31 while its own time figures ignored that note.
+		const dates = [new Date(2026, 6, 14), new Date(2026, 6, 31)];
+		const stats = computeDashboardStats(dates, [{ date: dates[0], parsed: EMPTY_NOTE }], today);
+		expect(stats.totalNotes).toBe(1);
+		expect(stats.oldestDate).toEqual(new Date(2026, 6, 14));
+		expect(stats.newestDate).toEqual(new Date(2026, 6, 14));
+	});
+
+	it("excludes a future-dated note from the streak", () => {
+		// A future-dated note must not extend the streak backwards either.
+		const dates = [new Date(2026, 6, 14), new Date(2026, 6, 15)];
+		expect(computeDashboardStats(dates, [], today).currentStreak).toBe(1);
+	});
+
+	it("excludes a future-dated note from the time totals and the daily average", () => {
+		// Defence in depth: even if a caller hands a future-dated note
+		// straight to `recentParsed`, it must not contribute minutes.
+		const future = new Date(2026, 6, 20);
+		const stats = computeDashboardStats(
+			[today, future],
+			[
+				{ date: today, parsed: { timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" }] } satisfies ParsedDailyNote },
+				{ date: future, parsed: { timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "b" }] } satisfies ParsedDailyNote },
+			],
+			today,
+			[{ name: "Work", displayName: "Work", color: "#d0e1fd" }],
+			"Uncategorized"
+		);
+		expect(stats.recentEventMinutes).toBe(60);
+		expect(stats.avgEventMinutesPerDay).toBe(60);
+		expect(stats.recentNotesSummary).toHaveLength(1);
+	});
+
+	it("reports an all-future vault as empty rather than as a note count", () => {
+		const stats = computeDashboardStats([new Date(2026, 6, 31)], [], today);
+		expect(stats.totalNotes).toBe(0);
+		expect(stats.oldestDate).toBeNull();
+		expect(stats.newestDate).toBeNull();
+		expect(stats.currentStreak).toBe(0);
 	});
 });
 

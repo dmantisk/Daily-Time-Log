@@ -28,6 +28,7 @@ export interface NoteActivitySummary {
 }
 
 export interface DashboardStats {
+	/** Daily notes dated on or before `today` — future-dated notes are NOT counted. */
 	totalNotes: number;
 	oldestDate: Date | null;
 	newestDate: Date | null;
@@ -66,6 +67,26 @@ export function getRecentWindowStart(today: Date, windowDays: number = RECENT_WI
 }
 
 /**
+ * True when a note's date is on or before `today` (i.e. the day has
+ * already happened).
+ *
+ * A daily note can legitimately be dated in the future — a template
+ * pre-created for tomorrow, a template with a fixed date, a note copied
+ * from another vault. Such a note records no elapsed time, so it is
+ * excluded from every figure that describes what was actually recorded.
+ *
+ * This is the ONE shared rule for the future bound; both
+ * `isWithinRecentWindow` and the vault-wide counts use it, so the
+ * period totals and the vault-wide figures can never disagree about
+ * which notes count.
+ */
+export function isOnOrBeforeToday(noteDate: Date, today: Date): boolean {
+	const noteDay = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+	const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+	return noteDay.getTime() <= todayDay.getTime();
+}
+
+/**
  * True when a note's date falls inside the selected window.
  *
  * The window is bounded on BOTH ends: notes dated after `today` are
@@ -79,10 +100,9 @@ export function getRecentWindowStart(today: Date, windowDays: number = RECENT_WI
  * dropped but the future bound still applies.
  */
 export function isWithinRecentWindow(noteDate: Date, today: Date, windowDays: number = RECENT_WINDOW_DAYS): boolean {
-	const noteDay = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
-	const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+	if (!isOnOrBeforeToday(noteDate, today)) return false;
 
-	if (noteDay.getTime() > todayDay.getTime()) return false;
+	const noteDay = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
 	return noteDay.getTime() >= getRecentWindowStart(today, windowDays).getTime();
 }
 
@@ -100,7 +120,15 @@ export function computeDashboardStats(
 	categories: CustomCategory[] = DEFAULT_CATEGORIES,
 	uncategorizedLabel = "Uncategorized"
 ): DashboardStats {
-	if (allNoteDates.length === 0) {
+	// The vault-wide figures describe what was actually recorded, so they
+	// apply the SAME future bound as the period totals. Without this, the
+	// dashboard could report "Total Notes: 2" with a date range ending
+	// 2026-07-31 while its own time figures ignored that note entirely.
+	// (A daily note is named for one date, so a future-dated note is a
+	// day that has not happened yet.)
+	const countedNoteDates = allNoteDates.filter((date) => isOnOrBeforeToday(date, today));
+
+	if (countedNoteDates.length === 0) {
 		return {
 			totalNotes: 0,
 			oldestDate: null,
@@ -114,11 +142,11 @@ export function computeDashboardStats(
 		};
 	}
 
-	const sorted = [...allNoteDates].sort((a, b) => a.getTime() - b.getTime());
+	const sorted = [...countedNoteDates].sort((a, b) => a.getTime() - b.getTime());
 	const oldestDate = sorted[0];
 	const newestDate = sorted[sorted.length - 1];
 
-	const noteDateStrings = new Set(allNoteDates.map((date) => formatDateBasename(date)));
+	const noteDateStrings = new Set(countedNoteDates.map((date) => formatDateBasename(date)));
 	let currentStreak = 0;
 	const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 	while (noteDateStrings.has(formatDateBasename(cursor))) {
@@ -148,7 +176,14 @@ export function computeDashboardStats(
 	const recentNotesSummary: NoteActivitySummary[] = [];
 
 	// Sort recentParsed newest-first for activity list summary
-	const sortedRecentParsed = [...recentParsed].sort((a, b) => b.date.getTime() - a.date.getTime());
+	//
+	// The future bound is applied HERE as well, so the function is
+	// self-consistent no matter what the caller passes in: a note dated
+	// after today can never contribute to the totals, the category
+	// breakdown, the activity list, or the daily average.
+	const sortedRecentParsed = [...recentParsed]
+		.filter(({ date }) => isOnOrBeforeToday(date, today))
+		.sort((a, b) => b.date.getTime() - a.date.getTime());
 
 	for (const { date, parsed } of sortedRecentParsed) {
 		let noteEventMinutes = 0;
@@ -242,7 +277,7 @@ export function computeDashboardStats(
 		daysWithRecordedTime.size > 0 ? Math.round(recentEventMinutes / daysWithRecordedTime.size) : 0;
 
 	return {
-		totalNotes: allNoteDates.length,
+		totalNotes: countedNoteDates.length,
 		oldestDate,
 		newestDate,
 		currentStreak,

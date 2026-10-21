@@ -102,10 +102,16 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 - **Do NOT auto-migrate notes** by inserting the Event heading into them. Notes without the heading are left untouched unless the user (or the sidebar's inline Event creation) adds it explicitly.
 
 ### 1.8 Dashboard Statistics
+- **A note dated after `today` is a day that has not happened yet, so it is counted NOWHERE.** A daily note can legitimately be dated in the future — a template pre-created for tomorrow, a template with a fixed date, a note copied from another vault — but such a note records no elapsed time. The bound is a CALENDAR-day bound (the time of day is irrelevant) and it applies to:
+  - the period totals (`isWithinRecentWindow` — including the "All Time" window, whose start bound is dropped but whose future bound is not);
+  - the vault-wide figures — `totalNotes`, `oldestDate`, `newestDate` and the current streak;
+  - the time totals, the category breakdown, the activity list and the daily average (applied inside `computeDashboardStats` itself, so the function is self-consistent whatever the caller passes in).
+  - The ONE shared rule lives in `isOnOrBeforeToday()` in `dashboardCollector.ts`. There must be no second, differently-implemented future bound.
 - **The "Daily Avg" figure divides by the DAYS that recorded time** — the window's total recorded minutes ÷ the number of distinct dates whose note recorded at least one minute. A daily note IS a day, so the label is accurate; the denominator is a count of days, not of files.
   - A note that exists but recorded nothing is a day that recorded **nothing**, not a day that recorded a zero — it must not drag the average down.
   - Two files carrying the same date (`2026-07-14.md` and `archive/2026-07-14.md`) are ONE day and must not be counted twice.
   - Dividing by the number of *notes* was wrong on both counts (it counted empty notes as zero-minute days, and counted same-date files as separate days).
+- **A vault holding only future-dated notes shows a NOTICE, not the "No daily notes yet." empty state and not a dashboard of unexplained zeros** — `dashboardFutureOnlyNotice` in `i18n.ts` explains that those days have not arrived yet, so nothing is counted until they do. The "no daily notes yet" state stays reserved for a vault with no daily notes at all.
 
 ---
 
@@ -192,6 +198,9 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - `isDailyNoteFileName` accepts a date-named `.md` file and rejects date-named files with any other extension — the plugin WRITES to the files it treats as daily notes, so a non-Markdown file must never be picked up and overwritten.
 - **Required `dashboardCollector.ts` test coverage** (`src/dashboardCollector.test.ts`):
   - `isWithinRecentWindow` bounds the window on BOTH ends. Notes dated after `today` are excluded — a future-dated daily note (a pre-created template, a copied note) records no elapsed time, so counting it would inflate the period totals and put a not-yet-happened day at the top of the recent-activity list. The future bound applies to the "All Time" window too.
+  - `isOnOrBeforeToday` is the single shared future bound (1.8): it accepts today and every earlier day, rejects a future day, and ignores the time of day.
+  - `computeDashboardStats` excludes future-dated notes from the **vault-wide** figures too — `totalNotes`, `oldestDate`, `newestDate` and the streak — not just from the period totals. The period figures and the vault-wide figures must never disagree about which notes count.
+  - `computeDashboardStats` also excludes a future-dated note handed to it directly in `recentParsed` (defence in depth — it must contribute no minutes, no category breakdown, no activity row and no average).
   - The "Daily Avg" denominator is the number of distinct dates that recorded time: a note that recorded nothing is excluded, two files carrying the same date count as one day, and a window where nothing recorded time reports 0.
 - **Required `settings.ts` test coverage** (`src/settings.test.ts`):
   - `validateCategoryName` rejects a blank name and a name already used by another category (case-insensitively), accepts a fresh name, and accepts a category keeping its own name when its index is passed as `ignoreIndex`.
