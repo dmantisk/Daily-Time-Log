@@ -10,7 +10,7 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 - **Configurable Event heading**: choose its text and Markdown heading level; only the configured heading is recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
-- **Theme-aware UI**: the sidebar and Work Insights follow Obsidian's active theme; popups follow the system theme.
+- **Theme-aware UI**: the sidebar, Work Insights, and popups follow Obsidian's active theme.
 - **Work Insights**: a vault summary — total notes in configured folder, current streak, time window filtering (7d/30d/90d/All), total event time and daily average, category time breakdown visualization (Multi-Segment Progress Bar), and recent note activity history.
 
 ## Daily Note Format
@@ -135,7 +135,7 @@ A batch of correctness fixes found in a full review of the plugin.
 - **Removed PDF/HTML export**; use a screenshot to capture the timeline.
 - **Removed To-Do parsing**, the sidebar To-Do panel, the Work Insights To-Do completion metric, and To-Do export; checkbox lines remain ordinary note content.
 - **Removed all Daily Time Log controls for opening or creating daily notes**; use Obsidian's Daily Notes core plugin instead. The daily-note-folder setting is now a scan filter for the dashboard and category badges, not a destination for new notes.
-- **Removed the sidebar-specific Light/Dark theme toggle.** The sidebar and Work Insights now both follow Obsidian's active theme; popups keep following the system theme.
+- **Removed the sidebar-specific Light/Dark theme toggle.** The sidebar, Work Insights, and popups follow Obsidian's active theme.
 - **Added settings for the Event heading text and Markdown level**, used when parsing daily notes.
 - The Event heading is now **fully configurable**: only the configured heading (at the configured level) is recognized. There is no hard-coded fallback list of historical spellings, and the heading is matched in its rendered form, so `# **Event**` and `# Event #` are recognized too.
 - Events are read **only from under the configured heading**, and the section ends at the next heading at the same level or above.

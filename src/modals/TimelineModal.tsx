@@ -102,7 +102,7 @@ function TimelineModalContent({
 						<button
 							type="button"
 							key={cat.name}
-							className={`dwl-category-chip${category === cat.displayName ? " is-selected" : ""}`}
+							className={`dwl-category-chip${category === cat.displayName ? " mod-cta" : ""}`}
 							onClick={() => setCategory(category === cat.displayName ? undefined : cat.displayName)}
 						>
 							<span className="dwl-category-chip-preview" style={{ backgroundColor: cat.color }} />
@@ -126,14 +126,14 @@ function TimelineModalContent({
 
 			<div className="dwl-modal-buttons">
 				{onDelete && (
-					<button type="button" className="dwl-modal-btn-delete" onClick={onDelete}>
+					<button type="button" className="mod-warning dwl-modal-btn-delete" onClick={onDelete}>
 						{t("btnDelete", language)}
 					</button>
 				)}
-				<button type="button" className="dwl-modal-btn-cancel" onClick={onCancel}>
+				<button type="button" onClick={onCancel}>
 					{t("btnCancel", language)}
 				</button>
-				<button type="button" className="dwl-modal-btn-save" onClick={handleSave}>
+				<button type="button" className="mod-cta" onClick={handleSave}>
 					{t("btnSave", language)}
 				</button>
 			</div>
@@ -143,11 +143,8 @@ function TimelineModalContent({
 
 /**
  * Add/edit modal for Event (Timeline) items — content is a React tree, but
- * the modal shell itself is still a plain Obsidian `Modal` (design.md §3:
- * modals always follow the SYSTEM theme via Canvas/CanvasText, independent
- * of whichever framework renders their content). The title uses Obsidian's
- * own native title bar (`this.titleEl`) rather than a custom in-content
- * heading — matches DayTime Tracker's TimelineModal structure exactly.
+ * the modal shell, title, and action buttons use Obsidian's native modal
+ * styling and follow the active Obsidian theme.
  */
 export class TimelineModal extends Modal {
 	private root: Root | null = null;
@@ -167,7 +164,6 @@ export class TimelineModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
-		this.containerEl.addClass("dwl-event-modal");
 		this.titleEl.setText(this.initial ? t("modalEditTitle", this.language) : t("modalAddTitle", this.language));
 
 		this.root = createRoot(contentEl);

@@ -172,11 +172,6 @@ export class DashboardView extends ItemView {
 	private renderKpiGrid(container: HTMLElement, stats: DashboardStats, language: MarkerLanguage): void {
 		const grid = container.createDiv({ cls: "dwl-dashboard-kpi-grid" });
 
-		const workCat = this.plugin.settings.categories.find(
-			(c) => c.name === "Work" || c.displayName.toLowerCase() === "work" || c.displayName === "업무"
-		);
-		const workColor = workCat ? workCat.color : "#d0e1fd";
-
 		// Card 1: Total Notes & Streak
 		const streakBadge = stats.currentStreak > 0 ? `${stats.currentStreak}${t("unitDays", language)}` : "";
 		this.renderMetricCard(
@@ -184,8 +179,7 @@ export class DashboardView extends ItemView {
 			t("statTotalNotes", language),
 			String(stats.totalNotes),
 			`${t("statStreak", language)}: ${stats.currentStreak}${t("unitDays", language)}`,
-			streakBadge,
-			workColor
+			streakBadge
 		);
 
 		// Card 2: Event Recording Time & Daily Average
@@ -207,18 +201,14 @@ export class DashboardView extends ItemView {
 		label: string,
 		value: string,
 		footerText: string,
-		badgeText?: string,
-		badgeBgColor?: string
+		badgeText?: string
 	): void {
 		const card = container.createDiv({ cls: "dwl-dashboard-kpi-card" });
 		const topRow = card.createDiv({ cls: "dwl-kpi-top-row" });
 		topRow.createDiv({ cls: "dwl-kpi-label", text: label });
 
 		if (badgeText) {
-			const badge = topRow.createDiv({ cls: "dwl-kpi-badge", text: badgeText });
-			if (badgeBgColor) {
-				badge.setCssStyles({ backgroundColor: badgeBgColor, color: "#0f172a" });
-			}
+			topRow.createDiv({ cls: "dwl-kpi-badge", text: badgeText });
 		}
 
 		card.createDiv({ cls: "dwl-kpi-value", text: value });

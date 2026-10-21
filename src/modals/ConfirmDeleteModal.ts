@@ -19,17 +19,16 @@ export class ConfirmDeleteModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
-		this.containerEl.addClass("dwl-confirm-modal");
 		this.titleEl.setText(this.titleText);
 
 		contentEl.createEl("p", { cls: "dwl-modal-text", text: this.message });
 
 		const buttonRow = contentEl.createDiv({ cls: "dwl-modal-buttons" });
 
-		const cancelBtn = buttonRow.createEl("button", { cls: "dwl-modal-btn-cancel", text: this.cancelText });
+		const cancelBtn = buttonRow.createEl("button", { text: this.cancelText });
 		cancelBtn.addEventListener("click", () => this.close());
 
-		const okBtn = buttonRow.createEl("button", { cls: "dwl-modal-btn-save", text: this.okText });
+		const okBtn = buttonRow.createEl("button", { cls: "mod-cta", text: this.okText });
 		okBtn.addEventListener("click", () => {
 			this.onConfirm();
 			this.close();

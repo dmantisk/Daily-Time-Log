@@ -201,7 +201,7 @@ export function computeDashboardStats(
 		const percentage = recentEventMinutes > 0 ? Math.round((uncategorizedMinutes / recentEventMinutes) * 100) : 0;
 		categoryBreakdown.push({
 			displayName: uncategorizedLabel,
-			color: "#94a3b8", // Slate gray for uncategorized
+			color: "var(--text-faint)",
 			minutes: uncategorizedMinutes,
 			percentage,
 		});

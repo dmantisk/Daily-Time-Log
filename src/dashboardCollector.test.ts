@@ -153,7 +153,9 @@ describe("computeDashboardStats", () => {
 		expect(stats.recentEventMinutes).toBe(120);
 		const totalBreakdownMinutes = stats.categoryBreakdown.reduce((sum, item) => sum + item.minutes, 0);
 		expect(totalBreakdownMinutes).toBe(stats.recentEventMinutes);
-		expect(stats.categoryBreakdown.find((item) => item.displayName === "Uncategorized")?.minutes).toBe(60);
+		const uncategorized = stats.categoryBreakdown.find((item) => item.displayName === "Uncategorized");
+		expect(uncategorized?.minutes).toBe(60);
+		expect(uncategorized?.color).toBe("var(--text-faint)");
 	});
 
 	it("matches category names case-insensitively, same as the badge renderer", () => {

@@ -81,22 +81,19 @@ function findCategory(
 }
 
 /**
- * Builds a badge `<span>` element for the given category token. Inline
- * styles carry the background and text colors so the badge looks right
- * regardless of what CSS snippets or themes are active. A CSS class is
- * also added so users can further override via their own snippets if they
- * want to.
+ * Builds a badge `<span>` element for the given category token. Configured
+ * category colors are explicit user data; unconfigured tokens inherit the
+ * theme-aware fallback styles from CSS.
  */
 function makeBadgeSpan(token: string, categories: CustomCategory[]): HTMLSpanElement {
 	const cat = findCategory(token, categories);
-	const bg = cat?.color ?? "#e2e8f0";
-	const fg = getTextColorForBackground(bg);
-
 	const span = document.createElement("span");
 	span.className = `dwl-cat-badge dwl-cat-badge--${token.trim().toLowerCase().replace(/[\s]+/g, "-")}`;
 	span.textContent = token;
-	span.style.backgroundColor = bg;
-	span.style.color = fg;
+	if (cat) {
+		span.style.backgroundColor = cat.color;
+		span.style.color = getTextColorForBackground(cat.color);
+	}
 	return span;
 }
 

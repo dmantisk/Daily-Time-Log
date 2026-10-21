@@ -327,8 +327,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 										const widthPercent = ((endCol - startCol) / CELLS_PER_HOUR) * 100;
 
 										const catObj = findCategoryByDisplayName(categories, item.category);
-										const bgColor = catObj?.color ?? "var(--dwl-bg-active)";
-										const textColor = catObj ? getTextColorForBackground(catObj.color) : "var(--dwl-text)";
+										const bgColor = catObj?.color ?? "var(--background-modifier-hover)";
+										const textColor = catObj ? getTextColorForBackground(catObj.color) : "var(--text-normal)";
 										const label = item.category ?? t("uncategorized", language);
 										const isShort = overlapEnd - overlapStart <= CELL_MINUTES;
 

@@ -9,12 +9,12 @@
 ## 디자인 원칙
 
 1. **파스텔톤 컬러** — 쨍한 원색 대신 저채도 소프트 파스텔로 눈의 피로도를 줄입니다.
-2. **저채도 버튼** — Obsidian 기본 `.mod-cta`(파란색 강조) 대신 무채색 계열 3종으로 통일합니다.
-3. **미니멀 삭제 버튼** — 평소엔 투명, hover 시에만 빨간 텍스트로 노출합니다.
-4. **팝업은 시스템 테마를 따름** *(변경)* — ~~라이트/다크 테마와 무관하게 흰색 배경 고정~~에서 변경. CSS `Canvas`/`CanvasText` 시스템 색상을 사용해 라이트/다크 테마에 따라 자동 전환됩니다. 자세한 내용은 §3 참조.
+2. **Obsidian 기본 컨트롤 우선** — 버튼은 Obsidian 기본 스타일과 의미 클래스(`.mod-cta`, `.mod-warning`)를 사용합니다.
+3. **네이티브 모달 우선** — 제목, 배경, 오버레이, 기본 버튼은 Obsidian Modal의 스타일을 사용합니다.
+4. **팝업은 Obsidian 테마를 따름** — Obsidian의 기본 Modal 스타일과 활성 테마를 사용합니다. 자세한 내용은 §3 참조.
 5. **Obsidian CSS 변수 우선** — 사이드바와 중앙 대시보드 뷰는 `--text-normal`, `--background-secondary` 등 Obsidian 변수를 사용해 활성 테마를 따릅니다.
 6. **다국어 지원 (EN / KO)** *(추가)* — 기본값은 Obsidian UI 언어 자동 감지이며, 플러그인 설정에서 English/Korean을 직접 선택할 수 있습니다. 파서는 항상 두 언어 마커를 동시에 인식하므로(AGENTS.md 1.3) UI 문구도 이와 별개로 설정된 언어에 따라 전환됩니다. 자세한 내용은 §9 참조.
-7. **테마 구분** — 사이드바와 대시보드는 Obsidian 테마를 따르고, 모달은 시스템 색상(`Canvas`/`CanvasText`)을 사용합니다. 자세한 내용은 §10 참조.
+7. **테마 일관성** — 사이드바, 대시보드, 모달 모두 Obsidian 테마를 따릅니다. 카테고리 색상만 사용자 설정 데이터로 유지합니다.
 8. **카테고리 파스텔 팔레트 = DayTime Tracker 기본값과 동일** *(2026-08-05 확인)* — §2.1의 5색 팔레트가 DayTime Tracker의 `DEFAULT_CATEGORIES`(Work/Study/Rest/Reading/Exercise) 색상값과 정확히 일치함을 확인했습니다. 카테고리 기능 이식 시 이 팔레트를 그대로 기본 카테고리 색상으로 재사용합니다.
 
 ---
@@ -56,50 +56,17 @@
 
 ### 2.1 카테고리 파스텔 팔레트
 
-```css
-/* styles.css — .dwl-view 스코프 내 변수 */
---dwl-c-work:          #d0e1fd;  /* Pastel Blue  */
---dwl-c-work-text:     #1e3a8a;  /* Deep Blue    */
+These are the default category colors stored in `settings.ts`, not theme colors or CSS variables. Users can change them in settings; category blocks and badges intentionally retain their configured colors across Obsidian themes. Text contrast is calculated from each configured color.
 
---dwl-c-study:         #ebd3f8;  /* Pastel Purple */
---dwl-c-study-text:    #581c87;  /* Deep Purple  */
+### 2.2 Buttons and controls
 
---dwl-c-rest:          #d1f2e5;  /* Pastel Green */
---dwl-c-rest-text:     #064e3b;  /* Deep Green   */
-
---dwl-c-reading:       #fdecd0;  /* Pastel Orange */
---dwl-c-reading-text:  #7c2d12;  /* Deep Orange  */
-
---dwl-c-exercise:      #e2e5e9;  /* Pastel Slate Gray */
---dwl-c-exercise-text: #1e293b;  /* Deep Slate   */
-```
-
-### 2.2 액션 버튼 3종
-
-| 역할 | 배경 | 텍스트 | 테두리 | hover 배경 |
-|---|---|---|---|---|
-| **저장/확인** | `#e2e8f0` | `#1e293b` | `#64748b` | `#cbd5e1` |
-| **취소** | `transparent` | `#475569` | `#cbd5e1` | `#f1f5f9` |
-| **삭제** | `transparent` | `#991b1b` | `#fca5a5` | `#fee2e2` |
-
-> [!IMPORTANT]
-> `.mod-cta` (Obsidian 기본 파란색 버튼)는 사용하지 않습니다. 모든 버튼은 저채도 계열로 통일합니다.
+Use Obsidian's native styles for modal actions: `.mod-cta` for save/confirm and `.mod-warning` for destructive actions. Other controls should inherit Obsidian's active-theme styling.
 
 ---
 
 ## 3. 모달 스타일 원칙
 
-> [!IMPORTANT]
-> *(변경)* 이전 안(흰색 배경 고정)을 폐기하고, 시스템 테마를 따르도록 변경했습니다. 사이드바 본체는 Obsidian 테마 변수(`--background-secondary` 등)를 쓰지만, 모달은 사이드바보다 더 범용적인 **시스템 레벨** 라이트/다크 신호(`Canvas`/`CanvasText`)를 사용합니다 — Obsidian 창 자체가 OS 다크모드를 따르지 않는 environments에서도 모달이 항상 읽기 가능한 대비를 유지하기 위함입니다.
-
-- **배경**: `Canvas` (시스템 배경색) — 라이트/다크 테마에 따라 자동 전환
-- **텍스트/타이틀**: `CanvasText` (시스템 텍스트색), 타이틀은 `font-weight: 700`, `font-size: 14~15px`
-- **테두리**: `rgba(0,0,0,0.1)` (그림자와 함께 배경과의 경계를 미세하게 표시)
-- **입력 필드 테두리**: 기본 `rgba(0,0,0,0.18)`, focus 시 `#a0aec0`
-- **textarea**: 세로 resize만 허용 (`resize: vertical; min-height: 48px; max-height: 90px`)
-- **등장 애니메이션**: `slideUp` — 14px 아래에서 위로, 0.25s, `cubic-bezier(0.16, 1, 0.3, 1)`
-- **dim 오버레이**: `rgba(0, 0, 0, 0.4)`, `fadeIn` 0.2s
-- **너비**: 이벤트 모달 `260px`, 확인 팝업 `230px` (둘 다 `max-width: calc(100% - 24px)`로 사이드바 폭 초과 방지)
+모달 셸, 제목, 배경, 오버레이, 기본 버튼은 Obsidian `Modal`의 네이티브 스타일을 사용합니다. 추가 CSS는 콘텐츠 레이아웃과 입력 크기 조정에만 사용하며, 색상은 Obsidian CSS 변수를 참조합니다. 저장/삭제 액션은 각각 Obsidian의 `.mod-cta` / `.mod-warning` 스타일을 사용합니다.
 
 ---
 
@@ -324,17 +291,17 @@ DayTime Tracker의 `timeline-*` 클래스를 이식하되, 이 프로젝트 컨�
 
 사이드바는 Obsidian의 활성 테마를 따라갑니다. CSS 색상 토큰은 `--background-primary`, `--background-secondary`, `--background-modifier-hover`, `--background-modifier-border`, `--text-normal`, `--text-muted`, `--text-faint`, `--interactive-accent`를 참조합니다. 별도의 사이드바 테마 설정은 없습니다.
 
-### 10.1 세 가지 테마 개념 (혼동 주의)
+### 10.1 테마 적용 범위
 
 | 대상 | 테마 소스 | 설정 위치 |
 |---|---|---|
 | 사이드바 (`view.ts`) | Obsidian 활성 테마 변수 | 없음 — Obsidian 테마를 그대로 따름 |
-| 모달/팝업 (이벤트/확인) | 시스템 테마 (`Canvas`/`CanvasText`) | 없음 — 항상 시스템을 따름 (원칙 4) |
-| 대시보드 (`DashboardView.ts`) | Obsidian 자체 테마 변수 | 없음 — Obsidian 테마를 그대로 따름 (원칙 5) |
+| 모달/팝업 (이벤트/확인) | Obsidian `Modal` 기본 스타일 및 테마 변수 | 없음 — Obsidian 테마를 그대로 따름 |
+| 대시보드 (`DashboardView.ts`) | Obsidian 자체 테마 변수 | 없음 — Obsidian 테마를 그대로 따름 |
 
-### 10.2 모달 색상
+### 10.2 사용자 지정 카테고리 색상
 
-이벤트/확인 모달은 사이드바 토큰이나 Obsidian 테마가 아닌 시스템 색상(`Canvas`/`CanvasText`)을 따릅니다.
+카테고리 색상은 설정으로 저장되는 사용자 데이터이며, 타임라인 블록과 해당 카테고리 배지에 적용됩니다. 다른 화면 색상은 Obsidian 테마 변수를 사용합니다.
 
 ---
 

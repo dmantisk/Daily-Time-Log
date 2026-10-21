@@ -6,22 +6,12 @@
 }
 
 .dwl-view {
-	--dwl-bg: var(--background-primary);
-	--dwl-bg-header: var(--background-secondary);
-	--dwl-bg-hover: var(--background-modifier-hover);
-	--dwl-bg-active: var(--background-modifier-hover);
-	--dwl-border: var(--background-modifier-border);
-	--dwl-border-light: var(--background-modifier-border);
-	--dwl-text: var(--text-normal);
-	--dwl-text-muted: var(--text-muted);
-	--dwl-text-faint: var(--text-faint);
-	--dwl-accent: var(--interactive-accent);
 	display: flex;
 	flex-direction: column;
 	gap: 0.75rem;
 	padding: 0.5rem;
-	background: var(--dwl-bg);
-	color: var(--dwl-text);
+	background: var(--background-primary);
+	color: var(--text-normal);
 	height: 100%;
 	box-sizing: border-box;
 	overflow: hidden;
@@ -44,16 +34,14 @@
 .dwl-section-title {
 	font-size: var(--font-ui-smaller);
 	font-weight: 600;
-	color: var(--dwl-text-muted);
+	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
 	display: flex;
 	align-items: center;
 }
 
-/* View header (date title + "today's note" button) — slightly darker than
-   the grid body background, matching DayTime Tracker's own header treatment
-   (background-color: var(--background-secondary) there). */
+/* View header and hour labels use Obsidian's secondary surface color. */
 
 .dwl-view-header {
 	display: flex;
@@ -62,23 +50,20 @@
 	gap: 0.5rem;
 	padding: 0.5rem 0.6rem;
 	margin: -0.5rem -0.5rem 0;
-	background: var(--dwl-bg-header);
-	border-bottom: 1px solid var(--dwl-border-light);
+	background: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .dwl-view-date-title {
 	margin: 0;
 	font-size: 1rem;
 	font-weight: 700;
-	color: var(--dwl-text);
+	color: var(--text-normal);
 }
 
 
 
-/* Banner shown when the note has no Event section under the configured
-   heading. Deliberately NOT themed via --dwl-* tokens: it is a notice about
-   the note's structure, not plugin content, so it uses Obsidian's own
-   theme colors (same reasoning as the empty-state block below). */
+/* Banner shown when the note has no Event section under the configured heading. */
 .dwl-missing-heading-banner {
 	display: flex;
 	flex-direction: column;
@@ -95,10 +80,7 @@
 	font-size: var(--font-ui-small);
 }
 
-/* Empty states (no note open / not a daily note) — deliberately NOT themed
-   via --dwl-* tokens like the rest of the sidebar. There's no real content
-   to show yet, so this should just look like a native part of the vault
-   (Obsidian's own theme colors), the same reasoning as the Dashboard. */
+/* Empty states use Obsidian's native theme colors. */
 .dwl-empty-state-block {
 	display: flex;
 	flex-direction: column;
@@ -134,8 +116,8 @@
 .dwl-grid {
 	display: flex;
 	flex-direction: column;
-	border-top: 1px solid var(--dwl-border);
-	border-left: 1px solid var(--dwl-border);
+	border-top: 1px solid var(--background-modifier-border);
+	border-left: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
 	overflow: hidden;
 }
@@ -154,8 +136,8 @@
 	justify-content: flex-end;
 	padding-right: 8px;
 	gap: 2px;
-	border-bottom: 1px solid var(--dwl-border);
-	background: var(--dwl-bg-header);
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
 	box-sizing: border-box;
 	user-select: none;
 }
@@ -163,12 +145,12 @@
 .dwl-grid-hour-num {
 	font-size: var(--font-ui-smaller);
 	font-weight: 600;
-	color: var(--dwl-text);
+	color: var(--text-normal);
 }
 
 .dwl-grid-hour-ampm {
 	font-size: 9px;
-	color: var(--dwl-text-faint);
+	color: var(--text-faint);
 }
 
 .dwl-grid-cells {
@@ -180,19 +162,19 @@
 
 .dwl-grid-cell {
 	flex: 1;
-	border-right: 1px solid var(--dwl-border-light);
-	border-bottom: 1px solid var(--dwl-border-light);
+	border-right: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid var(--background-modifier-border);
 	box-sizing: border-box;
 	cursor: crosshair;
 	transition: background-color 0.1s ease;
 }
 
 .dwl-grid-cell:hover {
-	background: var(--dwl-bg-hover);
+	background: var(--background-modifier-hover);
 }
 
 .dwl-grid-cell.is-selecting {
-	background: var(--dwl-accent);
+	background: var(--interactive-accent);
 	opacity: 0.4;
 }
 
@@ -213,7 +195,7 @@
 	padding: 0 6px;
 	z-index: 10;
 	box-sizing: border-box;
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+	box-shadow: var(--shadow-s);
 	cursor: pointer;
 	transition: transform 0.1s ease, filter 0.1s ease;
 	border-left: 2px solid transparent;
@@ -226,16 +208,7 @@
 	filter: brightness(1.1);
 }
 
-/* Modals (ConfirmDeleteModal, TimelineModal) — design.md §3: follow the
-   SYSTEM theme (Canvas/CanvasText), not Obsidian's in-app theme, so the popup always stays readable
-   regardless of how the surrounding window is themed. This is intentionally
-   NOT affected by --dwl-* tokens. */
-
-.dwl-confirm-modal,
-.dwl-event-modal {
-	color: CanvasText;
-}
-
+/* Modal layout; colors and control styles come from Obsidian's active theme. */
 .dwl-modal-body {
 	display: flex;
 	flex-direction: column;
@@ -247,28 +220,10 @@
 	gap: 0.35rem;
 }
 
-/* Neutral pill + small color-preview dot (NOT a fully category-colored
-   chip) — matches DayTime Tracker's timeline-modal-color-chip exactly. */
-.dwl-category-chip.dwl-category-chip {
+.dwl-category-chip {
 	display: flex;
 	align-items: center;
 	gap: 0.4rem;
-	background: rgba(0, 0, 0, 0.05);
-	border: 2px solid transparent;
-	border-radius: 20px;
-	padding: 0.3rem 0.7rem;
-	font-size: var(--font-ui-smaller);
-	font-weight: 500;
-	cursor: pointer;
-	color: CanvasText;
-	font-family: inherit;
-	transition: all 0.15s ease;
-	box-shadow: none;
-}
-
-.dwl-category-chip.dwl-category-chip.is-selected {
-	border-color: rgba(0, 0, 0, 0.45);
-	transform: scale(1.05);
 }
 
 .dwl-category-chip-preview {
@@ -278,31 +233,10 @@
 	border-radius: 50%;
 }
 
-/* Modal title uses Obsidian's own native title bar (this.titleEl) rather
-   than a custom heading — scoped under our container class so it doesn't
-   affect other plugins' modals. Matches DayTime Tracker's
-   .timeline-custom-modal-container .modal-title structure exactly. */
-.dwl-confirm-modal .modal,
-.dwl-event-modal .modal {
-	border-radius: 12px;
-}
-
-.dwl-confirm-modal .modal-title,
-.dwl-event-modal .modal-title {
-	margin: 0;
-	padding-bottom: 0.6rem;
-	font-size: 0.95rem;
-	font-weight: 700;
-	color: CanvasText;
-	border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-	text-align: left;
-}
-
 .dwl-modal-text {
 	margin: 0 0 0.75rem;
-	font-size: 0.8rem;
-	color: CanvasText;
-	opacity: 0.8;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
 	line-height: 1.5;
 }
 
@@ -316,8 +250,7 @@
 .dwl-modal-label {
 	font-size: var(--font-ui-smaller);
 	font-weight: 600;
-	color: CanvasText;
-	opacity: 0.7;
+	color: var(--text-muted);
 }
 
 .dwl-modal-time-row {
@@ -331,19 +264,19 @@
 	width: 100%;
 	min-width: 0;
 	padding: 0.3rem 0.5rem;
-	border: 1px solid rgba(0, 0, 0, 0.18);
+	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-s);
-	font-size: 0.8rem;
+	font-size: var(--font-ui-small);
 	font-family: inherit;
-	color: CanvasText;
-	background: Canvas;
+	color: var(--text-normal);
+	background: var(--background-primary);
 	outline: none;
 	box-shadow: none;
 }
 
 .dwl-modal-time-input.dwl-modal-time-input:focus,
 .dwl-modal-textarea.dwl-modal-textarea:focus {
-	border-color: #a0aec0;
+	border-color: var(--interactive-accent);
 	box-shadow: none;
 }
 
@@ -360,58 +293,11 @@
 	margin-top: 0.5rem;
 }
 
-/* Action button 3-spec — design.md §2.2. Intentionally NOT using Obsidian's
-   `.mod-cta` (accent blue) anywhere; every button here is low-saturation.
-   These are also shared by modals, so they intentionally use their own
-   fixed hex values rather than --dwl-* tokens (same reasoning as above). */
-
-.dwl-modal-btn-save.dwl-modal-btn-save,
-.dwl-modal-btn-cancel.dwl-modal-btn-cancel,
-.dwl-modal-btn-delete.dwl-modal-btn-delete {
-	padding: 0.3rem 0.7rem;
-	border-radius: var(--radius-s);
-	font-size: var(--font-ui-smaller);
-	font-weight: 500;
-	cursor: pointer;
-	font-family: inherit;
-	transition: background 0.15s;
-	box-shadow: none;
-}
-
-.dwl-modal-btn-save.dwl-modal-btn-save {
-	background: #e2e8f0;
-	color: #1e293b;
-	border: 1px solid #64748b;
-}
-
-.dwl-modal-btn-save.dwl-modal-btn-save:hover {
-	background: #cbd5e1;
-}
-
-.dwl-modal-btn-cancel.dwl-modal-btn-cancel {
-	background: transparent;
-	color: #475569;
-	border: 1px solid #cbd5e1;
-}
-
-.dwl-modal-btn-cancel.dwl-modal-btn-cancel:hover {
-	background: #f1f5f9;
-}
-
-.dwl-modal-btn-delete.dwl-modal-btn-delete {
-	background: transparent;
-	color: #991b1b;
-	border: 1px solid #fca5a5;
+.dwl-modal-btn-delete {
 	margin-right: auto;
 }
 
-.dwl-modal-btn-delete.dwl-modal-btn-delete:hover {
-	background: #fee2e2;
-}
-
-/* Dashboard — deliberately uses Obsidian's OWN theme variables directly
-   (no --dwl-* tokens, no light/dark setting). It's a main-workspace tab,
-   not the sidebar, so it should look like a native part of the vault. */
+/* Dashboard uses Obsidian's theme variables directly. */
 
 .dwl-dashboard-view {
 	padding: 1.5rem;
@@ -566,8 +452,8 @@
 	font-weight: 600;
 	padding: 0.1rem 0.4rem;
 	border-radius: var(--radius-s);
-	background: #d0e1fd;
-	color: #0f172a;
+	background: var(--background-modifier-border);
+	color: var(--text-normal);
 }
 
 
@@ -837,14 +723,10 @@
 	white-space: nowrap;
 	/* Prevent the badge from inheriting a strikethrough from a completed to-do line */
 	text-decoration: none;
-	/* Subtle inset shadow so pastel badges have visible depth on white backgrounds */
-	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 	vertical-align: middle;
 	/* Small gap from surrounding text */
 	margin: 0 0.1em;
 	cursor: default;
-	/* Colour is set via inline style by categoryBadges.ts — these fallbacks
-	   only apply if the inline style is somehow absent. */
-	background-color: #e2e8f0;
-	color: #1e293b;
+	background-color: var(--background-modifier-border);
+	color: var(--text-normal);
 }
