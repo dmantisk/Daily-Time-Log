@@ -193,8 +193,6 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 
 ## 5. Reference Assets
 
-- `docs/sidebar-mockup.html`: a static HTML mockup used purely as a visual reference for the **old** list+calendar sidebar UI/UX during its development. *(2026-08-05 기준)* Superseded by the grid+category UI being ported from DayTime Tracker (see `ref_docs/TODO.md`, `.agents/design.md`) — kept only as historical reference for how the pre-rewrite sidebar looked. **Do NOT update this file mid-rewrite** — it gets refreshed once, in `ref_docs/TODO.md` Phase 8, after the actual grid+category UI is implemented and working (referencing DayTime Tracker's real screens/HTML is fine at that point), so it always reflects a real, finished UI rather than a moving target. It is NOT part of the plugin bundle, is not loaded by Obsidian, and is not executable project code. `ref_docs/` (implementation history, task checklist) is intentionally untracked/local-only — do not document its contents here.
-
 ---
 
 ## 5. UI Design Reference

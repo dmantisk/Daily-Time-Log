@@ -188,30 +188,6 @@ tables, keeping the two key sets in step.
 
 ---
 
-### 6. The HTML mockups still show removed features — **Low**
-
-- **Status:** open
-- **Location:** `docs/sidebar-mockup.html`, `docs/dashboard-mockup.html`
-- **Severity:** Low — not bundled, not executed, reference material only
-
-**What happens**
-
-Both mockups still depict the To-Do panel, the To-Do completion metric,
-and the PDF/HTML export modal — all removed in v0.5.0. A reader opening
-them would get an inaccurate picture of the plugin.
-
-`.agents/AGENTS.md` §5 marks the sidebar mockup as a deliberately
-historical reference ("do NOT update this file mid-rewrite"), so it
-should be left alone. The dashboard mockup carries no such note.
-
-**Fix**
-
-Leave `docs/sidebar-mockup.html` as it is, and add a short note at the
-top of `docs/dashboard-mockup.html` marking it as a historical reference
-for the pre-0.5.0 UI. Alternatively, delete both and remove the
-reference from `AGENTS.md` — but that is a judgement call about whether
-the historical record is worth keeping.
-
 ---
 
 ## Done
