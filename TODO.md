@@ -14,14 +14,258 @@ Conventions used below:
 - **Status** — `open` until a fix is committed, then `done` with the
   commit hash.
 
-> **There are no open findings.** Both review batches are complete and
-> released: the first (14 findings) in v0.5.2, the second (5 findings) in
-> v0.5.3. The dashboard metric tooltips followed in the same release.
+> **Three findings are open** — see *Open findings* below. They come from
+> the repository review that followed the v0.5.3 release. The first two
+> review batches are complete and released: the first (14 findings) in
+> v0.5.2, the second (5 findings) in v0.5.3. The dashboard metric
+> tooltips followed in the same release.
 >
-> The findings below are kept as the **record** of what was wrong and why
-> the fix looks the way it does — each one states the reproduction, the
-> reasoning and the commit that fixed it. A future review should read them
-> before changing the areas they touch.
+> The resolved findings below are kept as the **record** of what was wrong
+> and why the fix looks the way it does — each one states the
+> reproduction, the reasoning and the commit that fixed it. A future
+> review should read them before changing the areas they touch.
+
+---
+
+## Open findings
+
+### 1. CRLF line endings silently destroy Events — **High**
+
+- **Status:** open
+- **Location:** `src/parser.ts` — `TIME_RANGE_REGEX`, and the write path
+  in `replaceLineRangeAt()` / `appendLineToBlock()`
+- **Severity:** High — events vanish from the dashboard without any
+  error, and the reading-view badges disagree with the parser
+
+**What happens**
+
+`TIME_RANGE_REGEX` ends with `(.*)$`. In JavaScript `.` does **not**
+match `\r`, and `content.split("\n")` leaves the `\r` on the end of every
+line of a CRLF file. The regex therefore fails to match every event line
+in such a note — the note parses as having **no events at all**.
+
+This is not a cosmetic mismatch. `findEventBlock()` still finds the
+section (headings are matched after a `.trim()`), so the reading view
+renders category badges for the lines the parser never saw — a direct
+violation of the parser/DOM agreement rule in `.agents/AGENTS.md` §1.3.
+
+The write path has the mirror-image defect: `replaceLineRangeAt()` and
+`appendLineToBlock()` re-join lines with `"\n"`, so editing one line in a
+CRLF file converts just that line to LF and the file ends up with mixed
+line endings.
+
+**Reproduction**
+
+```ts
+const crlf = "# Event\r\n- 09:00 - 10:00 [Admin] A\r\n- 10:00 - 11:00 [Admin] B\r\n";
+const lf   = "# Event\n- 09:00 - 10:00 [Admin] A\n- 10:00 - 11:00 [Admin] B\n";
+
+parseDailyNote(crlf).timeline.length;  // 0  — CRLF
+parseDailyNote(lf).timeline.length;    // 2  — LF
+```
+
+A realistic three-event CRLF note keeps only the **last** event, and only
+if the file does not end with a newline — a line terminated by `\r\n`
+never matches, and only the final line of a file with no trailing newline
+survives. So a CRLF note whose last line ends with a newline parses to
+**zero** events; without the trailing newline it parses to one of three.
+The dashboard follows: the CRLF note reports `recentEventMinutes: 0`
+where the same note with LF reports `120`.
+
+`.agents/AGENTS.md` §1.2 already says a trailing `\r` must be stripped
+so CRLF-terminated files are not broken, and `stripTrailingCarriageReturn()`
+exists in `src/parser.ts` — but only `stripFrontmatter()` uses it. The
+existing test `it("recognizes delimiters in CRLF files")` in
+`src/parser.test.ts` only covers the frontmatter delimiters, never an
+Event line.
+
+**Fix**
+
+Normalize the line endings before matching: strip a trailing `\r` from
+each line after the split (reusing `stripTrailingCarriageReturn()`), or
+normalize `\r\n` to `\n` once at the top of the parse. Separately, make
+the write path preserve the file's existing line-ending style instead of
+always joining with `"\n"`.
+
+**Test to add**
+
+In `src/parser.test.ts`:
+
+- a CRLF note with two events parses to two events;
+- the same note with CRLF parses to the same events as the LF note
+  (same times, same categories, same descriptions);
+- a CRLF note reports the same `recentEventMinutes` through
+  `computeDashboardStats()` as the LF note;
+- after `replaceLineRangeAt()` on a CRLF note, the file still uses CRLF
+  throughout.
+
+### 2. A fenced code block inside the Event section truncates it — **High**
+
+- **Status:** open
+- **Location:** `src/parser.ts` — `findEventBlock()`;
+  `src/categoryBadges.ts` — `walkDocumentOrder()`
+- **Severity:** High — events after the fence disappear, and the parser
+  disagrees with the DOM
+
+**What happens**
+
+`findEventBlock()` ends the Event section at the next heading at the same
+level or above. It has no notion of fenced code blocks, so a `#` line
+inside a ``` fence is treated as a real heading and **closes the
+section**. Every event after the fence becomes invisible.
+
+The reading view disagrees: the fence renders as `<pre><code># config…`
+— a code element, not a heading — so `walkDocumentOrder()` never sees a
+heading there and the DOM badges **all** the tokens. The parser sees one
+event, the DOM badges two. That is exactly the class of disagreement
+`.agents/AGENTS.md` §1.3 forbids.
+
+Two secondary effects fall out of the same gap:
+
+- an event-shaped line *inside* a fence is parsed as a real Event — the
+  fence is not a boundary to the parser, so
+  `- 99:99 - 99:99 [Work] fake` becomes a bogus second event (and the
+  fence's own ``` lines are absorbed into the surrounding descriptions);
+- a fence that contains no `#` is absorbed as continuation text into the
+  preceding event's description —
+  `description: "first\n```\nkey: value\n```"`, `lineCount: 4`.
+
+**Reproduction**
+
+```ts
+const content = [
+  "# Event",
+  "- 09:00 - 10:00 [Work] a",
+  "```",
+  "# config",
+  "```",
+  "- 10:00 - 11:00 [Work] b",
+  "- 11:00 - 12:00 [Work] c",
+].join("\n");
+
+findEventBlockInContent(content);        // { start: 0, end: 2 }
+parseDailyNote(content).timeline.length; // 1  — should be 3
+```
+
+**Fix**
+
+Make `findEventBlock()` code-fence aware: track ``` (and ~~~) fences
+while scanning and do not treat a `#` line inside a fence as a heading.
+For the DOM side, per `.agents/AGENTS.md` §1.3, `walkDocumentOrder()`
+must skip headings that are inside a `<pre>`/`<code>` element — the
+parser and the DOM then agree about where the section ends.
+
+**Test to add**
+
+In `src/parser.test.ts`:
+
+- a fence containing a `#` line inside the Event section does not close
+  it — all three events parse;
+- an event-shaped line inside a fence is not parsed as an Event;
+- a fence with no heading inside does not leak into the previous event's
+  description.
+
+In `src/categoryBadges.reading.test.ts`, in the existing
+`describe("parser / DOM agreement")` block: a cross-check that the
+parser and the DOM agree on the number of badge tokens for a note with a
+fenced `#` inside the Event section.
+
+### 3. An indented checkbox is absorbed, then deleted on the next edit — **High**
+
+- **Status:** open
+- **Location:** `src/parser.ts` — `parseTimeline()`, `isTopLevelOrMarker()`;
+  `src/modals/TimelineModal.tsx` — the guard at line 67
+- **Severity:** High — **data loss**: editing or deleting the preceding
+  event silently removes an unrelated line from the note
+
+**What happens**
+
+`parseTimeline()` tests `CHECKBOX_REGEX` (`/^[-*]\s*\[([ xX])\]\s*(.*)$/`)
+against the **raw** line. A line with leading whitespace —
+`"  - [ ] nested task"` — does not match, so it is not recognised as a
+to-do marker and is instead absorbed into the previous event's
+description as a continuation line.
+
+`isTopLevelOrMarker()` has the same defect: its regex is not applied to
+a trimmed line either, so it returns `false` for `"  - [ ] nested task"`
+and `true` for `"- [ ] nested task"`. The modal's guard at
+`src/modals/TimelineModal.tsx:67` therefore **accepts** a description
+that contains an indented checkbox, and the write path then rewrites
+that description — dropping the checkbox line.
+
+**Reproduction**
+
+```ts
+const content = "# Event\n- 09:00 - 10:00 [Work] a\n  - [ ] nested task\n";
+const [item] = parseDailyNote(content).timeline;
+
+item.description;  // "a\n  - [ ] nested task"   (lineCount: 3)
+isTopLevelOrMarker("  - [ ] nested task");  // false — should be true
+
+replaceLineRangeAt(content, item.line, item.lineCount, "…EDITED");
+// → "# Event\n…EDITED" — the "- [ ] nested task" line is GONE
+
+removeLineRangeAt(content, item.line, item.lineCount);
+// → "# Event" — the "- [ ] nested task" line is GONE
+```
+
+**Fix**
+
+Trim the line before testing it against `CHECKBOX_REGEX` in
+`parseTimeline()`, and do the same in `isTopLevelOrMarker()`. An
+indented checkbox is then a top-level marker: it is never absorbed into
+an event's description, and it survives any edit or delete of the
+surrounding event.
+
+**Test to add**
+
+In `src/parser.test.ts`:
+
+- an indented checkbox after an event is not absorbed into the event's
+  description (`lineCount` stays 1, `desc` stays `"a"`);
+- `isTopLevelOrMarker("  - [ ] nested task")` is `true`;
+- after `replaceLineRangeAt()` and after `removeLineRangeAt()`, the
+  checkbox line is still in the file.
+
+### 4. An out-of-range time inflates the dashboard — **Low**
+
+- **Status:** open
+- **Location:** `src/parser.ts` — `timeToMinutes()`, `minutesToTime()`
+- **Severity:** Low — a typo in a note produces a nonsense figure, but
+  nothing is lost
+
+**What happens**
+
+`TIME_RANGE_REGEX` is deliberately shape-only (`.agents/AGENTS.md` §1.4
+says it is not a validator), and `timeToMinutes()` does no range check:
+`timeToMinutes("99:99")` returns `6039`. A note containing
+`- 09:00 - 99:99 [Work] typo` therefore contributes **5499 minutes**
+(91.6 hours) to the dashboard, and `minutesToTime(6039)` renders back as
+`"100:39"`.
+
+**Reproduction**
+
+```ts
+const content = "# Event\n- 09:00 - 99:99 [Work] typo\n";
+const date = new Date(2026, 6, 14);
+const stats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(content) }], date);
+
+stats.recentEventMinutes;  // 5499  — 91.6 hours from one line
+```
+
+**Fix**
+
+Clamp the parsed hours and minutes to their valid ranges (or reject an
+out-of-range time when computing a duration) so a typo cannot dominate
+the totals. The shape of the Event line stays permissive — the fix
+belongs in the duration arithmetic, not in the regex.
+
+**Test to add**
+
+In `src/parser.test.ts`: `timeToMinutes("99:99")` and
+`minutesToTime(6039)` produce the clamped values. In
+`src/dashboardCollector.test.ts`: a note containing an out-of-range time
+does not report a duration larger than 24 hours.
 
 ---
 
