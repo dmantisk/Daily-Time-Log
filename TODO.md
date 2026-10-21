@@ -14,14 +14,14 @@ Conventions used below:
 - **Status** — `open` until a fix is committed, then `done` with the
   commit hash.
 
-> **Two findings are open** — see *Open findings* below. They come from
+> **One finding is open** — see *Open findings* below. It comes from
 > the repository review that followed the v0.5.3 release. The first two
 > review batches are complete and released: the first (14 findings) in
 > v0.5.2, the second (5 findings) in v0.5.3. The dashboard metric
 > tooltips followed in the same release. The third review batch (the one
 > that followed v0.5.4) is being worked through one finding at a time;
-> the CRLF and fenced-code-block findings are already fixed and recorded
-> below.
+> the CRLF, fenced-code-block and indented-checkbox findings are already
+> fixed and recorded below.
 >
 > The resolved findings below are kept as the **record** of what was wrong
 > and why the fix looks the way it does — each one states the
@@ -32,64 +32,7 @@ Conventions used below:
 
 ## Open findings
 
-### 3. An indented checkbox is absorbed, then deleted on the next edit — **High**
-
-- **Status:** open
-- **Location:** `src/parser.ts` — `parseTimeline()`, `isTopLevelOrMarker()`;
-  `src/modals/TimelineModal.tsx` — the guard at line 67
-- **Severity:** High — **data loss**: editing or deleting the preceding
-  event silently removes an unrelated line from the note
-
-**What happens**
-
-`parseTimeline()` tests `CHECKBOX_REGEX` (`/^[-*]\s*\[([ xX])\]\s*(.*)$/`)
-against the **raw** line. A line with leading whitespace —
-`"  - [ ] nested task"` — does not match, so it is not recognised as a
-to-do marker and is instead absorbed into the previous event's
-description as a continuation line.
-
-`isTopLevelOrMarker()` has the same defect: its regex is not applied to
-a trimmed line either, so it returns `false` for `"  - [ ] nested task"`
-and `true` for `"- [ ] nested task"`. The modal's guard at
-`src/modals/TimelineModal.tsx:67` therefore **accepts** a description
-that contains an indented checkbox, and the write path then rewrites
-that description — dropping the checkbox line.
-
-**Reproduction**
-
-```ts
-const content = "# Event\n- 09:00 - 10:00 [Work] a\n  - [ ] nested task\n";
-const [item] = parseDailyNote(content).timeline;
-
-item.description;  // "a\n  - [ ] nested task"   (lineCount: 3)
-isTopLevelOrMarker("  - [ ] nested task");  // false — should be true
-
-replaceLineRangeAt(content, item.line, item.lineCount, "…EDITED");
-// → "# Event\n…EDITED" — the "- [ ] nested task" line is GONE
-
-removeLineRangeAt(content, item.line, item.lineCount);
-// → "# Event" — the "- [ ] nested task" line is GONE
-```
-
-**Fix**
-
-Trim the line before testing it against `CHECKBOX_REGEX` in
-`parseTimeline()`, and do the same in `isTopLevelOrMarker()`. An
-indented checkbox is then a top-level marker: it is never absorbed into
-an event's description, and it survives any edit or delete of the
-surrounding event.
-
-**Test to add**
-
-In `src/parser.test.ts`:
-
-- an indented checkbox after an event is not absorbed into the event's
-  description (`lineCount` stays 1, `description` stays `"a"`);
-- `isTopLevelOrMarker("  - [ ] nested task")` is `true`;
-- after `replaceLineRangeAt()` and after `removeLineRangeAt()`, the
-  checkbox line is still in the file.
-
-### 4. An out-of-range time inflates the dashboard — **Low**
+### 3. An out-of-range time inflates the dashboard — **Low**
 
 - **Status:** open
 - **Location:** `src/parser.ts` — `timeToMinutes()`, `minutesToTime()`
@@ -352,7 +295,99 @@ timeline parse, and the DOM side must skip `<pre>`/`<code>` content.
 
 ---
 
-### 2. Image headings: the parser and the badge renderer disagree — **High**
+### 2. An indented checkbox is absorbed, then deleted on the next edit — **High**
+
+- **Status:** done — fixed in the v0.5.5 review batch
+- **Location:** `src/parser.ts` — `parseTimeline()`, `isTopLevelOrMarker()`;
+  `src/modals/TimelineModal.tsx` — the save-time guard
+- **Severity:** High — **data loss**: editing or deleting the preceding
+  event silently removes an unrelated line from the note
+
+**What happens**
+
+`parseTimeline()` tests `CHECKBOX_REGEX` (`/^[-*]\s*\[([ xX])\]\s*(.*)$/`)
+against the **raw** line. A line with leading whitespace —
+`"  - [ ] nested task"` — does not match, so it is not recognised as a
+to-do marker and is instead absorbed into the previous event's
+description as a continuation line.
+
+`isTopLevelOrMarker()` has the same defect: its regex is not applied to
+a trimmed line either, so it returns `false` for `"  - [ ] nested task"`
+and `true` for `"- [ ] nested task"`. The modal's guard at
+`src/modals/TimelineModal.tsx:67` therefore **accepts** a description
+that contains an indented checkbox, and the write path then rewrites
+that description — dropping the checkbox line.
+
+**Reproduction**
+
+```ts
+const content = "# Event\n- 09:00 - 10:00 [Work] a\n  - [ ] nested task\n";
+const [item] = parseDailyNote(content).timeline;
+
+item.description;  // "a\n  - [ ] nested task"   (lineCount: 3)
+isTopLevelOrMarker("  - [ ] nested task");  // false — should be true
+
+replaceLineRangeAt(content, item.line, item.lineCount, "…EDITED");
+// → "# Event\n…EDITED" — the "- [ ] nested task" line is GONE
+
+removeLineRangeAt(content, item.line, item.lineCount);
+// → "# Event" — the "- [ ] nested task" line is GONE
+```
+
+**Fix**
+
+Trim the line before testing it against `CHECKBOX_REGEX` in
+`parseTimeline()`, and do the same in `isTopLevelOrMarker()`. An
+indented checkbox is then a top-level marker: it is never absorbed into
+an event's description, and it survives any edit or delete of the
+surrounding event.
+
+**Test to add**
+
+In `src/parser.test.ts`:
+
+- an indented checkbox after an event is not absorbed into the event's
+  description (`lineCount` stays 1, `description` stays `"a"`);
+- `isTopLevelOrMarker("  - [ ] nested task")` is `true`;
+- after `replaceLineRangeAt()` and after `removeLineRangeAt()`, the
+  checkbox line is still in the file.
+
+**Resolution**
+
+The checkbox test is now applied to the **trimmed** line, in both
+`parseTimeline()` and `isTopLevelOrMarker()`. An indented to-do is a
+to-do at any indentation: it is never absorbed into an event's
+description, and therefore never becomes part of that event's
+`lineCount` — so the range-based write path
+(`replaceLineRangeAt()` / `removeLineRangeAt()`, which rewrite exactly
+`[item.line, item.line + item.lineCount - 1]`) can no longer take the
+checkbox line with it.
+
+The time-range test in `isTopLevelOrMarker()` deliberately stays on the
+**raw** line, because that is exactly what `parseTimeline()` does — the
+save-time guard in `TimelineModal` and the parser must agree, or the
+guard would reject a description the parser handles without trouble.
+
+The save-time guard in `TimelineModal` now rejects a description
+containing an indented checkbox (it already rejected a top-level one),
+so the user is asked to rephrase rather than silently losing the line.
+
+Tests added in `src/parser.test.ts` under a new
+`describe("indented checkboxes")` block: an indented checkbox is not
+absorbed into the event's description (`lineCount` stays 1);
+`isTopLevelOrMarker()` returns `true` for an indented `- [ ]`, `- [x]`
+and `* [X]`; the checkbox line survives an edit and a delete of the
+event above it; and — the guard against over-correcting — an indented
+line that is **not** a marker (`"  - nested detail"`) is still absorbed
+verbatim, exactly as before.
+
+`.agents/AGENTS.md` §1.4.2 now states the rule explicitly: a checkbox is
+a marker at any indentation, and the reason is data loss, not
+appearance.
+
+---
+
+### 3. Image headings: the parser and the badge renderer disagree — **High**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `285316b`)
 - **Location:** `src/parser.ts` — `normalizeHeadingText()`
@@ -423,7 +458,7 @@ new required reading-view coverage.
 
 ---
 
-### 3. "Daily Avg" divides by notes, not by days in the window — **Medium**
+### 4. "Daily Avg" divides by notes, not by days in the window — **Medium**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `8f53ee3`)
 - **Location:** `src/dashboardCollector.ts` — `avgEventMinutesPerDay`
@@ -488,7 +523,7 @@ carrying the same date as one day"`, and the zero case), and
 
 ---
 
-### 4. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
+### 5. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `05afe8f`)
 - **Location:** `src/dashboardCollector.ts` — `computeDashboardStats()`,
@@ -555,7 +590,7 @@ rule.
 
 ---
 
-### 5. A zero-length range counts as a full day — **Low**
+### 6. A zero-length range counts as a full day — **Low**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `78b0aeb`)
 - **Location:** `src/parser.ts` — `timelineDurationMinutes()`
@@ -593,7 +628,7 @@ the rule explicitly.
 
 ---
 
-### 6. `recentNotesTitle` is a dead translation key — **Low**
+### 7. `recentNotesTitle` is a dead translation key — **Low**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `5f035d4`)
 - **Location:** `src/i18n.ts` — `recentNotesTitle` (English and Korean)
@@ -637,7 +672,7 @@ dashboard, not in the sidebar, not in the README, and not in
 "Current Streak", "Date Range", "Event Time", "Daily Avg", "Top
 Category") with nothing saying how the number beside it was computed.
 That ambiguity is exactly why the "Daily Avg" denominator defect
-(findings #3 and #4 above) stayed invisible to users.
+(findings #4 and #5 above) stayed invisible to users.
 
 Each metric label now carries a tooltip explaining how it is computed,
 attached with Obsidian's `setTooltip()`. The explanations live in new

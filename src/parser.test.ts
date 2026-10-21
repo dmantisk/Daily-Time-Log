@@ -437,6 +437,46 @@ describe("parseTimeline", () => {
 	});
 });
 
+describe("indented checkboxes", () => {
+	const NESTED = "# Event\n- 09:00 - 10:00 [Work] a\n  - [ ] nested task\n";
+
+	it("does not absorb an indented checkbox into the event's description", () => {
+		// An indented to-do is still a to-do: it belongs to the user, not to
+		// the event above it. Absorbing it made the next edit or delete of
+		// that event silently remove the checkbox with it.
+		const [item] = parseDailyNote(NESTED).timeline;
+		expect(item.description).toBe("a");
+		expect(item.lineCount).toBe(1);
+	});
+
+	it("treats an indented checkbox as a top-level marker", () => {
+		expect(isTopLevelOrMarker("  - [ ] nested task")).toBe(true);
+		expect(isTopLevelOrMarker("\t- [x] nested task")).toBe(true);
+		expect(isTopLevelOrMarker("   * [X] nested task")).toBe(true);
+	});
+
+	it("keeps an indented checkbox in the file after an edit", () => {
+		const [item] = parseDailyNote(NESTED).timeline;
+		const edited = replaceLineRangeAt(NESTED, item.line, item.lineCount, "- 09:00 - 10:00 [Work] EDITED");
+		expect(edited).toBe("# Event\n- 09:00 - 10:00 [Work] EDITED\n  - [ ] nested task\n");
+	});
+
+	it("keeps an indented checkbox in the file after a delete", () => {
+		const [item] = parseDailyNote(NESTED).timeline;
+		const deleted = removeLineRangeAt(NESTED, item.line, item.lineCount);
+		expect(deleted).toBe("# Event\n  - [ ] nested task\n");
+	});
+
+	it("still absorbs an indented line that is not a marker", () => {
+		// Only the marker shapes are excluded - ordinary indented detail is
+		// still absorbed verbatim, as before.
+		const content = "# Event\n- 09:00 - 10:00 [Work] a\n  - nested detail";
+		const [item] = parseDailyNote(content).timeline;
+		expect(item.description).toBe("a\n  - nested detail");
+		expect(item.lineCount).toBe(2);
+	});
+});
+
 describe("parseDailyNote", () => {
 	it("parses only the configured Event block and ignores subsequent sections", () => {
 		const content = "# Intro\n- 8:00 - 9:00 ignored\n## Activity\n- 09:00 - 10:00 working\n# Notes\n- 10:00 - 11:00 ignored";

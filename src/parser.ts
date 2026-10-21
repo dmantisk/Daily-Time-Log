@@ -610,7 +610,14 @@ export function parseTimeline(lines: string[], range: LineRange): TimelineItem[]
 			continue;
 		}
 
-		if (CHECKBOX_REGEX.test(text)) {
+		// A checkbox is a top-level marker at ANY indentation: an indented
+		// "  - [ ] nested task" is still a to-do the user owns, not detail
+		// belonging to the event above it. The line is trimmed before the
+		// test so the leading whitespace cannot hide the marker - otherwise
+		// the line is absorbed into the event's description, and the next
+		// edit or delete of that event silently removes the checkbox with
+		// it (data loss).
+		if (CHECKBOX_REGEX.test(trimmed)) {
 			current = null;
 			continue;
 		}
@@ -661,7 +668,21 @@ export function parseDailyNote(
  * lines would misparse on the next read, instead of silently losing them.
  */
 export function isTopLevelOrMarker(line: string): boolean {
-	return TIME_RANGE_REGEX.test(line) || CHECKBOX_REGEX.test(line) || /^#{1,6}\s/.test(line.trim());
+	// The checkbox test is applied to the TRIMMED line: leading whitespace
+	// does not change what a line IS. An indented "  - [ ] nested task" is
+	// a to-do marker just like a top-level "- [ ] nested task" - it must
+	// never be treated as ordinary detail, or the save-time guard would
+	// accept a description whose checkbox line would then be lost on the
+	// next parse (AGENTS.md 1.4.2).
+	//
+	// The time-range test stays on the RAW line, because that is exactly
+	// what `parseTimeline()` does - the two must agree, or the guard would
+	// reject a description the parser handles without trouble.
+	return (
+		TIME_RANGE_REGEX.test(line) ||
+		CHECKBOX_REGEX.test(line.trim()) ||
+		/^#{1,6}\s/.test(line.trim())
+	);
 }
 
 /**
