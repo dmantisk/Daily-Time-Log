@@ -297,7 +297,7 @@ timeline parse, and the DOM side must skip `<pre>`/`<code>` content.
 
 ### 2. An indented checkbox is absorbed, then deleted on the next edit — **High**
 
-- **Status:** done — fixed in the v0.5.5 review batch
+- **Status:** done — fixed in the v0.5.5 review batch (commit `c23892b`)
 - **Location:** `src/parser.ts` — `parseTimeline()`, `isTopLevelOrMarker()`;
   `src/modals/TimelineModal.tsx` — the save-time guard
 - **Severity:** High — **data loss**: editing or deleting the preceding
