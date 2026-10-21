@@ -423,6 +423,14 @@ describe("time helpers", () => {
 		expect(timelineDurationMinutes({ start: "23:00", end: "01:00" })).toBe(120);
 	});
 
+	it("counts a zero-length range as zero, not as a full day", () => {
+		// `09:00 - 09:00` records no time. It is not an overnight range:
+		// timelineDaySegments draws no segment for it, so counting it as
+		// 1440 minutes made the dashboard report 24 hours of recorded
+		// time for a range the grid shows as nothing.
+		expect(timelineDurationMinutes({ start: "09:00", end: "09:00" })).toBe(0);
+	});
+
 	it("validates strict time input", () => {
 		expect(TIME_VALUE_REGEX.test("09:00")).toBe(true);
 		expect(TIME_VALUE_REGEX.test("24:00")).toBe(false);

@@ -653,15 +653,22 @@ export function minutesToTime(minutes: number): string {
 }
 
 /**
- * Duration of a Timeline/Event item in minutes. If `end` is not after
+ * Duration of a Timeline/Event item in minutes. If `end` is BEFORE
  * `start`, the range is treated as crossing midnight (e.g. 23:00-01:00).
  * Shared by the Timeline component (bar height) and the Dashboard's
  * "total recorded time" aggregate so the two never drift apart.
+ *
+ * A range whose end EQUALS its start (`09:00 - 09:00`) is a zero-length
+ * range and counts as 0 minutes — it is NOT an overnight range. The
+ * overnight branch is `end < start`; with `end <= start` a zero-length
+ * range counted as a full day (1440 minutes), while `timelineDaySegments`
+ * correctly drew no segment for it, so the grid showed nothing and the
+ * dashboard reported 24 hours of recorded time.
  */
 export function timelineDurationMinutes(item: Pick<TimelineItem, "start" | "end">): number {
 	const startMinutes = timeToMinutes(item.start);
 	const endMinutes = timeToMinutes(item.end);
-	return Math.max(endMinutes - startMinutes + (endMinutes <= startMinutes ? MINUTES_PER_DAY : 0), 0);
+	return Math.max(endMinutes - startMinutes + (endMinutes < startMinutes ? MINUTES_PER_DAY : 0), 0);
 }
 
 /**

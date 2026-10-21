@@ -164,7 +164,7 @@ show when a vault contains only future-dated notes.
 
 ### 4. A zero-length range counts as a full day — **Low**
 
-- **Status:** open
+- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
 - **Location:** `src/parser.ts` — `timelineDurationMinutes()`
 - **Severity:** Low — needs an unusual hand-written value, but the
   reported number is 24 hours off by the largest amount possible
@@ -187,6 +187,16 @@ timelineDurationMinutes({ start: "09:00", end: "09:00" }); // 1440 — expected 
 
 Treat `endMinutes === startMinutes` as zero rather than as an overnight
 range: the overnight branch should be `endMinutes < startMinutes`.
+
+**Resolution**
+
+The overnight branch is now `endMinutes < startMinutes`, so a
+zero-length range counts as 0 minutes — agreeing with
+`timelineDaySegments()`, which draws no segment for it.
+
+Test added in `src/parser.test.ts` (`"counts a zero-length range as
+zero, not as a full day"`), and `.agents/AGENTS.md` §1.4 now states
+the rule explicitly.
 
 ---
 
