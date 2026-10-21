@@ -719,7 +719,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Category badge pills — rendered inside both the live editor and reading view
+   Category badges — rendered inside both the live editor and reading view
    for [Category] tokens in daily notes. Background + text colours are set as
    inline styles by categoryBadges.ts (driven by plugin settings), so these
    rules only handle shape, spacing, and typography. Users can further
@@ -729,10 +729,14 @@
 .dwl-cat-badge {
 	display: inline-flex;
 	align-items: center;
-	padding: 0.05em 0.45em;
-	border-radius: 0.9em;
+	padding: 0.05em 0.35em;
+	/* A rounded rectangle, not a pill: the radius stays below the badge's
+	   half-height (~0.6em) so the corners stop at a distinct arc instead of
+	   curving all the way around. An em radius keeps that proportion at any
+	   user font size. */
+	border-radius: 0.3em;
 	font-size: 0.78em;
-	/* The category name is regular weight on purpose — a bolded pill draws
+	/* The category name is regular weight on purpose — a bolded badge draws
 	   more attention than the text it is embedded in. */
 	font-weight: normal;
 	line-height: 1.5;

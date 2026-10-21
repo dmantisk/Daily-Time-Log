@@ -2,7 +2,7 @@
  * Category badge rendering for the note editor and reading view.
  *
  * Finds `[Category]` tokens in daily notes (same format that parser.ts reads)
- * and replaces them with styled pill badges whose background color matches the
+ * and replaces them with styled badges whose background color matches the
  * plugin's configured category list. Falls back to a neutral grey badge for
  * tokens that don't match any configured category.
  *
