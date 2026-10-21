@@ -97,6 +97,35 @@ describe("Event heading matching", () => {
 		expect(normalizeHeadingText("`Event`")).toBe("Event");
 	});
 
+	it("strips an image heading entirely, matching the DOM's empty textContent", () => {
+		// An image renders as an <img> element, whose textContent is the
+		// EMPTY string — the alt text is an attribute, not rendered text.
+		// Substituting the alt text made the parser read `![Event](y.png)`
+		// as the heading "Event" and open an Event section the reading
+		// view never opened (and vice versa on the badge side).
+		expect(normalizeHeadingText("![Event](y.png)")).toBe("");
+		expect(normalizeHeadingText("![Event][ref]")).toBe("");
+		expect(normalizeHeadingText("![Event](y.png) trailing text")).toBe("trailing text");
+		expect(normalizeHeadingText("![a](1.png) ![b](2.png)")).toBe("");
+	});
+
+	it("does NOT match a heading that is only an image", () => {
+		// The parser and the DOM must agree: the DOM sees an empty heading
+		// text, so the section is not opened there either.
+		expect(matchMarker("# ![Event](y.png)", { text: "Event", level: 1 })).toBe(false);
+		expect(matchMarker("# ![Event](y.png)", { text: "", level: 1 })).toBe(false);
+	});
+
+	it("still matches a link heading, whose label IS its rendered text", () => {
+		expect(matchMarker("# [Event](https://example.com)", { text: "Event", level: 1 })).toBe(true);
+	});
+
+	it("does not treat an image inside a code span as an image", () => {
+		// A code span renders literally, so the image markup stays visible
+		// text and must not be stripped.
+		expect(normalizeHeadingText("`![Event](y.png)`")).toBe("![Event](y.png)");
+	});
+
 	it("does not match a decorated heading with a different text", () => {
 		expect(matchMarker("# **Other**", { text: "Event", level: 1 })).toBe(false);
 		expect(matchMarker("# Event log", { text: "Event", level: 1 })).toBe(false);

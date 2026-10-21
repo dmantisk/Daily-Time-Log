@@ -20,7 +20,7 @@ Conventions used below:
 
 ### 1. Image headings: the parser and the badge renderer disagree — **High**
 
-- **Status:** open
+- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
 - **Location:** `src/parser.ts` — `normalizeHeadingText()`
 - **Introduced by:** the v0.5.2 fix "make the parser recognize a link heading the way the DOM does" (commit `47fe231`)
 - **Severity:** High — a regression that re-creates the exact class of
@@ -63,6 +63,29 @@ Pin the parser and the DOM together for an image heading: assert that
 the equivalent rendered `<h1>`. A regression test in
 `src/parser.test.ts` plus a matching DOM-level case in
 `src/categoryBadges.reading.test.ts` is the shape that caught this.
+
+**Resolution**
+
+`stripInlineMarkup()` now removes image markup entirely (both the
+inline and the reference-style form) instead of substituting its alt
+text, so `![Event](y.png)` normalizes to `""` — the same text the
+rendered `<h1>` exposes. Links keep their label, which is correct: a
+link's label *is* its rendered text.
+
+Tests added:
+- `src/parser.test.ts` — the image heading normalizes to `""`, a
+  heading that is only an image does **not** match the configured
+  heading, a link heading still matches, and an image inside a code span
+  is left alone.
+- `src/categoryBadges.reading.test.ts` — a DOM-level case asserting
+  that an image heading opens no section, plus a **cross-check** that
+  pins the parser to the DOM: `normalizeHeadingText(raw)` must equal
+  the `textContent` of the equivalent rendered heading, for both the
+  image and the link form.
+
+`.agents/AGENTS.md` §1.3 now states the image rule explicitly (an image
+normalizes to the empty string, not to its alt text), and §4 lists the
+new required reading-view coverage.
 
 ---
 

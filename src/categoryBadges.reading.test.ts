@@ -15,6 +15,7 @@
 
 import { describe, expect, it } from "vitest";
 import { processCategoryBadgesInReadingView } from "./categoryBadges";
+import { normalizeHeadingText } from "./parser";
 import type { CustomCategory } from "./settings";
 import type { EventHeadingConfig } from "./parser";
 
@@ -148,6 +149,20 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		expect(badgeTexts(el)).toEqual(["Work"]);
 	});
 
+	it("does NOT render a badge when the configured heading is an image", () => {
+		// Obsidian renders `# ![Event](y.png)` as `<h1><img alt="Event" src="y.png"></h1>`.
+		// The alt text lives in an ATTRIBUTE, so the heading's textContent is
+		// the empty string — the section is not opened here, and the parser
+		// must agree (it must not read the alt text as the heading text).
+		const el = renderEl(
+			'<h1><img alt="Event" src="y.png"></h1><p>- 9:00 - 10:00 [Work] inside</p>' +
+				"<h1>Other</h1><p>- 11:00 - 12:00 [Rest] outside</p>"
+		);
+		process(el);
+
+		expect(badgeCount(el)).toBe(0);
+	});
+
 	it("does NOT render any badge when the configured heading is absent", () => {
 		const el = renderEl("<h1>Other</h1><p>- 9:00 - 10:00 [Work] nowhere</p>");
 		process(el);
@@ -195,6 +210,30 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		process(el);
 
 		expect(badgeCount(el)).toBe(0);
+	});
+});
+
+describe("parser / DOM agreement", () => {
+	it("normalizes an image heading to the same text the DOM exposes", () => {
+		// The parser must read a heading exactly as the renderer exposes it.
+		// An image renders as an <img> element whose textContent is the
+		// EMPTY string, so the parser must normalize `![Event](y.png)` to
+		// "" — not to its alt text. Substituting the alt text made the
+		// parser open an Event section the reading view never opened.
+		const el = renderEl('<h1><img alt="Event" src="y.png"></h1>');
+		const domText = el.querySelector("h1")?.textContent ?? "";
+
+		expect(normalizeHeadingText("![Event](y.png)")).toBe(domText);
+		expect(normalizeHeadingText("![Event](y.png)")).toBe("");
+	});
+
+	it("normalizes a link heading to the same text the DOM exposes", () => {
+		// A link's label IS its rendered text, so the two sides agree here.
+		const el = renderEl('<h1><a href="https://example.com">Event</a></h1>');
+		const domText = el.querySelector("h1")?.textContent ?? "";
+
+		expect(normalizeHeadingText("[Event](https://example.com)")).toBe(domText);
+		expect(normalizeHeadingText("[Event](https://example.com)")).toBe("Event");
 	});
 });
 

@@ -101,8 +101,11 @@ const FRONTMATTER_DELIMITER = "---";
  * text against the configured heading would therefore disagree with the
  * DOM, so the raw text is normalized to its rendered form:
  *
- * - Inline links and images are replaced by their label text
- *   (`[Event](url)` -> `Event`, `![Event](url)` -> `Event`).
+ * - Inline links are replaced by their label text (`[Event](url)` -> `Event`),
+ *   because a link's label IS its rendered text.
+ * - Inline images are removed ENTIRELY (`![Event](url)` -> ``), because an
+ *   image renders as an `<img>` element whose `textContent` is the empty
+ *   string — the alt text is an attribute, not rendered text.
  * - Inline emphasis / strong / strikethrough markers are removed
  *   (`**Event**` -> `Event`, `_Event_` -> `Event`, `~~Event~~` -> `Event`).
  * - Inline code spans are unwrapped (`` `Event` `` -> `Event`), but their
@@ -179,11 +182,19 @@ function splitOnCodeSpans(text: string): HeadingPart[] {
  * Applied only to the non-code parts of a heading.
  */
 function stripInlineMarkup(text: string): string {
-	// Links and images render as their label text, so the label is what
-	// the DOM exposes. A destination may contain balanced parentheses.
-	const withoutLinks = text
-		.replace(/!?\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)/g, "$1")
-		.replace(/!?\[([^\]]*)\]\[[^\]]*\]/g, "$1");
+	// An image renders as an <img> element, whose textContent is the EMPTY
+	// string — the alt text lives in an attribute, not in rendered text. So
+	// the image markup is removed entirely rather than substituted with its
+	// alt text. A link, by contrast, renders as an <a> element whose label
+	// IS its text, so a link keeps its label.
+	//
+	// A destination may contain balanced parentheses.
+	const withoutImages = text
+		.replace(/!\[[^\]]*\]\((?:[^()]|\([^()]*\))*\)/g, "")
+		.replace(/!\[[^\]]*\]\[[^\]]*\]/g, "");
+	const withoutLinks = withoutImages
+		.replace(/\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)/g, "$1")
+		.replace(/\[([^\]]*)\]\[[^\]]*\]/g, "$1");
 
 	const withoutStrong = withoutLinks.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "$1");
 	const withoutEmphasis = withoutStrong
