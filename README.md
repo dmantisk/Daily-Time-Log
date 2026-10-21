@@ -106,6 +106,13 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.5.4 (2026-10-21)
+
+A cosmetic release: the category name and the note badges both read more like the text around them.
+
+- **Made the note category badges squarer.** The `[Category]` badge in a daily note was a full pill — the corner radius was larger than the badge's own height, so the browser clamped it and both ends curved all the way around. The badge is now a rounded rectangle with distinct corners, and its horizontal padding was tightened to match. The radius is relative to the badge's own font size, so it keeps its proportions at any text size you use. This applies to both the live editor and the reading view.
+- **Removed the emphasis from category names.** A category name was drawn bolder than the text around it in the sidebar grid, the dashboard legend, and the badges — but in each of them the name is one item in a line of like items, so the extra weight made it read as an emphasised name plus its surroundings. Names are now drawn at the same weight as everything beside them. Your category colours are unchanged.
+
 ### 0.5.3 (2026-10-21)
 
 A second batch of correctness fixes found in a full review of the plugin.
