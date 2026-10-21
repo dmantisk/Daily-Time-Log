@@ -20,7 +20,7 @@ Conventions used below:
 
 ### 1. Image headings: the parser and the badge renderer disagree — **High**
 
-- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
+- **Status:** done — fixed in the v0.5.3 review batch (commit `285316b`)
 - **Location:** `src/parser.ts` — `normalizeHeadingText()`
 - **Introduced by:** the v0.5.2 fix "make the parser recognize a link heading the way the DOM does" (commit `47fe231`)
 - **Severity:** High — a regression that re-creates the exact class of
@@ -91,7 +91,7 @@ new required reading-view coverage.
 
 ### 2. "Daily Avg" divides by notes, not by days in the window — **Medium**
 
-- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
+- **Status:** done — fixed in the v0.5.3 review batch (commit `8f53ee3`)
 - **Location:** `src/dashboardCollector.ts` — `avgEventMinutesPerDay`
 - **Severity:** Medium — a misleading statistic, no data loss
 
@@ -156,7 +156,7 @@ carrying the same date as one day"`, and the zero case), and
 
 ### 3. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
 
-- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
+- **Status:** done — fixed in the v0.5.3 review batch (commit `05afe8f`)
 - **Location:** `src/dashboardCollector.ts` — `computeDashboardStats()`,
   `src/DashboardView.ts` — the empty-vault check
 - **Related to:** the v0.5.2 fix "exclude future-dated notes from the
@@ -223,7 +223,7 @@ rule.
 
 ### 4. A zero-length range counts as a full day — **Low**
 
-- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
+- **Status:** done — fixed in the v0.5.3 review batch (commit `78b0aeb`)
 - **Location:** `src/parser.ts` — `timelineDurationMinutes()`
 - **Severity:** Low — needs an unusual hand-written value, but the
   reported number is 24 hours off by the largest amount possible
@@ -261,7 +261,7 @@ the rule explicitly.
 
 ### 5. `recentNotesTitle` is a dead translation key — **Low**
 
-- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
+- **Status:** done — fixed in the v0.5.3 review batch (commit `5f035d4`)
 - **Location:** `src/i18n.ts` — `recentNotesTitle` (English and Korean)
 - **Severity:** Low — dead code only
 
@@ -295,6 +295,23 @@ which is what the "drop it from one side" constraint made hard before.
 ---
 
 ## Done
+
+### Second review batch — released in v0.5.3
+
+All 5 findings listed above were fixed, each in its own commit:
+
+| # | Severity | Finding | Commit |
+|---|----------|---------|--------|
+| 1 | High | Image headings: the parser and the badge renderer disagree | `285316b` |
+| 2 | Medium | "Daily Avg" divides by notes, not by days in the window | `8f53ee3` |
+| 3 | Medium | "Total Notes" and "Date Range" still count future-dated notes | `05afe8f` |
+| 4 | Low | A zero-length range counts as a full day | `78b0aeb` |
+| 5 | Low | `recentNotesTitle` is a dead translation key | `5f035d4` |
+
+See the v0.5.3 changelog entry in `README.md` for the user-facing
+description of each change. The rules the fixes established are recorded
+in `.agents/AGENTS.md` (§1.3, §1.4, §1.8, §2, §4), and each fix ships
+with a regression test that fails without it.
 
 ### First review batch — released in v0.5.2
 
