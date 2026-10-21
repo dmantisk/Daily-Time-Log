@@ -15,7 +15,7 @@
 
 import { describe, expect, it } from "vitest";
 import { processCategoryBadgesInReadingView } from "./categoryBadges";
-import { normalizeHeadingText } from "./parser";
+import { normalizeHeadingText, parseDailyNote } from "./parser";
 import type { CustomCategory } from "./settings";
 import type { EventHeadingConfig } from "./parser";
 
@@ -234,6 +234,69 @@ describe("parser / DOM agreement", () => {
 
 		expect(normalizeHeadingText("[Event](https://example.com)")).toBe(domText);
 		expect(normalizeHeadingText("[Event](https://example.com)")).toBe("Event");
+	});
+
+	it("agrees with the parser about a fenced block inside the Event section", () => {
+		// The parser treats a fence as a boundary: a `#` inside it is code,
+		// not a heading, so it cannot close the Event section. The reading
+		// view renders the fence as <pre><code>, so there is no heading
+		// element there either — the two sides must agree on how many
+		// category tokens belong to the section.
+		const source = [
+			"# Event",
+			"- 09:00 - 10:00 [Work] a",
+			"```",
+			"# config",
+			"- 12:00 - 13:00 [Work] not-an-event",
+			"```",
+			"- 10:00 - 11:00 [Rest] b",
+		].join("\n");
+
+		const parsed = parseDailyNote(source);
+		expect(parsed.timeline).toHaveLength(2);
+
+		// The rendered DOM of the same note: the fence becomes <pre><code>.
+		const el = renderEl(
+			"<h1>Event</h1>" +
+				"<p>- 09:00 - 10:00 [Work] a</p>" +
+				"<pre><code># config\n- 12:00 - 13:00 [Work] not-an-event</code></pre>" +
+				"<p>- 10:00 - 11:00 [Rest] b</p>"
+		);
+		process(el);
+
+		// Two parsed events, and two badge tokens in the DOM — the token
+		// inside the code block is NOT one of them.
+		expect(parsed.timeline.filter((item) => item.category !== undefined)).toHaveLength(2);
+		expect(badgeCount(el)).toBe(2);
+		expect(badgeTexts(el)).toEqual(["Work", "Rest"]);
+	});
+
+	it("does not render a badge for a category token inside a code block", () => {
+		// A token inside a fence is code, so it stays literal text — the
+		// same boundary the parser applies.
+		const el = renderEl(
+			"<h1>Event</h1>" +
+				"<pre><code>- 09:00 - 10:00 [Work] inside-a-fence</code></pre>" +
+				"<p>- 10:00 - 11:00 [Rest] b</p>"
+		);
+		process(el);
+
+		expect(badgeCount(el)).toBe(1);
+		expect(badgeTexts(el)).toEqual(["Rest"]);
+	});
+
+	it("does not let a heading inside a code block close the Event section", () => {
+		// `<pre><code>` content is never a heading element, so the section
+		// stays open — mirroring the parser's fence-aware boundary.
+		const el = renderEl(
+			"<h1>Event</h1>" +
+				"<pre><code># Other</code></pre>" +
+				"<p>- 10:00 - 11:00 [Rest] still inside</p>"
+		);
+		process(el);
+
+		expect(badgeCount(el)).toBe(1);
+		expect(badgeTexts(el)).toEqual(["Rest"]);
 	});
 });
 

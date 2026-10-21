@@ -332,6 +332,86 @@ export function headingLevel(line: string): number | null {
 }
 
 /**
+ * Matches an opening or closing code fence: three or more backticks, or
+ * three or more tildes. CommonMark allows a fence to be indented by up to
+ * three spaces, which the leading ` {0,3}` covers.
+ */
+const CODE_FENCE_REGEX = /^ {0,3}(`{3,}|~{3,})/;
+
+/**
+ * Tracks whether the parser is currently inside a fenced code block.
+ *
+ * A fenced block is a boundary for the parser, exactly as it is for the
+ * Markdown renderer: a `#` line inside a ``` fence is CODE, not a heading,
+ * so it must not close the Event section; and an event-shaped line inside a
+ * fence is not an Event.
+ *
+ * The fence character and its length are remembered, because CommonMark
+ * requires the closing fence to use the same character as the one that
+ * opened it (a ``` fence is not closed by a ~~~ line) and to be at least as
+ * long as the opener.
+ */
+class FenceTracker {
+	/** The fence character that opened the current block ("`" or "~"), or null when outside a fence. */
+	private char: string | null = null;
+	/** The length of the opening fence. */
+	private length = 0;
+
+	/**
+	 * Feeds one line to the tracker and returns true when the line is part
+	 * of a fenced code block — the opening fence, any line it contains, or
+	 * the closing fence.
+	 *
+	 * The tracker must be fed EVERY line, whether or not the caller cares
+	 * about it, because the fence state carries from line to line.
+	 */
+	consume(line: string): boolean {
+		const match = CODE_FENCE_REGEX.exec(line);
+
+		if (this.char === null) {
+			if (match && isOpeningFence(line, match)) {
+				this.char = match[1][0];
+				this.length = match[1].length;
+				return true;
+			}
+			return false;
+		}
+
+		// Inside a fence: only a closing fence of the same character, at
+		// least as long as the opener, and with nothing else on the line,
+		// ends the block. Anything else is ordinary fence content.
+		if (match && this.isClosingFence(line, match)) {
+			this.char = null;
+			this.length = 0;
+		}
+		return true;
+	}
+
+	/**
+	 * True when `line` closes the currently open fence: the same fence
+	 * character, at least as long as the opener, and with nothing but
+	 * whitespace after it.
+	 */
+	private isClosingFence(line: string, match: RegExpExecArray): boolean {
+		if (match[1][0] !== this.char) return false;
+		if (match[1].length < this.length) return false;
+		return line.trim() === match[0].trim();
+	}
+}
+
+/**
+ * True when `line` opens a fence. A backtick fence's info string may not
+ * contain a backtick (` ```a`b ` is not a fence); a tilde fence's info
+ * string may.
+ */
+function isOpeningFence(line: string, match: RegExpExecArray): boolean {
+	if (match[1][0] === "`" && line.slice(match[0].length).includes("`")) {
+		return false;
+	}
+	return true;
+}
+
+/**
  * Finds the single Event block in the file.
  *
  * Rule: the block starts at the first occurrence of the configured event
@@ -351,9 +431,18 @@ export function findEventBlock(
 	config: EventHeadingConfig
 ): LineRange | null {
 	let blockStart: number | null = null;
+	const fence = new FenceTracker();
 
 	for (let i = bodyStart; i < lines.length; i++) {
 		const line = lines[i];
+
+		// A line inside a fenced code block is CODE, not a heading, so it
+		// cannot open the section and cannot close it either. The fence
+		// boundary is tracked on every line, whether or not the block has
+		// started yet, so a fence that opens BEFORE the Event heading
+		// still shields the heading scan.
+		const inFence = fence.consume(line);
+		if (inFence) continue;
 
 		if (blockStart === null) {
 			if (matchMarker(line, config)) {
@@ -466,14 +555,28 @@ export function findEventBlockInContent(
  *   item's description (joined with `\n`).
  * - A second consecutive blank line stops the run.
  * - Any heading or time-range line resets the "current item" pointer.
+ * - A fenced code block is a boundary: its lines are CODE, so an
+ *   event-shaped line inside a fence is not an Event, and the fence is not
+ *   absorbed into the preceding item's description.
  */
 export function parseTimeline(lines: string[], range: LineRange): TimelineItem[] {
 	const items: TimelineItem[] = [];
 	let current: TimelineItem | null = null;
 	let previousWasBlank = false;
+	const fence = new FenceTracker();
 
 	for (const { text, line } of linesInRange(lines, range)) {
 		const trimmed = text.trim();
+
+		// A fenced code block is a boundary, exactly as it is for the
+		// Markdown renderer: the fence's own lines are CODE. An
+		// event-shaped line inside a fence is not an Event, and the fence
+		// is not absorbed into the preceding item's description.
+		if (fence.consume(text)) {
+			current = null;
+			previousWasBlank = false;
+			continue;
+		}
 
 		if (trimmed === "") {
 			if (previousWasBlank) {

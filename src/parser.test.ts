@@ -345,6 +345,61 @@ describe("isWithinEventHeading", () => {
 	});
 });
 
+describe("fenced code blocks", () => {
+	const NOTE_WITH_FENCE = [
+		"# Event",
+		"- 09:00 - 10:00 [Work] a",
+		"```",
+		"# config",
+		"```",
+		"- 10:00 - 11:00 [Work] b",
+		"- 11:00 - 12:00 [Work] c",
+	].join("\n");
+
+	it("does not let a heading inside a fence close the Event section", () => {
+		// The fence renders as <pre><code>, so the `#` inside it is CODE,
+		// not a heading — and must not end the section.
+		expect(findEventBlockInContent(NOTE_WITH_FENCE, DEFAULT_EVENT_HEADING)).toEqual({ start: 0, end: 6 });
+		expect(parseDailyNote(NOTE_WITH_FENCE).timeline).toHaveLength(3);
+	});
+
+	it("does not parse an event-shaped line inside a fence as an Event", () => {
+		const content = ["# Event", "```", "- 99:99 - 99:99 [Work] fake", "```", "- 10:00 - 11:00 [Work] real"].join(
+			"\n"
+		);
+		const items = parseDailyNote(content).timeline;
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({ start: "10:00", end: "11:00", description: "real" });
+	});
+
+	it("does not leak a fence into the previous event's description", () => {
+		const content = ["# Event", "- 09:00 - 10:00 [Work] first", "```", "key: value", "```"].join("\n");
+		const items = parseDailyNote(content).timeline;
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({ description: "first", lineCount: 1 });
+	});
+
+	it("treats a tilde fence as a boundary too", () => {
+		const content = ["# Event", "- 09:00 - 10:00 [Work] a", "~~~", "# config", "~~~", "- 10:00 - 11:00 [Work] b"].join(
+			"\n"
+		);
+		expect(parseDailyNote(content).timeline).toHaveLength(2);
+	});
+
+	it("does not let a backtick fence be closed by a tilde fence", () => {
+		const content = ["# Event", "- 09:00 - 10:00 [Work] a", "```", "~~~", "# config", "```", "- 10:00 - 11:00 [Work] b"].join(
+			"\n"
+		);
+		expect(parseDailyNote(content).timeline).toHaveLength(2);
+	});
+
+	it("keeps the section open when a fence appears before the Event heading", () => {
+		const content = ["```", "# not a heading", "```", "# Event", "- 09:00 - 10:00 [Work] a"].join("\n");
+		expect(findEventBlockInContent(content, DEFAULT_EVENT_HEADING)).toEqual({ start: 3, end: 4 });
+		expect(parseDailyNote(content).timeline).toHaveLength(1);
+	});
+});
+
 describe("parseTimeline", () => {
 	it("extracts time, category, description and physical line indexes", () => {
 		const items = parseTimeline(["# Event", "- 09:00 - 10:30 [업무] 회의 준비"], { start: 0, end: 1 });

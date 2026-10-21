@@ -14,13 +14,14 @@ Conventions used below:
 - **Status** — `open` until a fix is committed, then `done` with the
   commit hash.
 
-> **Three findings are open** — see *Open findings* below. They come from
+> **Two findings are open** — see *Open findings* below. They come from
 > the repository review that followed the v0.5.3 release. The first two
 > review batches are complete and released: the first (14 findings) in
 > v0.5.2, the second (5 findings) in v0.5.3. The dashboard metric
 > tooltips followed in the same release. The third review batch (the one
 > that followed v0.5.4) is being worked through one finding at a time;
-> the CRLF finding is already fixed and recorded below.
+> the CRLF and fenced-code-block findings are already fixed and recorded
+> below.
 >
 > The resolved findings below are kept as the **record** of what was wrong
 > and why the fix looks the way it does — each one states the
@@ -30,77 +31,6 @@ Conventions used below:
 ---
 
 ## Open findings
-
-### 2. A fenced code block inside the Event section truncates it — **High**
-
-- **Status:** open
-- **Location:** `src/parser.ts` — `findEventBlock()`;
-  `src/categoryBadges.ts` — `walkDocumentOrder()`
-- **Severity:** High — events after the fence disappear, and the parser
-  disagrees with the DOM
-
-**What happens**
-
-`findEventBlock()` ends the Event section at the next heading at the same
-level or above. It has no notion of fenced code blocks, so a `#` line
-inside a ``` fence is treated as a real heading and **closes the
-section**. Every event after the fence becomes invisible.
-
-The reading view disagrees: the fence renders as `<pre><code># config…`
-— a code element, not a heading — so `walkDocumentOrder()` never sees a
-heading there and the DOM badges **all** the tokens. The parser sees one
-event, the DOM badges two. That is exactly the class of disagreement
-`.agents/AGENTS.md` §1.3 forbids.
-
-Two secondary effects fall out of the same gap:
-
-- an event-shaped line *inside* a fence is parsed as a real Event — the
-  fence is not a boundary to the parser, so
-  `- 99:99 - 99:99 [Work] fake` becomes a bogus second event (and the
-  fence's own ``` lines are absorbed into the surrounding descriptions);
-- a fence that contains no `#` is absorbed as continuation text into the
-  preceding event's description —
-  `description: "first\n```\nkey: value\n```"`, `lineCount: 4`.
-
-**Reproduction**
-
-```ts
-const content = [
-  "# Event",
-  "- 09:00 - 10:00 [Work] a",
-  "```",
-  "# config",
-  "```",
-  "- 10:00 - 11:00 [Work] b",
-  "- 11:00 - 12:00 [Work] c",
-].join("\n");
-
-findEventBlockInContent(content);        // { start: 0, end: 2 }
-parseDailyNote(content).timeline.length; // 1  — should be 3
-```
-
-**Fix**
-
-Make `findEventBlock()` code-fence aware: track ``` (and ~~~) fences
-while scanning and do not treat a `#` line inside a fence as a heading.
-For the DOM side, per `.agents/AGENTS.md` §1.3, `walkDocumentOrder()`
-must skip headings that are inside a `<pre>`/`<code>` element — the
-parser and the DOM then agree about where the section ends.
-
-**Test to add**
-
-In `src/parser.test.ts`:
-
-- a fence containing a `#` line inside the Event section does not close
-  it — all three events parse;
-- an event-shaped line inside a fence is not parsed as an Event;
-- a fence with no heading inside does not leak into the previous event's
-  description.
-
-In `src/categoryBadges.reading.test.ts`, in the existing
-`describe("parser / DOM agreement")` block: a cross-check that the
-parser and the DOM agree on the number of badge tokens for a note with a
-fenced `#` inside the Event section.
 
 ### 3. An indented checkbox is absorbed, then deleted on the next edit — **High**
 
@@ -304,7 +234,125 @@ the read rule and the write rule.
 
 ---
 
-### 1. Image headings: the parser and the badge renderer disagree — **High**
+### 1. A fenced code block inside the Event section truncates it — **High**
+
+- **Status:** done — fixed in the v0.5.5 review batch
+- **Location:** `src/parser.ts` — `findEventBlock()`, `parseTimeline()`;
+  `src/categoryBadges.ts` — `walkDocumentOrder()`
+- **Severity:** High — events after the fence disappear, and the parser
+  disagrees with the DOM
+
+**What happens**
+
+`findEventBlock()` ends the Event section at the next heading at the same
+level or above. It has no notion of fenced code blocks, so a `#` line
+inside a ``` fence is treated as a real heading and **closes the
+section**. Every event after the fence becomes invisible.
+
+The reading view disagrees: the fence renders as `<pre><code># config…`
+— a code element, not a heading — so `walkDocumentOrder()` never sees a
+heading there and the DOM badges **all** the tokens. The parser sees one
+event, the DOM badges two. That is exactly the class of disagreement
+`.agents/AGENTS.md` §1.3 forbids.
+
+Two secondary effects fall out of the same gap:
+
+- an event-shaped line *inside* a fence is parsed as a real Event — the
+  fence is not a boundary to the parser, so
+  `- 99:99 - 99:99 [Work] fake` becomes a bogus second event (and the
+  fence's own ``` lines are absorbed into the surrounding descriptions);
+- a fence that contains no `#` is absorbed as continuation text into the
+  preceding event's description —
+  `description: "first\n```\nkey: value\n```"`, `lineCount: 4`.
+
+**Reproduction**
+
+```ts
+const content = [
+  "# Event",
+  "- 09:00 - 10:00 [Work] a",
+  "```",
+  "# config",
+  "```",
+  "- 10:00 - 11:00 [Work] b",
+  "- 11:00 - 12:00 [Work] c",
+].join("\n");
+
+findEventBlockInContent(content);        // { start: 0, end: 2 }
+parseDailyNote(content).timeline.length; // 1  — should be 3
+```
+
+**Fix**
+
+Make `findEventBlock()` code-fence aware: track ``` (and ~~~) fences
+while scanning and do not treat a `#` line inside a fence as a heading.
+For the DOM side, per `.agents/AGENTS.md` §1.3, `walkDocumentOrder()`
+must skip headings that are inside a `<pre>`/`<code>` element — the
+parser and the DOM then agree about where the section ends.
+
+**Test to add**
+
+In `src/parser.test.ts`:
+
+- a fence containing a `#` line inside the Event section does not close
+  it — all three events parse;
+- an event-shaped line inside a fence is not parsed as an Event;
+- a fence with no heading inside does not leak into the previous event's
+  description.
+
+In `src/categoryBadges.reading.test.ts`, in the existing
+`describe("parser / DOM agreement")` block: a cross-check that the
+parser and the DOM agree on the number of badge tokens for a note with a
+fenced `#` inside the Event section.
+
+**Resolution**
+
+A `FenceTracker` class in `src/parser.ts` now tracks the fence state
+line by line, and it is used by **both** `findEventBlock()` and
+`parseTimeline()`:
+
+- `findEventBlock()` no longer treats a `#` line inside a fence as a
+  heading, so a fence can neither open nor close the Event section. The
+  tracker is fed **every** line — including lines before the block has
+  started — so a fence that opens *before* the configured heading still
+  shields the heading scan.
+- `parseTimeline()` treats a fence as a boundary: an event-shaped line
+  inside a fence is not an Event, and the fence's own lines are not
+  absorbed into the preceding event's description.
+- CommonMark's fence rules are honoured: the closing fence must use the
+  **same character** as the opener and be **at least as long** (a ```
+  fence is not closed by a ~~~ line), and a backtick fence's info string
+  may not contain a backtick.
+
+On the DOM side, `walkDocumentOrder()` in `src/categoryBadges.ts` now
+skips **every node** inside a `<pre>`/`<code>` element — not just
+headings, but text nodes too, so a `[Category]` token inside a fence
+stays literal text instead of becoming a badge.
+
+Tests added:
+
+- `src/parser.test.ts`, in a new `describe("fenced code blocks")` block —
+  a `#` inside a fence does not close the section (all three events
+  parse); an event-shaped line inside a fence is not an Event; a fence
+  with no heading inside does not leak into the previous event's
+  description; a `~~~` fence is a boundary too; a ``` fence is not
+  closed by a `~~~` line; and a fence that opens *before* the Event
+  heading still shields the heading scan.
+- `src/categoryBadges.reading.test.ts`, in the existing
+  `describe("parser / DOM agreement")` block — a **cross-check** that
+  pins the parser to the DOM: for a note with a fenced `#` and a fenced
+  event-shaped line, the parser reports two events and the DOM renders
+  exactly two badges. Plus two more DOM-level cases: a category token
+  inside a code block gets no badge, and a heading inside a code block
+  does not close the Event section.
+
+`.agents/AGENTS.md` §1.3 now states the fence rule explicitly: a fenced
+code block is a boundary for both the block boundary computation and the
+timeline parse, and the DOM side must skip `<pre>`/`<code>` content.
+
+---
+
+### 2. Image headings: the parser and the badge renderer disagree — **High**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `285316b`)
 - **Location:** `src/parser.ts` — `normalizeHeadingText()`
@@ -375,7 +423,7 @@ new required reading-view coverage.
 
 ---
 
-### 2. "Daily Avg" divides by notes, not by days in the window — **Medium**
+### 3. "Daily Avg" divides by notes, not by days in the window — **Medium**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `8f53ee3`)
 - **Location:** `src/dashboardCollector.ts` — `avgEventMinutesPerDay`
@@ -440,7 +488,7 @@ carrying the same date as one day"`, and the zero case), and
 
 ---
 
-### 3. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
+### 4. "Total Notes" and "Date Range" still count future-dated notes — **Medium**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `05afe8f`)
 - **Location:** `src/dashboardCollector.ts` — `computeDashboardStats()`,
@@ -507,7 +555,7 @@ rule.
 
 ---
 
-### 4. A zero-length range counts as a full day — **Low**
+### 5. A zero-length range counts as a full day — **Low**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `78b0aeb`)
 - **Location:** `src/parser.ts` — `timelineDurationMinutes()`
@@ -545,7 +593,7 @@ the rule explicitly.
 
 ---
 
-### 5. `recentNotesTitle` is a dead translation key — **Low**
+### 6. `recentNotesTitle` is a dead translation key — **Low**
 
 - **Status:** done — fixed in the v0.5.3 review batch (commit `5f035d4`)
 - **Location:** `src/i18n.ts` — `recentNotesTitle` (English and Korean)
@@ -589,7 +637,7 @@ dashboard, not in the sidebar, not in the README, and not in
 "Current Streak", "Date Range", "Event Time", "Daily Avg", "Top
 Category") with nothing saying how the number beside it was computed.
 That ambiguity is exactly why the "Daily Avg" denominator defect
-(findings #2 and #3 above) stayed invisible to users.
+(findings #3 and #4 above) stayed invisible to users.
 
 Each metric label now carries a tooltip explaining how it is computed,
 attached with Obsidian's `setTooltip()`. The explanations live in new

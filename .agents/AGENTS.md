@@ -53,6 +53,15 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
    - **Deeper headings are subheadings and stay INSIDE the block.** With the heading configured at H2, a `### Sub` heading and its content remain part of the Event block; only an H1 or H2 ends it. This lets a note group events under nested sub-headings.
 3. If the configured heading is not found anywhere in the file, the file has **no Event block** and yields **zero events** — there is no whole-body fallback (see 1.7).
 
+**Fenced code blocks are boundaries** (`FenceTracker` in `parser.ts`):
+- A fenced code block (``` or ~~~) is a boundary for BOTH the block boundary computation and the timeline parse. The Markdown renderer treats it the same way, so the parser and the DOM must agree.
+- A `#` line **inside** a fence is CODE, not a heading: it can neither open nor close the Event section. Without this, a single fenced `#` line silently truncated the section and every event after the fence disappeared.
+- An **event-shaped line inside a fence is NOT an Event** (`- 99:99 - 99:99 [Work] fake` stays literal text).
+- The fence's own lines are **not absorbed** into the preceding event's description — a fence is a boundary, not a continuation.
+- The fence state is tracked on **every** line, whether or not the Event block has started yet, so a fence that opens *before* the configured heading still shields the heading scan.
+- CommonMark fence rules are honoured: the closing fence must use the **same character** as the opener and be **at least as long** (a ``` fence is not closed by a ~~~ line), and a backtick fence's info string may not contain a backtick.
+- On the DOM side, `walkDocumentOrder()` **skips every node inside a `<pre>`/`<code>` element** — the renderer emits those for a fenced block, so a `#` inside a fence is never a heading element there, and a `[Category]` token inside a fence stays literal text.
+
 **Inline creation**: `appendLineToBlock` inserts a new Event line at the end of the heading's **own** content — i.e. before the first deeper (sub)heading inside the block — so the Event list stays grouped directly under the configured heading and nested sections keep their own content. When the note has no Event block at all, the configured heading is created at the end of the file and the new line goes right under it (otherwise the event would land outside every block and never be parsed back).
 
 **Category badges are scoped the same way**: `categoryBadges.ts` renders a `[Category]` badge only for tokens inside the configured Event section — in the live editor via the block range from `findEventBlockInContent`, and in the reading view via `isWithinEventHeading` (which takes the rendered `<h1>`–`<h6>` headings preceding the token). A `[Category]` typed outside the Event section stays plain text, matching the parser's strict scoping. `isWithinEventHeading` lives in `parser.ts` (not `categoryBadges.ts`) so it stays unit-testable without the Obsidian API — `parser.test.ts` covers it, including a cross-check that it agrees with the file-based block range.
@@ -173,6 +182,7 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - Files where a heading that is *not* the configured one is present (must NOT open an Event block).
   - Files where the configured text appears at a **different** heading level (must NOT open an Event block — level is part of the match).
   - Files where the Event block is terminated by a heading at the **same level or above**, and files where a **deeper** heading (subheading) keeps its content inside the block.
+  - Files with a **fenced code block** inside the Event section: a `#` line inside a fence does not close the section, an event-shaped line inside a fence is not an Event, and the fence is not absorbed into the preceding event's description.
   - `isWithinEventHeading` (the heading-list form of the same rule, used by the category-badge renderer) — including a cross-check that it agrees with the file-based block range.
 - **Required `categoryBadges.ts` reading-view test coverage** (`src/categoryBadges.reading.test.ts`): the reading view is DOM-dependent, so this file is the one place where a real DOM is required — it runs under the `happy-dom` environment and drives the real `processCategoryBadgesInReadingView()` rather than a reimplementation.
   - A `[Category]` token under the configured heading renders a badge; one under a deeper (sub)heading also renders.
@@ -182,6 +192,7 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - A heading whose text is rendered from a link (`<h1><a href="...">Event</a></h1>`) opens the section — the parser must agree, or the note would show badges inside an Event section the parser never opened.
   - A heading whose text is rendered from an IMAGE (`<h1><img alt="Event" src="y.png"></h1>`) does **not** open the section — the image's `textContent` is `""`, not its alt text.
   - A **cross-check that pins the parser to the DOM**: `normalizeHeadingText(raw)` must equal the `textContent` of the equivalent rendered heading, for both a link heading and an image heading. This is the shape that catches the two sides drifting apart — a re-implementation on one side is not enough.
+  - A **fenced code block** inside the Event section: the fence renders as `<pre><code>`, so a `#` inside it is not a heading element, a `[Category]` token inside it gets no badge, and a heading inside it does not close the section — plus a cross-check that the parser and the DOM report the same number of events and badges for a note containing a fence.
   - Tokens that are not in event-line position (prose, checkboxes) and unknown categories do not render a badge.
   - Files outside the configured daily-note folder, and files that are not `YYYY-MM-DD`-named, are left untouched.
 - **Test environment notes**:
