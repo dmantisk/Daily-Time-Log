@@ -46,6 +46,65 @@ describe("isWithinRecentWindow", () => {
 	});
 });
 
+describe("computeDashboardStats — daily average denominator", () => {
+	const today = new Date(2026, 6, 14); // 2026-07-14
+
+	const oneHour = (date: Date): { date: Date; parsed: ParsedDailyNote } => ({
+		date,
+		parsed: {
+			timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" }],
+		} satisfies ParsedDailyNote,
+	});
+
+	it("divides by the days that recorded time, not by the number of notes", () => {
+		// Ten notes of 60 minutes each → 600 minutes over 10 recording days
+		// → 60 minutes per day. The old code divided by the note count,
+		// which happened to agree here, so the real defect shows below.
+		const dates = Array.from({ length: 10 }, (_, i) => new Date(2026, 6, i + 1));
+		const stats = computeDashboardStats(dates, dates.map(oneHour), today, undefined, "Uncategorized");
+		expect(stats.recentEventMinutes).toBe(600);
+		expect(stats.avgEventMinutesPerDay).toBe(60);
+	});
+
+	it("excludes a note that recorded no time from the denominator", () => {
+		// A note that exists but recorded nothing is a day that recorded
+		// nothing, not a day that recorded a zero — it must not drag the
+		// average down. Old code: 120 / 2 notes = 60 (wrong).
+		const dates = [new Date(2026, 6, 13), new Date(2026, 6, 14)];
+		const stats = computeDashboardStats(
+			dates,
+			[oneHour(dates[0]), { date: dates[1], parsed: EMPTY_NOTE }],
+			today,
+			undefined,
+			"Uncategorized"
+		);
+		expect(stats.recentEventMinutes).toBe(60);
+		expect(stats.avgEventMinutesPerDay).toBe(60);
+	});
+
+	it("reports 0 when nothing in the window recorded time", () => {
+		const stats = computeDashboardStats([today], [{ date: today, parsed: EMPTY_NOTE }], today);
+		expect(stats.recentEventMinutes).toBe(0);
+		expect(stats.avgEventMinutesPerDay).toBe(0);
+	});
+
+	it("counts two files carrying the same date as one day", () => {
+		// A daily note IS a day, and the same date can appear twice in a
+		// scanned folder (`2026-07-14.md` and `archive/2026-07-14.md`).
+		// Those are one day, so the average must not be halved.
+		const day = new Date(2026, 6, 14);
+		const stats = computeDashboardStats(
+			[day, day],
+			[oneHour(day), oneHour(day)],
+			today,
+			undefined,
+			"Uncategorized"
+		);
+		expect(stats.recentEventMinutes).toBe(120);
+		expect(stats.avgEventMinutesPerDay).toBe(120);
+	});
+});
+
 describe("computeDashboardStats", () => {
 	it("returns all zeros/nulls for an empty vault", () => {
 		const stats = computeDashboardStats([], [], new Date(2026, 6, 14));

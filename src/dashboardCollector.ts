@@ -34,6 +34,16 @@ export interface DashboardStats {
 	/** Consecutive days with a note, counting backward from `today` (0 if today has none). */
 	currentStreak: number;
 	recentEventMinutes: number;
+	/**
+	 * Average recorded minutes per day that recorded time — the window's
+	 * total divided by the number of distinct dates whose note recorded at
+	 * least one minute.
+	 *
+	 * A daily note IS a day (`YYYY-MM-DD.md`, one per date), so the
+	 * denominator is a count of days. Days whose note exists but recorded
+	 * no time are excluded: they are days that recorded nothing, not days
+	 * that recorded a zero.
+	 */
 	avgEventMinutesPerDay: number;
 	topCategoryName: string | null;
 	categoryBreakdown: CategoryStatItem[];
@@ -117,6 +127,16 @@ export function computeDashboardStats(
 	}
 
 	let recentEventMinutes = 0;
+	// The dates of the window notes that recorded at least one minute — the
+	// denominator of the daily average. A note that exists but recorded no
+	// time is a day that recorded nothing, not a day that recorded a zero,
+	// so it must not drag the average down.
+	//
+	// Keyed by DATE, not by note: a daily note IS a day, and the same date
+	// can appear twice in a scanned folder (e.g. `2026-07-14.md` and
+	// `archive/2026-07-14.md`) — those two files are ONE day, and counting
+	// them twice would halve the reported average.
+	const daysWithRecordedTime = new Set<string>();
 
 	// Map of category displayName -> total minutes
 	const categoryMinutesMap = new Map<string, number>();
@@ -165,6 +185,9 @@ export function computeDashboardStats(
 			}
 		}
 
+		// A note counts toward the daily average only if it recorded time.
+		if (noteEventMinutes > 0) daysWithRecordedTime.add(formatDateBasename(date));
+
 		recentNotesSummary.push({
 			date,
 			eventMinutes: noteEventMinutes,
@@ -210,8 +233,13 @@ export function computeDashboardStats(
 	categoryBreakdown.sort((a, b) => b.minutes - a.minutes);
 
 	const topCategoryName = categoryBreakdown.length > 0 ? categoryBreakdown[0].displayName : null;
-	const activeDaysCount = Math.max(1, recentParsed.length);
-	const avgEventMinutesPerDay = Math.round(recentEventMinutes / activeDaysCount);
+	// "Daily Avg" = the window's total recorded time divided by the number
+	// of days that recorded time. Dividing by the number of NOTES was
+	// wrong twice over: a note that recorded nothing was counted as a
+	// zero-minute day, and two files carrying the same date were counted
+	// as two separate days.
+	const avgEventMinutesPerDay =
+		daysWithRecordedTime.size > 0 ? Math.round(recentEventMinutes / daysWithRecordedTime.size) : 0;
 
 	return {
 		totalNotes: allNoteDates.length,

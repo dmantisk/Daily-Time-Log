@@ -98,8 +98,14 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 ### 1.7 Notes Without the Event Heading (No Fallback)
 - If the configured Event heading (1.3) is not found anywhere in the file, the file has **no Event block** and the parser returns **zero events**. There is deliberately **no whole-body fallback**: the configured heading is the single source of truth for where events live.
 - The sidebar shows a "No Event section" banner above the grid for such notes (`emptyStateTitleNoEventHeading` / `emptyStateDescNoEventHeading` in `i18n.ts`) instead of silently showing nothing, so the user can tell "no heading" apart from "heading but no events". The grid itself stays usable — creating the first Event writes the configured heading into the note (see 1.3).
-- The Dashboard treats such notes as having zero Event time (they still count as existing notes for streak/total purposes).
+- The Dashboard treats such notes as having zero Event time (they still count as existing notes for streak/total purposes, but they do NOT count toward the daily average — see 1.8).
 - **Do NOT auto-migrate notes** by inserting the Event heading into them. Notes without the heading are left untouched unless the user (or the sidebar's inline Event creation) adds it explicitly.
+
+### 1.8 Dashboard Statistics
+- **The "Daily Avg" figure divides by the DAYS that recorded time** — the window's total recorded minutes ÷ the number of distinct dates whose note recorded at least one minute. A daily note IS a day, so the label is accurate; the denominator is a count of days, not of files.
+  - A note that exists but recorded nothing is a day that recorded **nothing**, not a day that recorded a zero — it must not drag the average down.
+  - Two files carrying the same date (`2026-07-14.md` and `archive/2026-07-14.md`) are ONE day and must not be counted twice.
+  - Dividing by the number of *notes* was wrong on both counts (it counted empty notes as zero-minute days, and counted same-date files as separate days).
 
 ---
 
@@ -186,6 +192,7 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - `isDailyNoteFileName` accepts a date-named `.md` file and rejects date-named files with any other extension — the plugin WRITES to the files it treats as daily notes, so a non-Markdown file must never be picked up and overwritten.
 - **Required `dashboardCollector.ts` test coverage** (`src/dashboardCollector.test.ts`):
   - `isWithinRecentWindow` bounds the window on BOTH ends. Notes dated after `today` are excluded — a future-dated daily note (a pre-created template, a copied note) records no elapsed time, so counting it would inflate the period totals and put a not-yet-happened day at the top of the recent-activity list. The future bound applies to the "All Time" window too.
+  - The "Daily Avg" denominator is the number of distinct dates that recorded time: a note that recorded nothing is excluded, two files carrying the same date count as one day, and a window where nothing recorded time reports 0.
 - **Required `settings.ts` test coverage** (`src/settings.test.ts`):
   - `validateCategoryName` rejects a blank name and a name already used by another category (case-insensitively), accepts a fresh name, and accepts a category keeping its own name when its index is passed as `ignoreIndex`.
   - `copyCategories` / `createDefaultCategories` copy DEEPLY: mutating the copy must not reach the source list or `DEFAULT_CATEGORIES`.

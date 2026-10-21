@@ -91,7 +91,7 @@ new required reading-view coverage.
 
 ### 2. "Daily Avg" divides by notes, not by days in the window — **Medium**
 
-- **Status:** open
+- **Status:** done — fixed in the v0.5.3 review batch (see the commit history)
 - **Location:** `src/dashboardCollector.ts` — `avgEventMinutesPerDay`
 - **Severity:** Medium — a misleading statistic, no data loss
 
@@ -120,6 +120,37 @@ const days = 10; // ten notes, each with one 60-minute Event
 Decide which meaning is intended and make the label match it. If it is
 a per-calendar-day figure, divide by the number of days in the window
 rather than by the number of notes.
+
+**Resolution**
+
+*Decided:* the figure is the **total recorded time divided by the
+number of notes with recorded time** — i.e. it is an average over the
+days that actually recorded something, and NOT a per-calendar-day
+average (a day with no note is a day that was not recorded at all, not
+a day that recorded zero).
+
+Because a daily note **is** a day (`YYYY-MM-DD.md`, one per date), the
+"Daily Avg" label stays accurate: the denominator is a count of days.
+The old code was wrong even against that intent, because it divided by
+the number of *notes* rather than by the number of notes that recorded
+time — so a note that existed but recorded nothing was counted as a
+zero-minute day and dragged the average down.
+
+`computeDashboardStats` now counts the **distinct dates** whose note
+recorded at least one minute, and divides by that:
+
+- a note that recorded nothing is excluded (it is a day that recorded
+  nothing, not a day that recorded a zero);
+- two files carrying the same date (`2026-07-14.md` and
+  `archive/2026-07-14.md`) count as **one** day;
+- a window where nothing recorded time reports `0`, not a division by
+  an empty set.
+
+Tests added in `src/dashboardCollector.test.ts` (`"divides by the days
+that recorded time, not by the number of notes"`, `"excludes a note
+that recorded no time from the denominator"`, `"counts two files
+carrying the same date as one day"`, and the zero case), and
+`.agents/AGENTS.md` §1.8 now states the rule.
 
 ---
 
