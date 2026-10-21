@@ -236,7 +236,7 @@ the read rule and the write rule.
 
 ### 1. A fenced code block inside the Event section truncates it — **High**
 
-- **Status:** done — fixed in the v0.5.5 review batch
+- **Status:** done — fixed in the v0.5.5 review batch (commit `81930e9`)
 - **Location:** `src/parser.ts` — `findEventBlock()`, `parseTimeline()`;
   `src/categoryBadges.ts` — `walkDocumentOrder()`
 - **Severity:** High — events after the fence disappear, and the parser
