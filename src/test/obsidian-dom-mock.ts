@@ -23,30 +23,48 @@ export function installObsidianDomHelpers(): void {
 	proto.createEl = function <K extends keyof HTMLElementTagNameMap>(
 		this: HTMLElement,
 		tag: K,
-		options?: { text?: string; cls?: string; attr?: Record<string, string>; title?: string }
+		options?: DomElementInfoLike
 	): HTMLElementTagNameMap[K] {
 		const el = this.ownerDocument.createElement(tag);
-		if (options?.text !== undefined) el.textContent = options.text;
-		if (options?.cls) el.className = options.cls;
-		if (options?.title) el.setAttribute("title", options.title);
-		if (options?.attr) {
-			for (const [name, value] of Object.entries(options.attr)) el.setAttribute(name, value);
+		if (options?.text !== undefined) {
+			if (typeof options.text === "string") {
+				el.textContent = options.text;
+			} else {
+				el.appendChild(options.text);
+			}
 		}
-		this.appendChild(el);
+		if (options?.cls) {
+			el.className = Array.isArray(options.cls) ? options.cls.join(" ") : options.cls;
+		}
+		if (options?.title) el.setAttribute("title", options.title);
+		if (options?.value !== undefined) {
+			// `value` is a real `DomElementInfo` field — Obsidian applies it
+			// to the element's VALUE PROPERTY, not as an attribute. That
+			// distinction matters for `<option value="30">`: the select's
+			// `value` is read from the option's value, and a select with
+			// no value-bearing option falls back to the option's TEXT.
+			(el as unknown as { value: string }).value = options.value;
+		}
+		if (options?.type) el.setAttribute("type", options.type);
+		if (options?.href) el.setAttribute("href", options.href);
+		if (options?.placeholder) el.setAttribute("placeholder", options.placeholder);
+		if (options?.attr) {
+			for (const [name, value] of Object.entries(options.attr)) {
+				if (value === null) el.removeAttribute(name);
+				else el.setAttribute(name, String(value));
+			}
+		}
+		const parent = options?.parent ?? this;
+		if (options?.prepend) parent.insertBefore(el, parent.firstChild);
+		else parent.appendChild(el);
 		return el;
 	};
 
-	proto.createDiv = function (
-		this: HTMLElement,
-		options?: { text?: string; cls?: string; attr?: Record<string, string> }
-	): HTMLDivElement {
+	proto.createDiv = function (this: HTMLElement, options?: DomElementInfoLike): HTMLDivElement {
 		return this.createEl("div", options);
 	};
 
-	proto.createSpan = function (
-		this: HTMLElement,
-		options?: { text?: string; cls?: string; attr?: Record<string, string> }
-	): HTMLSpanElement {
+	proto.createSpan = function (this: HTMLElement, options?: DomElementInfoLike): HTMLSpanElement {
 		return this.createEl("span", options);
 	};
 
@@ -93,10 +111,10 @@ interface ObsidianElementProto {
 	empty(): void;
 	createEl<K extends keyof HTMLElementTagNameMap>(
 		tag: K,
-		options?: { text?: string; cls?: string; attr?: Record<string, string>; title?: string }
+		options?: DomElementInfoLike
 	): HTMLElementTagNameMap[K];
-	createDiv(options?: { text?: string; cls?: string; attr?: Record<string, string> }): HTMLDivElement;
-	createSpan(options?: { text?: string; cls?: string; attr?: Record<string, string> }): HTMLSpanElement;
+	createDiv(options?: DomElementInfoLike): HTMLDivElement;
+	createSpan(options?: DomElementInfoLike): HTMLSpanElement;
 	addClass(...classes: string[]): void;
 	removeClass(...classes: string[]): void;
 	toggleClass(classes: string | string[], value: boolean): void;
@@ -104,4 +122,24 @@ interface ObsidianElementProto {
 	setText(text: string): void;
 	setCssStyles(styles: Record<string, string>): void;
 	setAttr(name: string, value: string | number | boolean): void;
+}
+
+/**
+ * The subset of Obsidian's `DomElementInfo` the DOM helpers accept.
+ *
+ * Kept as a local interface rather than importing Obsidian's global
+ * namespace type so this test helper stays free of the types-only
+ * `obsidian` package at runtime.
+ */
+interface DomElementInfoLike {
+	text?: string | DocumentFragment;
+	cls?: string | string[];
+	attr?: Record<string, string | number | boolean | null>;
+	title?: string;
+	value?: string;
+	type?: string;
+	prepend?: boolean;
+	placeholder?: string;
+	href?: string;
+	parent?: Node;
 }

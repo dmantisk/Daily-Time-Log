@@ -208,6 +208,8 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - The "Daily Avg" tooltip states that the denominator is the days that recorded time.
   - The "Total Notes" tooltip states that future-dated notes are not counted.
   - The value element carries no tooltip — only the label does.
+  - The window dropdown's **value** is the window (`30`), not its label, and it agrees with the "Event Time (30)" metric label. A `<select>` whose options carry no value falls back to the option's TEXT, so a mock that drops `createEl`'s `value` field makes the control show one window while the figures cover another.
+- **Required `obsidian-dom-mock.ts` test coverage** (`src/test/obsidian-dom-mock.test.ts`): the DOM mock stands in for the helpers Obsidian adds to the `HTMLElement` prototype, and it drifts. When it drops a field the real `DomElementInfo` supports, the rendered DOM is not what Obsidian would produce and the test asserts on the wrong thing. The mock must cover the full `DomElementInfo` surface the plugin uses — `text` (string *and* `DocumentFragment`), `cls` (string *and* array), `title`, `attr` (with `null` meaning "remove the attribute"), `value` (applied to the element's value **property**, not as an attribute), `type`, `href`, `placeholder`, `prepend` and `parent`.
 - **Required `settings.ts` test coverage** (`src/settings.test.ts`):
   - `validateCategoryName` rejects a blank name and a name already used by another category (case-insensitively), accepts a fresh name, and accepts a category keeping its own name when its index is passed as `ignoreIndex`.
   - `copyCategories` / `createDefaultCategories` copy DEEPLY: mutating the copy must not reach the source list or `DEFAULT_CATEGORIES`.

@@ -130,4 +130,20 @@ describe("DashboardView metric tooltips", () => {
 		const value = container.querySelector(".dwl-kpi-value");
 		expect(tooltipOf(value)).toBeUndefined();
 	});
+
+	it("shows the selected window in the dropdown, and matches the metric label", () => {
+		// The dropdown's VALUE must carry the window (30), not its label
+		// ("Last 30 Days") — a mismatch here would mean the control shows
+		// one window while the figures cover another.
+		const select = container.querySelector("select") as HTMLSelectElement;
+		expect(select.value).toBe("30");
+		expect([...select.options].map((o) => o.value)).toEqual(["7", "30", "90", "0"]);
+
+		// The "Event Time" label names the window the figures cover, so it
+		// must agree with the dropdown.
+		const eventTime = [...container.querySelectorAll(".dwl-kpi-label")].find((el) =>
+			el.textContent?.startsWith("Event Time")
+		);
+		expect(eventTime?.textContent).toContain("30");
+	});
 });
