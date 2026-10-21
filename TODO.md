@@ -18,7 +18,9 @@ Conventions used below:
 > the repository review that followed the v0.5.3 release. The first two
 > review batches are complete and released: the first (14 findings) in
 > v0.5.2, the second (5 findings) in v0.5.3. The dashboard metric
-> tooltips followed in the same release.
+> tooltips followed in the same release. The third review batch (the one
+> that followed v0.5.4) is being worked through one finding at a time;
+> the CRLF finding is already fixed and recorded below.
 >
 > The resolved findings below are kept as the **record** of what was wrong
 > and why the fix looks the way it does — each one states the
@@ -28,76 +30,6 @@ Conventions used below:
 ---
 
 ## Open findings
-
-### 1. CRLF line endings silently destroy Events — **High**
-
-- **Status:** open
-- **Location:** `src/parser.ts` — `TIME_RANGE_REGEX`, and the write path
-  in `replaceLineRangeAt()` / `appendLineToBlock()`
-- **Severity:** High — events vanish from the dashboard without any
-  error, and the reading-view badges disagree with the parser
-
-**What happens**
-
-`TIME_RANGE_REGEX` ends with `(.*)$`. In JavaScript `.` does **not**
-match `\r`, and `content.split("\n")` leaves the `\r` on the end of every
-line of a CRLF file. The regex therefore fails to match every event line
-in such a note — the note parses as having **no events at all**.
-
-This is not a cosmetic mismatch. `findEventBlock()` still finds the
-section (headings are matched after a `.trim()`), so the reading view
-renders category badges for the lines the parser never saw — a direct
-violation of the parser/DOM agreement rule in `.agents/AGENTS.md` §1.3.
-
-The write path has the mirror-image defect: `replaceLineRangeAt()` and
-`appendLineToBlock()` re-join lines with `"\n"`, so editing one line in a
-CRLF file converts just that line to LF and the file ends up with mixed
-line endings.
-
-**Reproduction**
-
-```ts
-const crlf = "# Event\r\n- 09:00 - 10:00 [Admin] A\r\n- 10:00 - 11:00 [Admin] B\r\n";
-const lf   = "# Event\n- 09:00 - 10:00 [Admin] A\n- 10:00 - 11:00 [Admin] B\n";
-
-parseDailyNote(crlf).timeline.length;  // 0  — CRLF
-parseDailyNote(lf).timeline.length;    // 2  — LF
-```
-
-A realistic three-event CRLF note keeps only the **last** event, and only
-if the file does not end with a newline — a line terminated by `\r\n`
-never matches, and only the final line of a file with no trailing newline
-survives. So a CRLF note whose last line ends with a newline parses to
-**zero** events; without the trailing newline it parses to one of three.
-The dashboard follows: the CRLF note reports `recentEventMinutes: 0`
-where the same note with LF reports `120`.
-
-`.agents/AGENTS.md` §1.2 already says a trailing `\r` must be stripped
-so CRLF-terminated files are not broken, and `stripTrailingCarriageReturn()`
-exists in `src/parser.ts` — but only `stripFrontmatter()` uses it. The
-existing test `it("recognizes delimiters in CRLF files")` in
-`src/parser.test.ts` only covers the frontmatter delimiters, never an
-Event line.
-
-**Fix**
-
-Normalize the line endings before matching: strip a trailing `\r` from
-each line after the split (reusing `stripTrailingCarriageReturn()`), or
-normalize `\r\n` to `\n` once at the top of the parse. Separately, make
-the write path preserve the file's existing line-ending style instead of
-always joining with `"\n"`.
-
-**Test to add**
-
-In `src/parser.test.ts`:
-
-- a CRLF note with two events parses to two events;
-- the same note with CRLF parses to the same events as the LF note
-  (same times, same categories, same descriptions);
-- a CRLF note reports the same `recentEventMinutes` through
-  `computeDashboardStats()` as the LF note;
-- after `replaceLineRangeAt()` on a CRLF note, the file still uses CRLF
-  throughout.
 
 ### 2. A fenced code block inside the Event section truncates it — **High**
 
@@ -270,6 +202,107 @@ does not report a duration larger than 24 hours.
 ---
 
 ## Findings (all resolved)
+
+### 0. CRLF line endings silently destroy Events — **High**
+
+- **Status:** done — fixed in the v0.5.5 review batch
+- **Location:** `src/parser.ts` — `TIME_RANGE_REGEX`, and the write path
+  in `replaceLineRangeAt()` / `appendLineToBlock()`
+- **Severity:** High — events vanish from the dashboard without any
+  error, and the reading-view badges disagree with the parser
+
+**What happens**
+
+`TIME_RANGE_REGEX` ends with `(.*)$`. In JavaScript `.` does **not**
+match `\r`, and `content.split("\n")` leaves the `\r` on the end of every
+line of a CRLF file. The regex therefore fails to match every event line
+in such a note — the note parses as having **no events at all**.
+
+This is not a cosmetic mismatch. `findEventBlock()` still finds the
+section (headings are matched after a `.trim()`), so the reading view
+renders category badges for the lines the parser never saw — a direct
+violation of the parser/DOM agreement rule in `.agents/AGENTS.md` §1.3.
+
+The write path has the mirror-image defect: `replaceLineRangeAt()` and
+`appendLineToBlock()` re-join lines with `"\n"`, so editing one line in a
+CRLF file converts just that line to LF and the file ends up with mixed
+line endings.
+
+**Reproduction**
+
+```ts
+const crlf = "# Event\r\n- 09:00 - 10:00 [Admin] A\r\n- 10:00 - 11:00 [Admin] B\r\n";
+const lf   = "# Event\n- 09:00 - 10:00 [Admin] A\n- 10:00 - 11:00 [Admin] B\n";
+
+parseDailyNote(crlf).timeline.length;  // 0  — CRLF
+parseDailyNote(lf).timeline.length;    // 2  — LF
+```
+
+A realistic three-event CRLF note keeps only the **last** event, and only
+if the file does not end with a newline — a line terminated by `\r\n`
+never matches, and only the final line of a file with no trailing newline
+survives. So a CRLF note whose last line ends with a newline parses to
+**zero** events; without the trailing newline it parses to one of three.
+The dashboard follows: the CRLF note reports `recentEventMinutes: 0`
+where the same note with LF reports `120`.
+
+`.agents/AGENTS.md` §1.2 already says a trailing `\r` must be stripped
+so CRLF-terminated files are not broken, and `stripTrailingCarriageReturn()`
+exists in `src/parser.ts` — but only `stripFrontmatter()` uses it. The
+existing test `it("recognizes delimiters in CRLF files")` in
+`src/parser.test.ts` only covers the frontmatter delimiters, never an
+Event line.
+
+**Fix**
+
+Normalize the line endings before matching: strip a trailing `\r` from
+each line after the split (reusing `stripTrailingCarriageReturn()`), or
+normalize `\r\n` to `\n` once at the top of the parse. Separately, make
+the write path preserve the file's existing line-ending style instead of
+always joining with `"\n"`.
+
+**Test to add**
+
+In `src/parser.test.ts`:
+
+- a CRLF note with two events parses to two events;
+- the same note with CRLF parses to the same events as the LF note
+  (same times, same categories, same descriptions);
+- a CRLF note reports the same `recentEventMinutes` through
+  `computeDashboardStats()` as the LF note;
+- after `replaceLineRangeAt()` on a CRLF note, the file still uses CRLF
+  throughout.
+
+**Resolution**
+
+`splitContentLines()` in `src/parser.ts` is now the single place that
+strips the trailing `\r`, and every read path goes through it:
+`stripFrontmatter()`, `parseDailyNote()`, `findEventBlockInContent()` and
+the sidebar's staleness guards (which had their own `content.split("\n")`
+calls — in a CRLF file those would have compared a `\r`-suffixed line
+against the item and rejected **every** edit and delete).
+
+The write path now re-joins with the ending the file already uses:
+`replaceLineAt()`, `replaceLineRangeAt()`, `removeLineRangeAt()` and
+`appendLineToBlock()` detect the file's line ending once per write and
+join with it, so editing one line in a CRLF note no longer converts that
+line to LF and leaves the file with mixed line endings.
+
+Stripping the `\r` does not change the line COUNT, so line indices stay
+relative to the original file (AGENTS.md §1.2).
+
+Tests added in `src/parser.test.ts` under a new `describe("CRLF line
+endings")` block: a CRLF note parses to two events; it parses to exactly
+the same events as the LF note; it reports the same `recentEventMinutes`
+(120) through `computeDashboardStats()`; and a CRLF note stays CRLF
+throughout after a replace, a remove and an append — with an explicit
+assertion that no lone LF was introduced. An LF note is asserted to stay
+LF.
+
+`.agents/AGENTS.md` now has a new **§1.2.1 Line Endings (CRLF)** stating
+the read rule and the write rule.
+
+---
 
 ### 1. Image headings: the parser and the badge renderer disagree — **High**
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { computeDashboardStats } from "./dashboardCollector";
 import {
 	appendLineToBlock,
 	DEFAULT_EVENT_HEADING,
@@ -45,6 +46,53 @@ describe("stripFrontmatter", () => {
 
 	it("recognizes delimiters in CRLF files", () => {
 		expect(stripFrontmatter("---\r\ntags: [work]\r\n---\r\n# Event").bodyStart).toBe(3);
+	});
+});
+
+describe("CRLF line endings", () => {
+	const CRLF_NOTE = "# Event\r\n- 09:00 - 10:00 [Admin] A\r\n- 10:00 - 11:00 [Admin] B\r\n";
+	const LF_NOTE = "# Event\n- 09:00 - 10:00 [Admin] A\n- 10:00 - 11:00 [Admin] B\n";
+
+	it("parses every event in a CRLF note", () => {
+		// TIME_RANGE_REGEX ends in `(.*)$`, and JS `.` does not match `\r` —
+		// without normalization a CRLF note parses as having NO events.
+		expect(parseDailyNote(CRLF_NOTE).timeline).toHaveLength(2);
+	});
+
+	it("parses a CRLF note to exactly the same events as the LF note", () => {
+		expect(parseDailyNote(CRLF_NOTE).timeline).toEqual(parseDailyNote(LF_NOTE).timeline);
+	});
+
+	it("reports the same dashboard minutes for a CRLF note as for the LF note", () => {
+		const date = new Date(2026, 6, 14);
+		const crlfStats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(CRLF_NOTE) }], date);
+		const lfStats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(LF_NOTE) }], date);
+		expect(crlfStats.recentEventMinutes).toBe(lfStats.recentEventMinutes);
+		expect(crlfStats.recentEventMinutes).toBe(120);
+	});
+
+	it("keeps a CRLF note CRLF when a line is replaced", () => {
+		const edited = replaceLineRangeAt(CRLF_NOTE, 1, 1, "- 09:00 - 10:00 [Admin] EDITED");
+		expect(edited).toBe("# Event\r\n- 09:00 - 10:00 [Admin] EDITED\r\n- 10:00 - 11:00 [Admin] B\r\n");
+		// No lone LF was introduced anywhere in the file.
+		expect(edited.replace(/\r\n/g, "")).not.toContain("\n");
+	});
+
+	it("keeps a CRLF note CRLF when a line is removed", () => {
+		const edited = removeLineRangeAt(CRLF_NOTE, 1, 1);
+		expect(edited).toBe("# Event\r\n- 10:00 - 11:00 [Admin] B\r\n");
+		expect(edited.replace(/\r\n/g, "")).not.toContain("\n");
+	});
+
+	it("keeps a CRLF note CRLF when a line is appended", () => {
+		const edited = appendLineToBlock(CRLF_NOTE, "- 11:00 - 12:00 [Admin] C");
+		expect(edited.replace(/\r\n/g, "")).not.toContain("\n");
+		expect(parseDailyNote(edited).timeline).toHaveLength(3);
+	});
+
+	it("leaves an LF note LF", () => {
+		const edited = replaceLineRangeAt(LF_NOTE, 1, 1, "- 09:00 - 10:00 [Admin] EDITED");
+		expect(edited).not.toContain("\r");
 	});
 });
 

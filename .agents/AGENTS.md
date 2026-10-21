@@ -22,6 +22,12 @@ Please strictly adhere to the following rules and specifications during developm
 - This stripping logic MUST be implemented as a pure function inside `src/parser.ts` (no Obsidian API dependency), consistent with the Decoupled Parser Strategy in Section 4.
 - **Line indices must stay relative to the original file.** Do not renumber lines after stripping — downstream line-index tracking (1.4) depends on original file line numbers.
 
+### 1.2.1 Line Endings (CRLF)
+- **The parse MUST be line-ending agnostic.** A CRLF file splits on `"\n"` and leaves a trailing `"\r"` on every line, and JavaScript's `.` does **not** match `\r` — so `TIME_RANGE_REGEX`, which ends in `(.*)$`, would fail to match **every** Event line and the note would parse as having **no events at all**, with no error. The reading view disagrees with the parser about the same file (it renders the lines the parser never saw), which is the parser/DOM disagreement class §1.3 exists to prevent.
+  - `splitContentLines()` in `src/parser.ts` is the single place that strips the trailing `\r`; every read path goes through it (`stripFrontmatter`, `parseDailyNote`, `findEventBlockInContent`, and the staleness guards in the sidebar). Do NOT call `content.split("\n")` directly on file content — that reintroduces the defect.
+- **The write path MUST preserve the file's existing line-ending style.** `replaceLineAt()`, `replaceLineRangeAt()`, `removeLineRangeAt()` and `appendLineToBlock()` re-join with the ending the file already uses (detected once per write), so editing one line in a CRLF note does not convert that line to LF and leave the file with mixed line endings.
+- Stripping the `\r` does **not** change the line COUNT, so line indices stay relative to the original file (see §1.2).
+
 ### 1.3 Event Block Marker (Single Configurable Heading)
 The Event block is identified by **one user-configured heading** (`eventHeadingText` + `eventHeadingLevel` in Settings), not by a generic `---` divider (a `---` divider was rejected because it collides with YAML frontmatter's closing delimiter).
 

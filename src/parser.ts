@@ -266,13 +266,48 @@ function stripTrailingCarriageReturn(line: string): string {
 }
 
 /**
+ * Splits `content` into lines, dropping the line terminators.
+ *
+ * A CRLF file splits on `"\n"` and leaves a trailing `"\r"` on every line,
+ * and JavaScript's `.` does **not** match `\r` — so `TIME_RANGE_REGEX`, which
+ * ends in `(.*)$`, would fail to match EVERY event line in such a note and
+ * the note would parse as having no events at all. Stripping the trailing
+ * `"\r"` here makes the parse line-ending agnostic.
+ *
+ * The line COUNT is unchanged by this, so line indices stay relative to the
+ * original file (AGENTS.md 1.2).
+ */
+export function splitContentLines(content: string): string[] {
+	return content.split("\n").map(stripTrailingCarriageReturn);
+}
+
+/**
+ * The line ending a file uses: `"\r\n"` if it contains one, otherwise `"\n"`.
+ *
+ * The write path must re-join lines with the ending the file already uses —
+ * otherwise editing one line in a CRLF note converts just that line to LF and
+ * the file ends up with mixed line endings.
+ */
+function detectLineEnding(content: string): string {
+	return content.includes("\r\n") ? "\r\n" : "\n";
+}
+
+/**
+ * Re-joins `lines` with the line ending the original `content` used, so a
+ * write never changes the file's line-ending style.
+ */
+function joinLines(lines: string[], content: string): string {
+	return lines.join(detectLineEnding(content));
+}
+
+/**
  * Strips a leading YAML frontmatter block (line 0 must be exactly `---`,
  * closed by the next line that is exactly `---`). Line indices in the
  * returned `lines` array stay relative to the original file — callers get a
  * `bodyStart` offset to scan from instead of a re-numbered array.
  */
 export function stripFrontmatter(content: string): { lines: string[]; bodyStart: number } {
-	const lines = content.split("\n");
+	const lines = splitContentLines(content);
 
 	if (stripTrailingCarriageReturn(lines[0] ?? "") !== FRONTMATTER_DELIMITER) {
 		return { lines, bodyStart: 0 };
@@ -530,9 +565,9 @@ export function isTopLevelOrMarker(line: string): boolean {
  * Replaces a single line at the given index (0-based).
  */
 export function replaceLineAt(content: string, lineIndex: number, newLine: string): string {
-	const lines = content.split("\n");
+	const lines = splitContentLines(content);
 	lines[lineIndex] = newLine;
-	return lines.join("\n");
+	return joinLines(lines, content);
 }
 
 /**
@@ -541,23 +576,23 @@ export function replaceLineAt(content: string, lineIndex: number, newLine: strin
  * lines due to continuation lines.
  */
 export function replaceLineRangeAt(content: string, lineIndex: number, lineCount: number, newLine: string): string {
-	const lines = content.split("\n");
+	const lines = splitContentLines(content);
 	lines.splice(lineIndex, lineCount, newLine);
-	return lines.join("\n");
+	return joinLines(lines, content);
 }
 
 /**
  * Removes a range of lines (inclusive start, lineCount lines).
  */
 export function removeLineRangeAt(content: string, lineIndex: number, lineCount: number): string {
-	const lines = content.split("\n");
+	const lines = splitContentLines(content);
 	lines.splice(lineIndex, lineCount);
-	return lines.join("\n");
+	return joinLines(lines, content);
 }
 
 /** Same staleness guard as `timelineLineMatches`, for Timeline/Event items. */
 export function timelineLineMatches(line: string, item: TimelineItem): boolean {
-	const match = TIME_RANGE_REGEX.exec(line);
+	const match = TIME_RANGE_REGEX.exec(stripTrailingCarriageReturn(line));
 	if (match === null) return false;
 	const category = match[3] ? match[3] : undefined;
 	return (
@@ -606,15 +641,15 @@ export function appendLineToBlock(
 	if (!block) {
 		const heading = `${"#".repeat(config.level)} ${config.text}`;
 		const base = lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
-		return [...base, heading, newLine, ""].join("\n");
+		return joinLines([...base, heading, newLine, ""], content);
 	}
 
 	const insertAt = endOfOwnContent(lines, block, config.level);
 	if (insertAt >= lines.length) {
-		return appendAtEndOfFile(lines, newLine);
+		return appendAtEndOfFile(lines, newLine, content);
 	}
 
-	return [...lines.slice(0, insertAt), newLine, ...lines.slice(insertAt)].join("\n");
+	return joinLines([...lines.slice(0, insertAt), newLine, ...lines.slice(insertAt)], content);
 }
 
 /**
@@ -630,11 +665,11 @@ function endOfOwnContent(lines: string[], block: LineRange, level: number): numb
 	return block.end + 1;
 }
 
-function appendAtEndOfFile(lines: string[], newLine: string): string {
+function appendAtEndOfFile(lines: string[], newLine: string, content: string): string {
 	if (lines.length > 0 && lines[lines.length - 1] === "") {
-		return [...lines.slice(0, -1), newLine, ""].join("\n");
+		return joinLines([...lines.slice(0, -1), newLine, ""], content);
 	}
-	return [...lines, newLine].join("\n");
+	return joinLines([...lines, newLine], content);
 }
 
 const MINUTES_PER_DAY = 24 * 60;
