@@ -341,6 +341,24 @@ Category colors are user data stored in settings, and are applied to the timelin
 - Clicking a recent-note list item opens that note via `workspace.openLinkText(file.path, "", false)`
 - If there is not a single daily note, only the empty-state message (`dashboardEmptyVault`) is shown
 
+### 11.2.1 Metric tooltips
+
+Every metric label carries an explanation of **how the number is computed**, shown on hover.
+
+A bare label ("Daily Avg", "Date Range", "Current Streak") does not say what the number beside it means, so the figure cannot be interpreted on its own. The explanation is a `tipStat*` key in `i18n.ts`, attached with Obsidian's `setTooltip()` to the **label** element — never to the value, which is the number itself. The label gets `cursor: help` so it looks hoverable.
+
+| Metric | Tooltip explains |
+|---|---|
+| Total Notes | Counts daily notes dated on or before today; future-dated notes are excluded |
+| Current Streak | Consecutive days with a note, counting back from today; 0 if today has none |
+| Date Range | The oldest and the newest daily note in the vault |
+| Event Time | The total time recorded across all Events in the selected window |
+| Daily Avg | The average per day **that recorded time** — days whose note recorded nothing are not counted |
+| Top Category | The category with the most recorded time in the selected window |
+
+> [!NOTE]
+> The "Daily Avg" row is the one that most needs it: the denominator is the days that recorded time, NOT the days in the window and NOT the number of notes. A day with no note is a day that was not recorded at all, not a day that recorded zero.
+
 ### 11.3 Theming
 
 It follows the active theme using Obsidian's own theme variables.

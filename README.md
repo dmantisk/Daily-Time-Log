@@ -11,7 +11,7 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
 - **Theme-aware UI**: the sidebar, Work Insights, and popups follow Obsidian's active theme.
-- **Work Insights**: a vault summary — total notes in configured folder, current streak, time window filtering (7d/30d/90d/All), total event time and daily average, category time breakdown visualization (Multi-Segment Progress Bar), and recent note activity history.
+- **Work Insights**: a vault summary — total notes in configured folder, current streak, time window filtering (7d/30d/90d/All), total event time and daily average, category time breakdown visualization (Multi-Segment Progress Bar), and recent note activity history. Every metric carries a tooltip explaining how it is computed.
 
 ## Daily Note Format
 
@@ -115,6 +115,7 @@ A second batch of correctness fixes found in a full review of the plugin.
 - **Fixed the "Daily Avg" figure dividing by the wrong thing.** It divided the recorded time by the number of notes rather than by the number of days that recorded time, so a note that recorded nothing counted as a zero-minute day and dragged the average down, and two files carrying the same date were counted as two separate days. A daily note is a day, so the average is now taken over the days that actually recorded something.
 - **Fixed future-dated notes still being counted in the dashboard totals.** The period totals excluded notes dated after today, but "Total Notes" and "Date Range" still counted them, so the dashboard could report two notes and a date range ending next month while ignoring that note's time. Both now use the same rule.
 - **Fixed a vault containing only future-dated notes showing an unexplained empty dashboard.** It now shows a notice explaining that those days have not arrived yet.
+- **Added tooltips explaining every dashboard metric.** Labels like "Daily Avg" or "Date Range" did not say how the number beside them was computed, so the figures could not be interpreted on their own. Hovering a metric now explains it — for instance, that "Daily Avg" is the average per day *that recorded time*, and that "Total Notes" leaves out notes dated in the future.
 - **Removed a dead translation key** that was declared in both languages but never used.
 
 ### 0.5.2 (2026-10-21)

@@ -112,6 +112,7 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - Two files carrying the same date (`2026-07-14.md` and `archive/2026-07-14.md`) are ONE day and must not be counted twice.
   - Dividing by the number of *notes* was wrong on both counts (it counted empty notes as zero-minute days, and counted same-date files as separate days).
 - **A vault holding only future-dated notes shows a NOTICE, not the "No daily notes yet." empty state and not a dashboard of unexplained zeros** — `dashboardFutureOnlyNotice` in `i18n.ts` explains that those days have not arrived yet, so nothing is counted until they do. The "no daily notes yet" state stays reserved for a vault with no daily notes at all.
+- **Every dashboard metric carries an EXPLANATION of how it is computed, shown on hover.** A bare label ("Daily Avg", "Date Range", "Current Streak") does not say what the number beside it means, so the figure cannot be interpreted on its own — the ambiguity behind the "Daily Avg" denominator defect was invisible to users for exactly this reason. The explanation lives in a `tipStat*` i18n key, attached with Obsidian's `setTooltip()` to the metric's LABEL element (never to the value, which is the number itself). The label also gets `cursor: help` so it looks hoverable. `src/DashboardView.test.ts` asserts that every KPI label and every Period Summary row has one, and that the "Daily Avg" tooltip states that the denominator is the days that recorded time.
 
 ---
 
@@ -202,6 +203,11 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
   - `computeDashboardStats` excludes future-dated notes from the **vault-wide** figures too — `totalNotes`, `oldestDate`, `newestDate` and the streak — not just from the period totals. The period figures and the vault-wide figures must never disagree about which notes count.
   - `computeDashboardStats` also excludes a future-dated note handed to it directly in `recentParsed` (defence in depth — it must contribute no minutes, no category breakdown, no activity row and no average).
   - The "Daily Avg" denominator is the number of distinct dates that recorded time: a note that recorded nothing is excluded, two files carrying the same date count as one day, and a window where nothing recorded time reports 0.
+- **Required `DashboardView.ts` test coverage** (`src/DashboardView.test.ts`): the dashboard is vanilla DOM, so it needs a real DOM.
+  - Every KPI card label and every Period Summary row carries a tooltip explaining how the metric is computed.
+  - The "Daily Avg" tooltip states that the denominator is the days that recorded time.
+  - The "Total Notes" tooltip states that future-dated notes are not counted.
+  - The value element carries no tooltip — only the label does.
 - **Required `settings.ts` test coverage** (`src/settings.test.ts`):
   - `validateCategoryName` rejects a blank name and a name already used by another category (case-insensitively), accepts a fresh name, and accepts a category keeping its own name when its index is passed as `ignoreIndex`.
   - `copyCategories` / `createDefaultCategories` copy DEEPLY: mutating the copy must not reach the source list or `DEFAULT_CATEGORIES`.

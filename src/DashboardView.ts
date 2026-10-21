@@ -1,4 +1,4 @@
-import { ItemView, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
+import { ItemView, setTooltip, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import type DailyWorkLogPlugin from "./main";
 import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./parser";
 import { formatDateBasename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
@@ -191,13 +191,23 @@ export class DashboardView extends ItemView {
 			t("statTotalNotes", language),
 			String(stats.totalNotes),
 			`${t("statStreak", language)}: ${stats.currentStreak}${t("unitDays", language)}`,
-			streakBadge
+			streakBadge,
+			t("tipStatTotalNotes", language),
+			t("tipStatStreak", language)
 		);
 
 		// Card 2: Event Recording Time & Daily Average
 		const timeVal = formatMinutes(stats.recentEventMinutes);
 		const avgSub = `${t("statAvgPerDay", language)}: ${formatMinutes(stats.avgEventMinutesPerDay)}`;
-		this.renderMetricCard(grid, this.eventTimeLabel(language), timeVal, avgSub);
+		this.renderMetricCard(
+			grid,
+			this.eventTimeLabel(language),
+			timeVal,
+			avgSub,
+			undefined,
+			t("tipStatEventTime", language),
+			t("tipStatAvgPerDay", language)
+		);
 
 		// Card 3: Top Category
 		const topCat = stats.topCategoryName ?? "-";
@@ -205,26 +215,39 @@ export class DashboardView extends ItemView {
 			stats.categoryBreakdown.length > 0
 				? t("statTopCategoryPct", language).replace("%s", String(stats.categoryBreakdown[0].percentage))
 				: "-";
-		this.renderMetricCard(grid, t("statTopCategory", language), topCat, topCatSub);
+		this.renderMetricCard(grid, t("statTopCategory", language), topCat, topCatSub, undefined, t("tipStatTopCategory", language));
 	}
 
+	/**
+	 * Renders one KPI card.
+	 *
+	 * `labelTooltip` and `footerTooltip` attach an explanation of the
+	 * metric to the label / footer element on hover. A bare label like
+	 * "Daily Avg" or "Date Range" does not say how the number is
+	 * computed, which makes the figure impossible to interpret on its
+	 * own — the tooltip is where that meaning lives.
+	 */
 	private renderMetricCard(
 		container: HTMLElement,
 		label: string,
 		value: string,
 		footerText: string,
-		badgeText?: string
+		badgeText?: string,
+		labelTooltip?: string,
+		footerTooltip?: string
 	): void {
 		const card = container.createDiv({ cls: "dwl-dashboard-kpi-card" });
 		const topRow = card.createDiv({ cls: "dwl-kpi-top-row" });
-		topRow.createDiv({ cls: "dwl-kpi-label", text: label });
+		const labelEl = topRow.createDiv({ cls: "dwl-kpi-label", text: label });
+		if (labelTooltip) setTooltip(labelEl, labelTooltip);
 
 		if (badgeText) {
 			topRow.createDiv({ cls: "dwl-kpi-badge", text: badgeText });
 		}
 
 		card.createDiv({ cls: "dwl-kpi-value", text: value });
-		card.createDiv({ cls: "dwl-kpi-footer", text: footerText });
+		const footerEl = card.createDiv({ cls: "dwl-kpi-footer", text: footerText });
+		if (footerTooltip) setTooltip(footerEl, footerTooltip);
 	}
 
 
@@ -329,10 +352,25 @@ export class DashboardView extends ItemView {
 				? `${formatDateBasename(stats.oldestDate)} ~ ${formatDateBasename(stats.newestDate)}`
 				: "-";
 
-		this.renderSummaryRow(summaryBox, t("statDateRange", language), dateRangeText);
-		this.renderSummaryRow(summaryBox, t("statStreak", language), `${stats.currentStreak} ${t("unitDays", language)}`);
-		this.renderSummaryRow(summaryBox, this.eventTimeLabel(language), formatMinutes(stats.recentEventMinutes));
-		this.renderSummaryRow(summaryBox, t("statAvgPerDay", language), formatMinutes(stats.avgEventMinutesPerDay));
+		this.renderSummaryRow(summaryBox, t("statDateRange", language), dateRangeText, t("tipStatDateRange", language));
+		this.renderSummaryRow(
+			summaryBox,
+			t("statStreak", language),
+			`${stats.currentStreak} ${t("unitDays", language)}`,
+			t("tipStatStreak", language)
+		);
+		this.renderSummaryRow(
+			summaryBox,
+			this.eventTimeLabel(language),
+			formatMinutes(stats.recentEventMinutes),
+			t("tipStatEventTime", language)
+		);
+		this.renderSummaryRow(
+			summaryBox,
+			t("statAvgPerDay", language),
+			formatMinutes(stats.avgEventMinutesPerDay),
+			t("tipStatAvgPerDay", language)
+		);
 	}
 
 	/**
@@ -348,9 +386,10 @@ export class DashboardView extends ItemView {
 		return t("statEventTimeWindow", language).replace("%s", String(this.selectedWindowDays));
 	}
 
-	private renderSummaryRow(container: HTMLElement, label: string, value: string): void {
+	private renderSummaryRow(container: HTMLElement, label: string, value: string, tooltip?: string): void {
 		const row = container.createDiv({ cls: "dwl-summary-row" });
-		row.createDiv({ cls: "dwl-summary-label", text: label });
+		const labelEl = row.createDiv({ cls: "dwl-summary-label", text: label });
+		if (tooltip) setTooltip(labelEl, tooltip);
 		row.createDiv({ cls: "dwl-summary-val", text: value });
 	}
 }

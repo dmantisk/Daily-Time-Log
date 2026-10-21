@@ -445,6 +445,9 @@
 	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
+	/* A metric label carries an explanation on hover (see
+	   DashboardView.renderMetricCard), so it must LOOK hoverable. */
+	cursor: help;
 }
 
 .dwl-kpi-badge {
@@ -664,6 +667,9 @@
 .dwl-summary-label {
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
+	/* Matches the KPI label: a summary label carries an explanation on
+	   hover, so it must LOOK hoverable. */
+	cursor: help;
 }
 
 .dwl-summary-val {

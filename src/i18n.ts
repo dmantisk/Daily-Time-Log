@@ -89,6 +89,12 @@ export type UIStringKey =
 	| "statAvgPerDay"
 	| "statTopCategory"
 	| "statTopCategoryPct"
+	| "tipStatTotalNotes"
+	| "tipStatStreak"
+	| "tipStatDateRange"
+	| "tipStatEventTime"
+	| "tipStatAvgPerDay"
+	| "tipStatTopCategory"
 	| "categoryDistTitle"
 	| "periodSummaryTitle"
 	| "activityNotesTitle"
@@ -196,6 +202,14 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statAvgPerDay: "Daily Avg",
 		statTopCategory: "Top Category",
 		statTopCategoryPct: "%s% of recorded time",
+		tipStatTotalNotes:
+			"The number of daily notes in the vault, dated on or before today. Notes dated in the future are not counted.",
+		tipStatStreak: "The number of consecutive days with a daily note, counting back from today. 0 if today has no note.",
+		tipStatDateRange: "The date of the oldest and the newest daily note in the vault.",
+		tipStatEventTime: "The total time recorded across all Events in the selected time window.",
+		tipStatAvgPerDay:
+			"The average time recorded per day that recorded time. Days whose note recorded nothing are not counted.",
+		tipStatTopCategory: "The category with the most recorded time in the selected time window.",
 		categoryDistTitle: "Time Distribution by Category",
 		periodSummaryTitle: "Period Summary",
 		activityNotesTitle: "Recent Note Activities",
@@ -292,6 +306,12 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statAvgPerDay: "일평균 기록",
 		statTopCategory: "최다 활동 카테고리",
 		statTopCategoryPct: "전체 기록 시간의 %s%",
+		tipStatTotalNotes: "오늘 날짜까지의 일일 노트 수입니다. 미래 날짜의 노트는 집계되지 않습니다.",
+		tipStatStreak: "오늘부터 역순으로 노트가 연속으로 작성된 일수입니다. 오늘 노트가 없으면 0입니다.",
+		tipStatDateRange: "볼트에 있는 가장 오래된 노트와 가장 최근 노트의 날짜입니다.",
+		tipStatEventTime: "선택한 기간 동안 기록된 전체 Event 시간입니다.",
+		tipStatAvgPerDay: "시간이 기록된 날짜당 평균 기록 시간입니다. 아무것도 기록하지 않은 날은 제외됩니다.",
+		tipStatTopCategory: "선택한 기간 동안 기록된 시간이 가장 많은 카테고리입니다.",
 		categoryDistTitle: "카테고리별 기록 시간 분포",
 		periodSummaryTitle: "기간 요약",
 		activityNotesTitle: "최근 일간 노트 작업 내역",
