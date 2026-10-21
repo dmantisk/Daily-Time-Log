@@ -4,6 +4,6 @@
 	"version": "0.5.4",
 	"minAppVersion": "1.11.0",
 	"description": "Visualize daily time tracking directly from daily notes with minimal metadata.",
-	"author": "Hong SeongChan",
+	"author": "dmantisk",
 	"isDesktopOnly": false
 }

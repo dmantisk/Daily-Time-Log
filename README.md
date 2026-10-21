@@ -2,7 +2,7 @@
 
 An Obsidian plugin that visualizes time-tracking Events directly from your daily markdown notes — no YAML frontmatter required.
 
-A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by SeongChan Hong, used under the MIT License.
+A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by SeongChan Hong, maintained by [dmantisk](https://github.com/dmantisk), used under the MIT License.
 
 ## Features
 
@@ -115,6 +115,7 @@ A cosmetic release: the category name and the note badges both read more like th
 - **Made the note category badges squarer.** The `[Category]` badge in a daily note was a full pill — the corner radius was larger than the badge's own height, so the browser clamped it and both ends curved all the way around. The badge is now a rounded rectangle with distinct corners, and its horizontal padding was tightened to match. The radius is relative to the badge's own font size, so it keeps its proportions at any text size you use. This applies to both the live editor and the reading view.
 - **Removed the emphasis from category names.** A category name was drawn bolder than the text around it in the sidebar grid, the dashboard legend, and the badges — but in each of them the name is one item in a line of like items, so the extra weight made it read as an emphasised name plus its surroundings. Names are now drawn at the same weight as everything beside them. Your category colours are unchanged.
 - **Removed the old name from the ribbon tooltips.** The rename to "Daily Time Log" had missed the tooltips on the sidebar and dashboard ribbon icons, which still read "DailyWorkLog" — the upstream project's internal name rather than this plugin's. They now show the plugin's own name in both English and Korean.
+- **Changed the plugin's author to dmantisk.** The plugin card still credited the upstream author, which is not who maintains this fork. It now credits the fork's owner, and the README and LICENSE name both parties — the original author's copyright notice is kept, as the MIT license requires.
 
 ### 0.5.3 (2026-10-21)
 
@@ -209,4 +210,4 @@ A batch of correctness fixes found in a full review of the plugin.
 
 ## License
 
-MIT
+MIT. Copyright (c) 2026 Hong SeongChan (original author) and dmantisk (fork maintainer).
