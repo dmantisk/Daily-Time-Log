@@ -222,7 +222,7 @@ surrounding event.
 In `src/parser.test.ts`:
 
 - an indented checkbox after an event is not absorbed into the event's
-  description (`lineCount` stays 1, `desc` stays `"a"`);
+  description (`lineCount` stays 1, `description` stays `"a"`);
 - `isTopLevelOrMarker("  - [ ] nested task")` is `true`;
 - after `replaceLineRangeAt()` and after `removeLineRangeAt()`, the
   checkbox line is still in the file.
