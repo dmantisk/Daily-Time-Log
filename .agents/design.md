@@ -403,6 +403,8 @@ It follows the active theme using Obsidian's own theme variables.
 
 > [!NOTE]
 > *(confirmed 2026-08-05)* The Dashboard is **kept unchanged in both feature and implementation** through this restructuring. It is not a target of the React conversion either.
+>
+> *(updated 2026-10-30)* The second sentence no longer holds in the strictest sense: the Dashboard is still vanilla DOM and still not a React target, but its **controls** were replaced with Obsidian's own components in the native-component pass (§11.2). Its features, statistics and layout are unchanged.
 
 ---
 
