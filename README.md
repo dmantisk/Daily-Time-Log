@@ -113,6 +113,18 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.8.1 (2026-10-22)
+
+Performance and documentation improvements from the third-party review.
+
+- Filtered vault-modify refresh to daily notes only; debounced refresh by 500 ms; split refresh so settings changes rebuild badges but pane switches don't.
+- Added per-file `mtime` + heading-config parse cache in the dashboard; built off-screen content before DOM swap; used `cachedRead` for read-only paths; switched vault scan to `getMarkdownFiles()`; hoisted `getDailyNoteFormat()` out of loop.
+- Switched drag-to-select to pointer events (`onPointerDown`/`onPointerEnter`/`onPointerUp`) with `touch-action: none`; added `pointercancel` guard; released pointer capture on down.
+- Added `badgeKey` tracking so category badges rebuild when core Daily Notes folder/format changes.
+- Added localized `i18n` keys for timeline notices (`Failed to save/update/delete event`, `Daily note not found`).
+- Trimmed docs: `.agents/AGENTS.md` reduced to concise guide; full rules preserved in `.agents/AGENTS-reference.md`; `TODO.md` kept to open items; resolved review findings moved to `docs/REVIEW-ARCHIVE.md`; older changelog entries moved to `docs/CHANGELOG-ARCHIVE.md`.
+- Updated `tsconfig.json` exclude to cover `.test.tsx` and `src/test/**`.
+
 ### 0.8.0 (2026-10-22)
 
 Navigation between daily notes.
