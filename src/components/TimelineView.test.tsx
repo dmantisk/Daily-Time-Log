@@ -218,6 +218,25 @@ describe("TimelineView — grid rendering", () => {
 		expect(rendered[0].textContent).toContain("Work");
 	});
 
+	it("does NOT render the time range inside the bar", async () => {
+		// The bar's position and width on the grid already convey the
+		// time range, so the label shows the category name only. The range
+		// stays available in the tooltip.
+		await renderView("# Event\n- 09:00 - 10:00 [Work] Morning\n");
+
+		const rendered = blocks();
+		expect(rendered).toHaveLength(1);
+
+		const label = rendered[0].textContent ?? "";
+		expect(label).toContain("Work");
+		expect(label).not.toContain("09:00");
+		expect(label).not.toContain("10:00");
+		expect(label).not.toContain("-");
+
+		// The range is still exposed via the tooltip.
+		expect(rendered[0].getAttribute("title")).toContain("09:00");
+	});
+
 	it("renders an overnight Event as a bar in the evening AND in the morning", async () => {
 		// An Event crossing midnight occupies two in-day segments. The
 		// dashboard already counted its full duration, but the grid used

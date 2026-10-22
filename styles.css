@@ -199,7 +199,7 @@
 	gap: 0.2em;
 	font-size: 11px;
 	/* The category name is regular weight on purpose — the block label reads
-	   as one uniform line, not as an emphasised name plus a time range. */
+	   as one uniform line, not as an emphasised name. */
 	font-weight: normal;
 	overflow: hidden;
 	text-overflow: ellipsis;

@@ -330,7 +330,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 										const bgColor = catObj?.color ?? "var(--background-modifier-hover)";
 										const textColor = catObj ? getTextColorForBackground(catObj.color) : "var(--text-normal)";
 										const label = item.category ?? t("uncategorized", language);
-										const isShort = overlapEnd - overlapStart <= CELL_MINUTES;
 
 										return (
 											<div
@@ -354,10 +353,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 												}}
 												onMouseDown={(evt) => evt.stopPropagation()}
 											>
-												{/* The category name carries no emphasis of its own — it sits
-								    at the same weight as the time range beside it. */}
+												{/* The bar shows the category name only — the time range is
+								    already conveyed by the block's position and width on
+								    the grid, and it stays available in the tooltip. */}
 												{label}
-												{!isShort && ` (${item.start}-${item.end})`}
 											</div>
 										);
 									})}
