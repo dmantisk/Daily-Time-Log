@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { formatDateBasename, isDailyNoteFileName, isSameDate, parseDateFromBasename } from "../dailyNote";
+import { formatDateBasename, formatDateFilename, isDailyNoteFileName, isSameDate, parseDateFromBasename } from "../dailyNote";
 import { t, WEEKDAYS } from "../i18n";
 import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
 import { TimelineModal, type EventEntryValues } from "../modals/TimelineModal";
@@ -251,6 +251,36 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		<div className="dwl-view">
 			<div className="dwl-view-header">
 				<h2 className="dwl-view-date-title">{formatDateHeader(dateForFile, language)}</h2>
+				<div className="dwl-nav-buttons">
+					<button
+						className="dwl-nav-btn"
+						onClick={() => {
+							const prev = new Date(dateForFile);
+							prev.setDate(prev.getDate() - 1);
+							const prevFileName = formatDateFilename(prev);
+							const prevFile = plugin.app.vault.getAbstractFileByPath(prevFileName);
+							if (prevFile && prevFile instanceof TFile) {
+								plugin.app.workspace.getLeaf(false).openFile(prevFile);
+							}
+						}}
+					>
+						← {t("prev", language)}
+					</button>
+					<button
+						className="dwl-nav-btn"
+						onClick={() => {
+							const next = new Date(dateForFile);
+							next.setDate(next.getDate() + 1);
+							const nextFileName = formatDateFilename(next);
+							const nextFile = plugin.app.vault.getAbstractFileByPath(nextFileName);
+							if (nextFile && nextFile instanceof TFile) {
+								plugin.app.workspace.getLeaf(false).openFile(nextFile);
+							}
+						}}
+					>
+						{t("next", language)} →
+					</button>
+				</div>
 			</div>
 
 			{/* Strict scoping: Events are read only from under the configured

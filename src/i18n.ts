@@ -102,6 +102,8 @@ export type UIStringKey =
 	| "languageAuto"
 	| "languageEnglish"
 	| "languageKorean"
+	| "prev"
+	| "next"
 	| "hourMidnight"
 	| "hourMidnightAm"
 	| "hourMidnightPm"
@@ -117,6 +119,8 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		languageEnglish: "English",
 		languageKorean: "한국어",
 		hourMidnight: "Midnight (24:00)",
+		prev: "Previous",
+		next: "Next",
 		hourMidnightAm: "12 AM (00:00)",
 		hourMidnightPm: "12 PM (12:00)",
 		hourAm: "%s AM",
@@ -221,6 +225,8 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		languageEnglish: "English",
 		languageKorean: "한국어",
 		hourMidnight: "자정 (24:00)",
+		prev: "이전",
+		next: "다음",
 		hourMidnightAm: "오전 12시 (00:00)",
 		hourMidnightPm: "오후 12시 (12:00)",
 		hourAm: "오전 %s시",

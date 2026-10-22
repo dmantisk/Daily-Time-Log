@@ -19,6 +19,18 @@
 
 /* View header and hour labels use Obsidian's secondary surface color. */
 
+.dwl-nav-buttons {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.dwl-nav-btn {
+	padding: 4px 10px;
+	font-size: 0.85em;
+	cursor: pointer;
+}
+
 .dwl-view-header {
 	display: flex;
 	align-items: center;
