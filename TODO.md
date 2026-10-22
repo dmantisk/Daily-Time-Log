@@ -25,8 +25,7 @@ Conventions used below:
 >
 > The native Obsidian component review (7 findings) is complete too —
 > the code is merged-ready on `feature/native-obsidian-components`, but
-> the branch is **not merged** and **v0.7.0 is not released**. Those two
-> release items are the only open entries; see the Open findings section.
+> release items are now historical (merged in v0.8.0, commit 6031d95).
 >
 > The resolved findings below are kept as the **record** of what was wrong
 > and why the fix looks the way it does — each one states the

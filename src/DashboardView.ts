@@ -80,15 +80,21 @@ export class DashboardView extends ItemView {
 		// explaining why it is empty.
 		const hasPastOrPresentNotes = allNotes.some((note) => isOnOrBeforeToday(note.date, today));
 
-		// Read in parallel rather than one file at a time — "All Time" can mean
-		// every daily note in the vault, and cachedRead() calls don't depend on
-		// each other, so there's no reason to serialize them.
-		const recentParsed: Array<{ date: Date; parsed: ParsedDailyNote }> = await Promise.all(
-			recentNotes.map(async (note) => ({
-				date: note.date,
-				parsed: parseDailyNote(await this.app.vault.cachedRead(note.file), this.plugin.getEventHeadingConfig()),
-			}))
-		);
+		// Read in bounded batches (max 10 concurrent) rather than all at
+		// once — "All Time" can mean many notes, and unbounded Promise.all
+		// creates a burst of reads and high transient memory.
+		const recentParsed: Array<{ date: Date; parsed: ParsedDailyNote }> = [];
+		const batchSize = 10;
+		for (let i = 0; i < recentNotes.length; i += batchSize) {
+			const batch = recentNotes.slice(i, i + batchSize);
+			const batchResults = await Promise.all(
+				batch.map(async (note) => ({
+					date: note.date,
+					parsed: parseDailyNote(await this.app.vault.cachedRead(note.file), this.plugin.getEventHeadingConfig()),
+				}))
+			);
+			recentParsed.push(...batchResults);
+		}
 
 		if (token !== this.refreshToken) return; // superseded by a newer refresh() call meanwhile
 

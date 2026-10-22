@@ -144,6 +144,7 @@ export function buildCategoryBadgeEditorPlugin(
 	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
 	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
 ) {
+	const blockCache = new Map<string, { block: { start: number; end: number } | null; line: number }>();
 	const matcher = new MatchDecorator({
 		regexp: new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g"),
 		decoration: (match, view, pos) => {
@@ -152,7 +153,7 @@ export function buildCategoryBadgeEditorPlugin(
 			if (!findCategory(match[1], categories)) return null;
 			// Strict scoping: the token must sit inside the Event block, so a
 			// `[Category]` typed outside the configured heading stays plain text.
-			if (!isInsideEventBlock(view, pos, eventHeading)) return null;
+			if (!isInsideEventBlock(view, pos, eventHeading, blockCache)) return null;
 			return Decoration.replace({
 				widget: new CategoryBadgeWidget(match[1], categories),
 			});
@@ -192,17 +193,18 @@ export function buildCategoryBadgeEditorPlugin(
 function isInsideEventBlock(
 	view: EditorView,
 	pos: number,
-	eventHeading: EventHeadingConfig
+	eventHeading: EventHeadingConfig,
+	cache?: Map<string, { block: { start: number; end: number } | null; line: number }>
 ): boolean {
 	const text = view.state.doc.toString();
-	const block = findEventBlockInContent(text, eventHeading);
+	const cacheKey = eventHeading.text + "|" + eventHeading.level;
+	let block = cache?.get(cacheKey)?.block ?? null;
+	if (!cache || !cache.has(cacheKey)) {
+		block = findEventBlockInContent(text, eventHeading);
+		cache?.set(cacheKey, { block, line: 0 });
+	}
 	if (!block) return false;
-
-	// CodeMirror positions are absolute character offsets; the block range is
-	// expressed in line indices. Convert the match position to a line index
-	// (CodeMirror's `lineAt` is 1-based, the block's is 0-based).
 	const line = view.state.doc.lineAt(pos).number - 1;
-
 	return line >= block.start && line <= block.end;
 }
 

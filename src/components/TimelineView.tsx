@@ -142,36 +142,48 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 	const addEvent = async (values: EventEntryValues): Promise<void> => {
 		if (!activeFile) return;
-		const content = await plugin.app.vault.read(activeFile);
-		await plugin.writeFile(
-			activeFile,
-			appendLineToBlock(content, buildTimelineLine(values), plugin.getEventHeadingConfig())
-		);
-		await reloadFile(activeFile);
+		try {
+			const content = await plugin.app.vault.read(activeFile);
+			await plugin.writeFile(
+				activeFile,
+				appendLineToBlock(content, buildTimelineLine(values), plugin.getEventHeadingConfig())
+			);
+			await reloadFile(activeFile);
+		} catch (e) {
+			new Notice(`Failed to save event: ${(e as Error).message ?? String(e)}`);
+		}
 	};
 
 	const updateEvent = async (item: TimelineItem, values: EventEntryValues): Promise<void> => {
 		if (!activeFile) return;
-		const content = await plugin.app.vault.read(activeFile);
-		const lines = splitContentLines(content);
-		if (!timelineRangeMatches(lines, item)) {
+		try {
+			const content = await plugin.app.vault.read(activeFile);
+			const lines = splitContentLines(content);
+			if (!timelineRangeMatches(lines, item)) {
+				await reloadFile(activeFile);
+				return;
+			}
+			await plugin.writeFile(activeFile, replaceLineRangeAt(content, item.line, item.lineCount, buildTimelineLine(values)));
 			await reloadFile(activeFile);
-			return;
+		} catch (e) {
+			new Notice(`Failed to update event: ${(e as Error).message ?? String(e)}`);
 		}
-		await plugin.writeFile(activeFile, replaceLineRangeAt(content, item.line, item.lineCount, buildTimelineLine(values)));
-		await reloadFile(activeFile);
 	};
 
 	const deleteEvent = async (item: TimelineItem): Promise<void> => {
 		if (!activeFile) return;
-		const content = await plugin.app.vault.read(activeFile);
-		const lines = splitContentLines(content);
-		if (!timelineRangeMatches(lines, item)) {
+		try {
+			const content = await plugin.app.vault.read(activeFile);
+			const lines = splitContentLines(content);
+			if (!timelineRangeMatches(lines, item)) {
+				await reloadFile(activeFile);
+				return;
+			}
+			await plugin.writeFile(activeFile, removeLineRangeAt(content, item.line, item.lineCount));
 			await reloadFile(activeFile);
-			return;
+		} catch (e) {
+			new Notice(`Failed to delete event: ${(e as Error).message ?? String(e)}`);
 		}
-		await plugin.writeFile(activeFile, removeLineRangeAt(content, item.line, item.lineCount));
-		await reloadFile(activeFile);
 	};
 
 	const openEventModal = (item: TimelineItem | null, defaultStart: string, defaultEnd: string): void => {
