@@ -31,9 +31,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		const lang = this.plugin.getUiLanguage();
 
-		new Setting(containerEl).setName(t("settingsTitle", lang)).setHeading();
-		new Setting(containerEl).setName(t("settingGeneralSection", lang)).setHeading();
-
 		new Setting(containerEl)
 			.setName(t("settingStartHourName", lang))
 			.setDesc(t("settingStartHourDesc", lang))

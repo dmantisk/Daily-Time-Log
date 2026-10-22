@@ -50,8 +50,6 @@ export type UIStringKey =
 	| "unitDays"
 	| "dashboardEmptyVault"
 	| "dashboardFutureOnlyNotice"
-	| "settingsTitle"
-	| "settingGeneralSection"
 	| "settingStartHourName"
 	| "settingStartHourDesc"
 	| "settingEndHourName"
@@ -163,8 +161,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		dashboardEmptyVault: "No daily notes yet.",
 		dashboardFutureOnlyNotice:
 			"Only future-dated notes were found. They record no time yet, so nothing is counted until their date arrives.",
-		settingsTitle: "Daily Time Log Settings",
-		settingGeneralSection: "General",
 		settingStartHourName: "Day Start Hour",
 		settingStartHourDesc: "Set the start hour to display on the timeline.",
 		settingEndHourName: "Day End Hour",
@@ -265,8 +261,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		dashboardEmptyVault: "아직 작성된 일일 노트가 없습니다.",
 		dashboardFutureOnlyNotice:
 			"미래 날짜의 노트만 있습니다. 아직 기록된 시간이 없으므로 해당 날짜가 될 때까지 집계되지 않습니다.",
-		settingsTitle: "Daily Time Log 설정",
-		settingGeneralSection: "일반",
 		settingStartHourName: "하루 시작 시간",
 		settingStartHourDesc: "타임라인에 표시할 시작 시간(시)을 설정합니다.",
 		settingEndHourName: "하루 종료 시간",
