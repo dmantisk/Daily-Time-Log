@@ -56,9 +56,6 @@ export type UIStringKey =
 	| "settingStartHourDesc"
 	| "settingEndHourName"
 	| "settingEndHourDesc"
-	| "settingFolderName"
-	| "settingFolderDesc"
-	| "settingFolderPlaceholder"
 	| "settingEventHeadingTextName"
 	| "settingEventHeadingTextDesc"
 	| "settingEventHeadingLevelName"
@@ -172,10 +169,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingStartHourDesc: "Set the start hour to display on the timeline.",
 		settingEndHourName: "Day End Hour",
 		settingEndHourDesc: "Set the end hour to display on the timeline. (Supports up to midnight 24:00)",
-		settingFolderName: "Daily Note Folder Filter",
-		settingFolderDesc:
-			"Limits Daily Time Log's dashboard and badge scanning. Leave empty to scan the whole vault.",
-		settingFolderPlaceholder: "Whole vault",
 		settingLanguageName: "Language",
 		settingEventHeadingTextName: "Event heading text",
 		settingEventHeadingTextDesc: "Heading label that marks the start of the Event section in daily notes.",
@@ -278,10 +271,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingStartHourDesc: "타임라인에 표시할 시작 시간(시)을 설정합니다.",
 		settingEndHourName: "하루 종료 시간",
 		settingEndHourDesc: "타임라인에 표시할 종료 시간(시)을 설정합니다. (자정 24:00까지 지원)",
-		settingFolderName: "일일 노트 검색 폴더",
-		settingFolderDesc:
-			"Daily Time Log의 대시보드 및 배지 검색 범위를 제한합니다. 비워두면 볼트 전체를 검색합니다.",
-		settingFolderPlaceholder: "볼트 전체",
 		settingLanguageName: "언어",
 		settingEventHeadingTextName: "이벤트 제목 문구",
 		settingEventHeadingTextDesc: "일일 노트에서 Event 섹션의 시작을 표시하는 제목 문구입니다.",

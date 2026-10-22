@@ -40,13 +40,20 @@ function renderEl(html: string): HTMLElement {
  * Runs the reading-view post-processor over `el` for a daily note named
  * `2026-10-16.md` at the vault root.
  */
-function process(el: HTMLElement, eventHeading: EventHeadingConfig = DEFAULT_CONFIG): void {
+function process(
+	el: HTMLElement,
+	eventHeading: EventHeadingConfig = DEFAULT_CONFIG,
+	sourcePath = "2026-10-16.md",
+	dailyNoteFolder = "",
+	dateFormat = "YYYY-MM-DD"
+): void {
 	processCategoryBadgesInReadingView(
 		el,
-		{ sourcePath: "2026-10-16.md" } as never,
+		{ sourcePath } as never,
 		CATEGORIES,
-		"",
-		eventHeading
+		dailyNoteFolder,
+		eventHeading,
+		dateFormat
 	);
 }
 
@@ -69,6 +76,13 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 
 		expect(badgeCount(el)).toBe(1);
 		expect(badgeTexts(el)).toEqual(["Work"]);
+	});
+
+	it("renders badges in notes using the core plugin's nested date format and folder", () => {
+		const el = renderEl("<h1>Event</h1><p>- 9:00 - 10:00 [Work] Team meeting</p>");
+		process(el, DEFAULT_CONFIG, "Log/2026/10/16.md", "Log", "YYYY/MM/DD");
+
+		expect(badgeCount(el)).toBe(1);
 	});
 
 	it("renders a badge for a token under a deeper (sub)heading of the Event section", () => {

@@ -1,7 +1,12 @@
-import { TFile } from "obsidian";
+import { TFile, Notice, setIcon } from "obsidian";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { formatDateBasename, formatDateFilename, isDailyNoteFileName, isSameDate, parseDateFromBasename } from "../dailyNote";
+import {
+	formatDailyNotePath,
+	formatDateBasename,
+	isSameDate,
+	parseDateFromDailyNotePath,
+} from "../dailyNote";
 import { t, WEEKDAYS } from "../i18n";
 import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
 import { TimelineModal, type EventEntryValues } from "../modals/TimelineModal";
@@ -42,8 +47,8 @@ function buildTimelineLine(values: EventEntryValues): string {
 	return `- ${values.start} - ${values.end} ${categoryPart}${values.description}`.trimEnd();
 }
 
-function formatDateHeader(date: Date, language: MarkerLanguage): string {
-	const basename = formatDateBasename(date);
+function formatDateHeader(date: Date, language: MarkerLanguage, dateFormat: string): string {
+	const basename = formatDateBasename(date, dateFormat);
 	if (isSameDate(date, new Date())) {
 		return `${basename} ${t("todayDateSuffix", language)}`;
 	}
@@ -96,12 +101,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		const run = async (): Promise<void> => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (!file) return;
-			// A daily note is a MARKDOWN file with a date-shaped basename.
-			// The extension check keeps date-named non-Markdown files (e.g.
-			// an image named `2026-10-16.png`) out of scope — the plugin
-			// writes to whatever file it considers a daily note, so accepting
-			// them here would corrupt the file's content.
-			const resolved = isDailyNoteFileName(file.name) ? file : null;
+			const resolved =
+				parseDateFromDailyNotePath(
+					file.path,
+					plugin.getDailyNoteFormat(),
+					plugin.getDailyNoteFolder()
+				) !== null
+					? file
+					: null;
 			if (cancelled) return;
 			setActiveFile(resolved);
 			if (!resolved) {
@@ -242,7 +249,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		);
 	}
 
-	const dateForFile = parseDateFromBasename(activeFile.basename);
+	const dateForFile = parseDateFromDailyNotePath(
+		activeFile.path,
+		plugin.getDailyNoteFormat(),
+		plugin.getDailyNoteFolder()
+	);
 	if (!dateForFile) return null;
 
 	const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
@@ -250,35 +261,51 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	return (
 		<div className="dwl-view">
 			<div className="dwl-view-header">
-				<h2 className="dwl-view-date-title">{formatDateHeader(dateForFile, language)}</h2>
+				<h2 className="dwl-view-date-title">
+					{formatDateHeader(dateForFile, language, plugin.getDailyNoteFormat())}
+				</h2>
 				<div className="dwl-nav-buttons">
 					<button
+						ref={(el) => { if (el) setIcon(el, "chevron-left"); }}
+						aria-label={t("prev", language)}
 						className="dwl-nav-btn"
 						onClick={() => {
 							const prev = new Date(dateForFile);
 							prev.setDate(prev.getDate() - 1);
-							const prevFileName = formatDateFilename(prev);
+							const prevFileName = formatDailyNotePath(
+								prev,
+								plugin.getDailyNoteFormat(),
+								plugin.getDailyNoteFolder()
+							);
 							const prevFile = plugin.app.vault.getAbstractFileByPath(prevFileName);
 							if (prevFile && prevFile instanceof TFile) {
 								plugin.app.workspace.getLeaf(false).openFile(prevFile);
+							} else {
+								new Notice(`Previous daily note not found: ${prevFileName}`);
 							}
 						}}
 					>
-						← {t("prev", language)}
 					</button>
 					<button
+						ref={(el) => { if (el) setIcon(el, "chevron-right"); }}
+						aria-label={t("next", language)}
 						className="dwl-nav-btn"
 						onClick={() => {
 							const next = new Date(dateForFile);
 							next.setDate(next.getDate() + 1);
-							const nextFileName = formatDateFilename(next);
+							const nextFileName = formatDailyNotePath(
+								next,
+								plugin.getDailyNoteFormat(),
+								plugin.getDailyNoteFolder()
+							);
 							const nextFile = plugin.app.vault.getAbstractFileByPath(nextFileName);
 							if (nextFile && nextFile instanceof TFile) {
 								plugin.app.workspace.getLeaf(false).openFile(nextFile);
+							} else {
+								new Notice(`Next daily note not found: ${nextFileName}`);
 							}
 						}}
 					>
-						{t("next", language)} →
 					</button>
 				</div>
 			</div>

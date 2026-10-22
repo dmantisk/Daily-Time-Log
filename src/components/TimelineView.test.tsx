@@ -49,11 +49,16 @@ import { TFile } from "obsidian";
 const DAILY_NOTE_CONTENT = "# Event\n- 09:00 - 10:00 [Work] Existing\n";
 
 /** Builds a plugin stub good enough for the sidebar to render a grid. */
-function createPluginStub(noteContent: string = DAILY_NOTE_CONTENT): never {
+function createPluginStub(
+	noteContent: string = DAILY_NOTE_CONTENT,
+	notePath = "2026-10-16.md",
+	dateFormat = "YYYY-MM-DD",
+	dailyNoteFolder = ""
+): never {
 	const file = new TFile();
-	file.path = "2026-10-16.md";
-	file.name = "2026-10-16.md";
-	file.basename = "2026-10-16";
+	file.path = notePath;
+	file.name = notePath.split("/").pop() ?? notePath;
+	file.basename = file.name.replace(/\.md$/i, "");
 	file.extension = "md";
 
 	return {
@@ -72,6 +77,8 @@ function createPluginStub(noteContent: string = DAILY_NOTE_CONTENT): never {
 		},
 		getUiLanguage: () => "en",
 		getEventHeadingConfig: () => ({ text: "Event", level: 1 }),
+		getDailyNoteFolder: () => dailyNoteFolder,
+		getDailyNoteFormat: () => dateFormat,
 	} as never;
 }
 
@@ -94,9 +101,19 @@ describe("TimelineView — drag-to-select", () => {
 	});
 
 	/** Renders the sidebar and waits for the async file read to settle. */
-	async function renderView(noteContent: string = DAILY_NOTE_CONTENT): Promise<void> {
+	async function renderView(
+		noteContent: string = DAILY_NOTE_CONTENT,
+		notePath?: string,
+		dateFormat?: string,
+		dailyNoteFolder?: string
+	): Promise<void> {
 		await act(async () => {
-			root.render(React.createElement(TimelineView, { plugin: createPluginStub(noteContent), refreshToken: 0 }));
+			root.render(
+				React.createElement(TimelineView, {
+					plugin: createPluginStub(noteContent, notePath, dateFormat, dailyNoteFolder),
+					refreshToken: 0,
+				})
+			);
 		});
 	}
 
@@ -125,6 +142,12 @@ describe("TimelineView — drag-to-select", () => {
 		// The release fires the cell's React onMouseUp AND the window-level
 		// mouseup listener. Only one of them may open the modal.
 		expect(openModalCalls).toHaveLength(1);
+	});
+
+	it("recognizes a nested note path from the core Daily Notes settings", async () => {
+		await renderView(DAILY_NOTE_CONTENT, "Log/2026/10/16.md", "YYYY/MM/DD", "Log");
+
+		expect(cells()).toHaveLength(144);
 	});
 
 	it("opens exactly ONE add-Event modal for a drag that ends outside the grid", async () => {

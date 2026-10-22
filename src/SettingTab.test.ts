@@ -27,7 +27,6 @@ function createPluginStub() {
 		eventHeadingLevel: 1,
 		startHour: 0,
 		endHour: 24,
-		dailyNoteFolder: "",
 		categories: [
 			{ name: "Work", displayName: "Work", color: "#d0e1fd", isDefault: true },
 			{ name: "Study", displayName: "Study", color: "#ebd3f8", isDefault: true },
@@ -43,15 +42,6 @@ function createPluginStub() {
 		saveSettings,
 		getUiLanguage: () => "en",
 	} as never;
-}
-
-/** The settings whose name matches, found among the recorded settings. */
-function settingWithPlaceholder(placeholder: string): Setting {
-	const match = Setting.created.find((setting) =>
-		setting.components.texts.some((text) => text.inputEl.placeholder === placeholder)
-	);
-	if (!match) throw new Error(`No setting found with placeholder "${placeholder}"`);
-	return match;
 }
 
 /** The setting whose text input has no placeholder (the Event heading field). */
@@ -83,26 +73,6 @@ describe("DailyWorkLogSettingTab", () => {
 		tab.display();
 		return plugin;
 	}
-
-	it("refreshes the views when the daily-note folder changes", async () => {
-		const plugin = renderTab();
-		const folderSetting = settingWithPlaceholder("Whole vault");
-		const folderInput = folderSetting.components.texts[0];
-
-		expect(plugin.refreshViews).not.toHaveBeenCalled();
-
-		await folderInput.setValueFromUser("Daily Notes");
-
-		// The folder change is debounced, because it drives a vault-wide
-		// note scan and rebuilding the editor extensions.
-		await new Promise((resolve) => setTimeout(resolve, 600));
-
-		// The folder filter drives the dashboard's note scan and the
-		// category badge scope, so both must be rebuilt when it changes.
-		expect(plugin.settings.dailyNoteFolder).toBe("Daily Notes");
-		expect(plugin.saveSettings).toHaveBeenCalled();
-		expect(plugin.refreshViews).toHaveBeenCalled();
-	}, 5000);
 
 	it("refreshes the views when the Event heading text changes", async () => {
 		const plugin = renderTab();

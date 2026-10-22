@@ -1,5 +1,4 @@
-import { App, debounce, Notice, PluginSettingTab, Setting } from "obsidian";
-import { FolderSuggest } from "./FolderSuggest";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import { formatHourLabel, t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
@@ -73,38 +72,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					this.plugin.refreshViews();
 				});
-			});
-
-		new Setting(containerEl)
-			.setName(t("settingFolderName", lang))
-			.setDesc(t("settingFolderDesc", lang))
-			.addText((text) => {
-				// The folder filter drives a vault-wide note scan, so the
-				// refresh is debounced — otherwise every keystroke would
-				// re-scan the vault and rebuild the editor extensions.
-				const applyFolder = debounce(
-					async (value: string): Promise<void> => {
-						this.plugin.settings.dailyNoteFolder = value.trim();
-						await this.plugin.saveSettings();
-						// The folder filter drives the dashboard's note scan
-						// and the category badge scope, so both have to be
-						// rebuilt — otherwise the open dashboard keeps
-						// showing the previous folder's notes until it is
-						// refreshed by hand, and the editor badges keep the
-						// old scope until the next reload.
-						this.plugin.refreshViews();
-					},
-					400,
-					true
-				);
-
-				text
-					.setPlaceholder(t("settingFolderPlaceholder", lang))
-					.setValue(this.plugin.settings.dailyNoteFolder)
-					.onChange((value) => {
-						void applyFolder(value);
-					});
-				new FolderSuggest(this.app, text.inputEl);
 			});
 
 		new Setting(containerEl)

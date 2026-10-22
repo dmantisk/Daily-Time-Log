@@ -1,15 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+	formatDailyNotePath,
 	formatDateBasename,
 	formatDateFilename,
 	isDailyNoteFileName,
 	isInDailyNoteFolder,
+	parseDateFromDailyNotePath,
 	parseDateFromBasename,
 } from "./dailyNote";
 
 describe("parseDateFromBasename", () => {
 	it("parses a valid YYYY-MM-DD basename", () => {
 		expect(parseDateFromBasename("2026-07-13")).toEqual(new Date(2026, 6, 13));
+	});
+
+	it("parses the core Daily Notes plugin's slash-separated date format", () => {
+		expect(parseDateFromBasename("2026/10/22", "YYYY/MM/DD")).toEqual(new Date(2026, 9, 22));
 	});
 
 	it("returns null for a basename that doesn't match the pattern at all", () => {
@@ -42,12 +48,39 @@ describe("formatDateBasename / formatDateFilename", () => {
 		const date = new Date(2026, 6, 13);
 		expect(parseDateFromBasename(formatDateBasename(date))).toEqual(date);
 	});
+
+	it("formats using a custom core Daily Notes date format", () => {
+		const date = new Date(2026, 9, 22);
+		expect(formatDateBasename(date, "YYYY/MM/DD")).toBe("2026/10/22");
+		expect(formatDateFilename(date, "YYYY/MM/DD")).toBe("2026/10/22.md");
+	});
+});
+
+describe("Daily Notes plugin paths", () => {
+	it("formats a note path under the core plugin folder", () => {
+		expect(formatDailyNotePath(new Date(2026, 9, 22), "YYYY/MM/DD", "Log"))
+			.toBe("Log/2026/10/22.md");
+	});
+
+	it("parses a nested daily note path relative to the core plugin folder", () => {
+		expect(parseDateFromDailyNotePath("Log/2026/10/22.md", "YYYY/MM/DD", "Log"))
+			.toEqual(new Date(2026, 9, 22));
+	});
+
+	it("does not identify paths outside the configured core folder", () => {
+		expect(parseDateFromDailyNotePath("Other/2026/10/22.md", "YYYY/MM/DD", "Log")).toBeNull();
+	});
+
+	it("rejects invalid dates in a nested date path", () => {
+		expect(parseDateFromDailyNotePath("Log/2026/02/31.md", "YYYY/MM/DD", "Log")).toBeNull();
+	});
 });
 
 describe("isDailyNoteFileName", () => {
 	it("accepts a date-named Markdown file", () => {
 		expect(isDailyNoteFileName("2026-07-13.md")).toBe(true);
 		expect(isDailyNoteFileName("2026-07-13.MD")).toBe(true);
+		expect(isDailyNoteFileName("2026/10/22.md", "YYYY/MM/DD")).toBe(true);
 	});
 
 	it("rejects a date-named file with a non-Markdown extension", () => {

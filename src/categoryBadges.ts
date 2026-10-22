@@ -10,9 +10,8 @@
  *   1. Reading view  — via registerMarkdownPostProcessor (static HTML render)
  *   2. Live editor   — via a CodeMirror ViewPlugin using MatchDecorator
  *
- * Scoped to daily notes only: a file must be inside the configured
- * `dailyNoteFolder` AND have a valid YYYY-MM-DD basename (checked via
- * parseDateFromBasename from dailyNote.ts). Files outside that scope are
+ * Scoped to daily notes only: a file must match the core Daily Notes
+ * plugin's folder and date format. Files outside that scope are
  * left completely untouched.
  *
  * Additionally scoped to the Event block: badges are only rendered for
@@ -35,7 +34,7 @@ import {
 	WidgetType,
 } from "@codemirror/view";
 import { editorInfoField } from "obsidian";
-import { isDailyNoteFileName, isInDailyNoteFolder } from "./dailyNote";
+import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 import { getTextColorForBackground } from "./components/colorUtils";
 import {
 	CATEGORY_BADGE_REGEX_SOURCE,
@@ -56,13 +55,15 @@ export { CATEGORY_BADGE_REGEX_SOURCE };
 // ---------------------------------------------------------------------------
 
 /**
- * Returns whether a vault-relative file path corresponds to a daily note
- * (inside the configured folder AND a valid YYYY-MM-DD Markdown file name).
+ * Returns whether a vault-relative path matches the configured daily-note
+ * folder and date format.
  */
-function isDailyNoteFile(filePath: string, dailyNoteFolder: string): boolean {
-	if (!isInDailyNoteFolder(filePath, dailyNoteFolder)) return false;
-	const fileName = filePath.split("/").pop() ?? "";
-	return isDailyNoteFileName(fileName);
+function isDailyNoteFile(
+	filePath: string,
+	dailyNoteFolder: string | undefined,
+	dateFormat: string
+): boolean {
+	return parseDateFromDailyNotePath(filePath, dateFormat, dailyNoteFolder) !== null;
 }
 
 /**
@@ -139,8 +140,9 @@ class CategoryBadgeWidget extends WidgetType {
  */
 export function buildCategoryBadgeEditorPlugin(
 	categories: CustomCategory[],
-	dailyNoteFolder: string,
-	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING
+	dailyNoteFolder?: string,
+	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
+	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
 ) {
 	const matcher = new MatchDecorator({
 		regexp: new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g"),
@@ -163,7 +165,7 @@ export function buildCategoryBadgeEditorPlugin(
 			// scope decision — it doesn't change while the editor is open.
 			const info = view.state.field(editorInfoField, false);
 			const filePath = info?.file?.path ?? null;
-			const inScope = filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder);
+			const inScope = filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
 
 			return {
 				inScope,
@@ -297,10 +299,11 @@ export function processCategoryBadgesInReadingView(
 	el: HTMLElement,
 	ctx: MarkdownPostProcessorContext,
 	categories: CustomCategory[],
-	dailyNoteFolder: string,
-	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING
+	dailyNoteFolder?: string,
+	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
+	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
 ): void {
-	if (!isDailyNoteFile(ctx.sourcePath, dailyNoteFolder)) return;
+	if (!isDailyNoteFile(ctx.sourcePath, dailyNoteFolder, dateFormat)) return;
 
 	const regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
 	const targets: Text[] = [];

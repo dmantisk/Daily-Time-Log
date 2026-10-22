@@ -1,7 +1,7 @@
 import { ButtonComponent, DropdownComponent, ItemView, setTooltip, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import type DailyWorkLogPlugin from "./main";
 import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./parser";
-import { formatDateBasename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
+import { formatDateBasename, parseDateFromDailyNotePath } from "./dailyNote";
 import { computeDashboardStats, isOnOrBeforeToday, isWithinRecentWindow, type DashboardStats } from "./dashboardCollector";
 import { getTextColorForBackground } from "./components/colorUtils";
 import { findCategoryByDisplayName } from "./settings";
@@ -117,18 +117,20 @@ export class DashboardView extends ItemView {
 	}
 
 	/**
-	 * Collects daily note files filtered strictly by dailyNoteFolder setting
-	 * (AGENTS.md 1.1 + User Request).
+	 * Collects notes matching the core Daily Notes plugin's folder and date format.
 	 */
 	private collectDailyNoteFiles(): DailyNoteFile[] {
 		const result: DailyNoteFile[] = [];
-		const folderSetting = this.plugin.settings.dailyNoteFolder;
+		const folderSetting = this.plugin.getDailyNoteFolder();
 		const normalizedFolder = folderSetting.trim().replace(/^\/+|\/+$/g, "");
 
 		const consider = (file: TAbstractFile) => {
 			if (!(file instanceof TFile) || file.extension !== "md") return;
-			if (!isInDailyNoteFolder(file.path, folderSetting)) return;
-			const date = parseDateFromBasename(file.basename);
+			const date = parseDateFromDailyNotePath(
+				file.path,
+				this.plugin.getDailyNoteFormat(),
+				folderSetting
+			);
 			if (date) result.push({ file, date });
 		};
 

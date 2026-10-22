@@ -129,8 +129,6 @@ export interface DailyWorkLogSettings {
 	/** Grid timeline's displayed hour range, inclusive start / exclusive end (0-24). */
 	startHour: number;
 	endHour: number;
-	/** Optional vault-relative folder filter for daily-note scanning. Empty string = whole vault. */
-	dailyNoteFolder: string;
 	/** Up to 10 entries; see CustomCategory for how these map into note bodies. */
 	categories: CustomCategory[];
 }
@@ -143,7 +141,6 @@ export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	eventHeadingLevel: DEFAULT_EVENT_HEADING.level,
 	startHour: 0,
 	endHour: 24,
-	dailyNoteFolder: "",
 	categories: createDefaultCategories(),
 };
 

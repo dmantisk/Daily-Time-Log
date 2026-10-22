@@ -8,7 +8,8 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
 - **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — and up to 10 in total), stored as a `[Category]` tag right in the note body.
-- **Configurable daily note folder**: notes don't have to live at the vault root, with folder autocomplete in settings.
+- **Daily note location and format**: follows the core Daily Notes plugin's "New file location" and date format, including formats that create nested paths such as `YYYY/MM/DD`.
+- **Navigation scope**: previous/next buttons find the adjacent dated note under the core plugin's configured location.
 - **Configurable Event heading**: choose its text and Markdown heading level; only the configured heading is recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
@@ -17,7 +18,7 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 
 ## Daily Note Format
 
-Daily notes must be named `YYYY-MM-DD.md`. Daily Time Log reads and updates existing notes but does not create or open them — create notes with Obsidian's Daily Notes core plugin or another workflow. The default Event section is:
+Daily Time Log follows the date format and "New file location" configured in Obsidian's Daily Notes core plugin (using `YYYY-MM-DD` at the vault root if those settings are unavailable). It reads and updates existing notes but does not create them — create notes with the core plugin or another workflow. The default Event section is:
 
 ```markdown
 # Event
@@ -107,6 +108,16 @@ npm run build   # type-check (tsc) + production build
 ```
 
 ## Changelog
+
+### 0.8.0 (2026-10-22)
+
+Navigation between daily notes.
+
+- **Added previous/next buttons** using native Obsidian lucide icons (`chevron-left` / `chevron-right`).
+- **Navigation scoped to the configured daily note folder** (folder root only; subfolders not scanned).
+- **Shows a native Notice** when the previous/next note does not exist.
+
+> **Requires Obsidian 1.13.0 or later.**
 
 ### 0.7.0 (2026-10-30)
 

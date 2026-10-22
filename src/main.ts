@@ -9,6 +9,22 @@ import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
 import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
+import { DEFAULT_DAILY_NOTE_FORMAT } from "./dailyNote";
+
+interface CoreDailyNotesOptions {
+	format?: unknown;
+	folder?: unknown;
+}
+
+interface CoreDailyNotesPlugin {
+	instance?: {
+		options?: CoreDailyNotesOptions;
+	};
+}
+
+interface InternalPluginRegistry {
+	getPluginById(id: string): CoreDailyNotesPlugin | null | undefined;
+}
 
 export default class DailyWorkLogPlugin extends Plugin {
 	settings: DailyWorkLogSettings = DEFAULT_SETTINGS;
@@ -70,8 +86,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.categoryBadgeExtensions.push(
 			buildCategoryBadgeEditorPlugin(
 				this.settings.categories,
-				this.settings.dailyNoteFolder,
-				this.getEventHeadingConfig()
+				this.getDailyNoteFolder(),
+				this.getEventHeadingConfig(),
+				this.getDailyNoteFormat()
 			)
 		);
 		this.registerEditorExtension(this.categoryBadgeExtensions);
@@ -82,16 +99,22 @@ export default class DailyWorkLogPlugin extends Plugin {
 					el,
 					ctx,
 					this.settings.categories,
-					this.settings.dailyNoteFolder,
-					this.getEventHeadingConfig()
+					this.getDailyNoteFolder(),
+					this.getEventHeadingConfig(),
+					this.getDailyNoteFormat()
 				);
 			}
 		);
 	}
 
 	async loadSettings(): Promise<void> {
-		const loadedData = (await this.loadData()) as Partial<DailyWorkLogSettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+		const loadedData = (await this.loadData()) as
+			| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown })
+			| null;
+		const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
+		const settingsData = { ...(loadedData ?? {}) };
+		delete settingsData.dailyNoteFolder;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, settingsData);
 
 		// The settings screen mutates category objects in place, so the
 		// category list must be a deep copy. Without this, a fresh install
@@ -103,7 +126,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 			this.settings.categories = createDefaultCategories();
 		}
 
-		let shouldSave = false;
+		let shouldSave = legacyFolderSettingPresent;
 
 		// The Event heading is part of the note FORMAT, not a UI string, so
 		// its default never depends on the interface language. Resolving it
@@ -124,6 +147,21 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+	}
+
+	getDailyNoteFolder(): string {
+		const folder = this.getCoreDailyNotesOptions()?.folder;
+		return typeof folder === "string" ? folder : "";
+	}
+
+	getDailyNoteFormat(): string {
+		const format = this.getCoreDailyNotesOptions()?.format;
+		return typeof format === "string" && format.length > 0 ? format : DEFAULT_DAILY_NOTE_FORMAT;
+	}
+
+	private getCoreDailyNotesOptions(): CoreDailyNotesOptions | undefined {
+		const registry = (this.app as typeof this.app & { internalPlugins?: InternalPluginRegistry }).internalPlugins;
+		return registry?.getPluginById("daily-notes")?.instance?.options;
 	}
 
 	getUiLanguage(): MarkerLanguage {
@@ -198,8 +236,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.categoryBadgeExtensions.push(
 			buildCategoryBadgeEditorPlugin(
 				this.settings.categories,
-				this.settings.dailyNoteFolder,
-				this.getEventHeadingConfig()
+				this.getDailyNoteFolder(),
+				this.getEventHeadingConfig(),
+				this.getDailyNoteFormat()
 			)
 		);
 		// updateOptions is the Obsidian API for updating registered editor extensions at runtime.

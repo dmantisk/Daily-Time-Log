@@ -17,6 +17,10 @@
  * production import from "obsidian" needs a runtime counterpart here.
  */
 
+import moment from "moment";
+
+export { moment };
+
 // ---------------------------------------------------------------------------
 // CodeMirror / editor bridge
 // ---------------------------------------------------------------------------
@@ -48,6 +52,11 @@ export function getLanguage(): string {
 /** Attaches a tooltip to an element. No-op in tests. */
 export function setTooltip(el: HTMLElement, tooltip: string): void {
 	el.setAttribute("aria-label", tooltip);
+}
+
+/** Records the icon name on the element; tests do not need Obsidian's SVG rendering. */
+export function setIcon(el: HTMLElement, icon: string): void {
+	el.dataset.icon = icon;
 }
 
 /** Transient user-facing message. */

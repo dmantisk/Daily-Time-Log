@@ -30,8 +30,9 @@ function createPluginStub(): never {
 				{ name: "Work", displayName: "Work", color: "#d0e1fd" },
 				{ name: "Study", displayName: "Study", color: "#ebd3f8" },
 			],
-			dailyNoteFolder: "",
 		},
+		getDailyNoteFolder: () => "",
+		getDailyNoteFormat: () => "YYYY-MM-DD",
 		getUiLanguage: (): MarkerLanguage => "en",
 		getEventHeadingConfig: () => ({ text: "Event", level: 1 }),
 	} as never;
