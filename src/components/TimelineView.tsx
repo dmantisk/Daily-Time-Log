@@ -341,6 +341,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 				onPointerLeave={() => {
 					if (isDragging) handlePointerUp();
 				}}
+				onPointerCancel={() => {
+					setIsDragging(false);
+					setDragStart(null);
+					setDragEnd(null);
+					dragHandledRef.current = false;
+				}}
 			>
 				<div className="dwl-grid">
 					{hours.map((hour) => {
@@ -385,7 +391,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 											<div
 												key={colIndex}
 												className={`dwl-grid-cell${isSelecting ? " is-selecting" : ""}`}
-												onPointerDown={() => handlePointerDown(cellIndex)}
+												onPointerDown={(e) => {
+													const el = e.currentTarget as HTMLElement;
+													if (el.hasPointerCapture && el.hasPointerCapture(e.pointerId)) {
+														el.releasePointerCapture(e.pointerId);
+													}
+													handlePointerDown(cellIndex);
+												}}
 												onPointerEnter={() => handlePointerEnter(cellIndex)}
 												onPointerUp={handlePointerUp}
 											/>

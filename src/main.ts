@@ -33,6 +33,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 	private dashboardRibbonEl!: HTMLElement;
 	private refreshTimer: number | null = null;
 	private refreshTimelineAfterDebounce = false;
+	private badgeKey = "";
 	/** Holds the currently registered CodeMirror extension for category badges.
 	 *  Stored as a mutable array so its contents can be replaced in-place and
 	 *  the change applied to open editors via updateOptions() without a reload. */
@@ -72,6 +73,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", () => {
 				this.refreshTimelineView();
+				this.refreshBadgesIfNeeded();
 			})
 		);
 
@@ -100,6 +102,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 				this.getDailyNoteFormat()
 			)
 		);
+		this.badgeKey = `${this.getDailyNoteFolder()}|${this.getDailyNoteFormat()}`;
 		this.registerEditorExtension(this.categoryBadgeExtensions);
 
 		this.registerMarkdownPostProcessor(
@@ -274,8 +277,14 @@ export default class DailyWorkLogPlugin extends Plugin {
 				this.getDailyNoteFormat()
 			)
 		);
-		// updateOptions is the Obsidian API for updating registered editor extensions at runtime.
 		this.app.workspace.updateOptions();
+		this.badgeKey = `${this.getDailyNoteFolder()}|${this.getDailyNoteFormat()}`;
+	}
+
+	private refreshBadgesIfNeeded(): void {
+		const key = `${this.getDailyNoteFolder()}|${this.getDailyNoteFormat()}`;
+		if (key === this.badgeKey) return;
+		this.refreshCategoryBadgeExtension();
 	}
 
 	async activateView(): Promise<void> {
