@@ -23,6 +23,11 @@ Conventions used below:
 > indented-checkbox and out-of-range-time findings are all fixed and
 > recorded below.
 >
+> The native Obsidian component review (7 findings) is complete too —
+> the code is merged-ready on `feature/native-obsidian-components`, but
+> the branch is **not merged** and **v0.7.0 is not released**. Those two
+> release items are the only open entries; see the Open findings section.
+>
 > The resolved findings below are kept as the **record** of what was wrong
 > and why the fix looks the way it does — each one states the
 > reproduction, the reasoning and the commit that fixed it. A future
@@ -32,8 +37,62 @@ Conventions used below:
 
 ## Open findings
 
-_Nothing is open — every finding from the review that followed v0.5.4 has
-been fixed and is recorded in the section below._
+Two release items are outstanding. They are not defects — the code is
+complete, tested and pushed — but the work is not finished until the
+branch is merged and the release is cut.
+
+### 9. The native-component branch is not merged — **Process**
+
+- **Status:** open
+- **Location:** branch `feature/native-obsidian-components` (commit `8def25f`)
+- **Severity:** Process — nothing is broken; the work simply has not
+  reached `main` yet
+
+**What happens**
+
+The whole native-component pass lives on a feature branch. `main` is
+still at `13cd4b2` (v0.6.0), so a user installing the plugin from
+`main` gets the old, hand-rolled controls. The branch is pushed, so
+the work is safe — it just needs the pull request.
+
+**Fix**
+
+Open a pull request from `feature/native-obsidian-components` into
+`main` and merge it:
+
+https://github.com/dmantisk/Daily-Time-Log/pull/new/feature/native-obsidian-components
+
+### 10. v0.7.0 is not tagged or released — **Process**
+
+- **Status:** open
+- **Location:** `manifest.json` (version `0.7.0`), `versions.json`
+  (`"0.7.0": "1.13.0"`), `README.md` (`### 0.7.0` changelog entry)
+- **Severity:** Process
+
+**What happens**
+
+The version numbers and the changelog entry are already prepared, and
+`.github/scripts/extract-changelog.mjs` accepts the new entry. What is
+missing is the tag and the GitHub Release.
+
+**Fix**
+
+Tag `v0.7.0` on the merge commit and let the Release workflow run.
+The script reads the first `###` heading under `## Changelog` in
+`README.md`, so the release notes are picked up automatically.
+
+> [!NOTE]
+> Two smaller items were raised during the v0.7.0 review and are
+> deliberately **not** being changed:
+>
+> - **React still ships in the bundle** for `view.tsx` /
+>   `TimelineView.tsx`. That is by design — `.agents/AGENTS.md` §3 scopes
+>   React to the sidebar grid, and the grid has no native equivalent.
+> - **The category chips stay hand-rolled.** Obsidian has no native
+>   control for a set of coloured category labels.
+>
+> The multi-segment distribution bar was also reviewed and **rejected** as
+> a candidate for `ProgressBarComponent` — see finding 8 below.
 
 ---
 
@@ -222,6 +281,14 @@ segments**, one per category, each with its own colour and share of
 the total — a single-value component cannot express that, and wrapping
 it per category would produce a row of separate bars rather than one
 stacked bar. The hand-rolled markup stays.
+
+### Commits — native Obsidian component review
+
+| Commit | Change |
+|--------|--------|
+| `9272712` | The pass itself: all 7 findings, the new `TimelineModal`/`ConfirmDeleteModal` tests, the mock fidelity fixes, and the docs |
+| `396a024` | `design.md` §11.3 — the Dashboard is no longer "unchanged in implementation" |
+| `8def25f` | Follow-ups: deprecated `setWarning()` removed, the category row tagged through `Setting.setClass()` and pinned by tests, and the hard-link test-vault layout documented |
 
 ---
 
