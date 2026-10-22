@@ -94,6 +94,10 @@ export type UIStringKey =
 	| "periodSummaryTitle"
 	| "activityNotesTitle"
 	| "todayDateSuffix"
+	| "noticeSaveEventFailed"
+	| "noticeUpdateEventFailed"
+	| "noticeDeleteEventFailed"
+	| "noticeDailyNoteNotFound"
 	| "languageAuto"
 	| "languageEnglish"
 	| "languageKorean"
@@ -110,6 +114,10 @@ export type UIStringKey =
 export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 	en: {
 		todayDateSuffix: "(Today)",
+		noticeSaveEventFailed: "Failed to save event",
+		noticeUpdateEventFailed: "Failed to update event",
+		noticeDeleteEventFailed: "Failed to delete event",
+		noticeDailyNoteNotFound: "Daily note not found: %s",
 		languageAuto: "Auto",
 		languageEnglish: "English",
 		languageKorean: "한국어",
@@ -210,6 +218,10 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 
 	ko: {
 		todayDateSuffix: "(오늘)",
+		noticeSaveEventFailed: "일과 저장 실패",
+		noticeUpdateEventFailed: "일과 수정 실패",
+		noticeDeleteEventFailed: "일과 삭제 실패",
+		noticeDailyNoteNotFound: "일일 노트를 찾을 수 없습니다: %s",
 		languageAuto: "자동",
 		languageEnglish: "English",
 		languageKorean: "한국어",

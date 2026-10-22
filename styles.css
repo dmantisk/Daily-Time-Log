@@ -107,6 +107,7 @@
 .dwl-grid {
 	display: flex;
 	flex-direction: column;
+	touch-action: none;
 	border-top: 1px solid var(--background-modifier-border);
 	border-left: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);

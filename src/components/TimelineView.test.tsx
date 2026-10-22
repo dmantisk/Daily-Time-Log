@@ -3,8 +3,8 @@
  *
  * Sidebar grid drag-to-select behaviour.
  *
- * The bug this guards against: a single mouse release fired TWO handlers —
- * the grid cell's React `onMouseUp` and the window-level `mouseup`
+ * The bug this guards against: a single pointer release fired TWO handlers —
+ * the grid cell's React `onPointerUp` and the window-level `pointerup`
  * listener the component registers to catch a release outside the grid.
  * Both ran within the same event dispatch, before React re-rendered, so
  * the `isDragging` state guard could not suppress the second one and the
@@ -68,6 +68,7 @@ function createPluginStub(
 			},
 			vault: {
 				read: async () => noteContent,
+				cachedRead: async () => noteContent,
 			},
 		},
 		settings: {
@@ -130,17 +131,17 @@ describe("TimelineView — drag-to-select", () => {
 		// Drag across the first three cells of the first hour and release
 		// on the last one.
 		await act(async () => {
-			gridCells[0].dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+			gridCells[0].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
 		});
 		await act(async () => {
-			gridCells[1].dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+			gridCells[1].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
 		});
 		await act(async () => {
-			gridCells[2].dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+			gridCells[2].dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 		});
 
-		// The release fires the cell's React onMouseUp AND the window-level
-		// mouseup listener. Only one of them may open the modal.
+		// The release fires the cell's React onPointerUp AND the window-level
+		// pointerup listener. Only one of them may open the modal.
 		expect(openModalCalls).toHaveLength(1);
 	});
 
@@ -155,15 +156,15 @@ describe("TimelineView — drag-to-select", () => {
 		const gridCells = cells();
 
 		await act(async () => {
-			gridCells[0].dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+			gridCells[0].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
 		});
 		await act(async () => {
-			gridCells[3].dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+			gridCells[3].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
 		});
 		// Released on the document body — outside the grid, so only the
 		// window listener can catch it.
 		await act(async () => {
-			document.body.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+			document.body.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 		});
 
 		expect(openModalCalls).toHaveLength(1);
@@ -174,20 +175,20 @@ describe("TimelineView — drag-to-select", () => {
 		const gridCells = cells();
 
 		await act(async () => {
-			gridCells[0].dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+			gridCells[0].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
 		});
 		await act(async () => {
-			gridCells[2].dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+			gridCells[2].dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 		});
 		expect(openModalCalls).toHaveLength(1);
 
 		// A second, separate drag must still work — the latch must be
 		// released when a new drag starts, not latched forever.
 		await act(async () => {
-			gridCells[5].dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+			gridCells[5].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
 		});
 		await act(async () => {
-			gridCells[7].dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+			gridCells[7].dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 		});
 
 		expect(openModalCalls).toHaveLength(2);

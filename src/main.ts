@@ -9,7 +9,7 @@ import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
 import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
-import { DEFAULT_DAILY_NOTE_FORMAT } from "./dailyNote";
+import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 
 interface CoreDailyNotesOptions {
 	format?: unknown;
@@ -31,6 +31,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 	private lastSelfWrite: { path: string; content: string } | null = null;
 	private sidebarRibbonEl!: HTMLElement;
 	private dashboardRibbonEl!: HTMLElement;
+	private refreshTimer: number | null = null;
+	private refreshTimelineAfterDebounce = false;
 	/** Holds the currently registered CodeMirror extension for category badges.
 	 *  Stored as a mutable array so its contents can be replaced in-place and
 	 *  the change applied to open editors via updateOptions() without a reload. */
@@ -69,7 +71,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", () => {
-				this.refreshViews();
+				this.refreshTimelineView();
 			})
 		);
 
@@ -78,6 +80,13 @@ export default class DailyWorkLogPlugin extends Plugin {
 				void this.handleVaultModify(file);
 			})
 		);
+		this.registerInterval(
+			window.setInterval(() => this.refreshDataViews(), 5 * 60 * 1000)
+		);
+		this.register(() => {
+			if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
+			this.refreshTimelineAfterDebounce = false;
+		});
 
 		// Category badge rendering — live editor (CodeMirror ViewPlugin) and
 		// reading view (markdown post-processor). The editor extension is built
@@ -177,9 +186,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	/**
 	 * Writes must go through this method (not `vault.modify` directly) so the
-	 * resulting `modify` event can be recognized as self-triggered and
-	 * skipped — otherwise the sidebar would redundantly re-render itself
-	 * after every edit.
+	 * resulting `modify` event can be recognized as self-triggered so the
+	 * sidebar isn't redundantly re-rendered after every edit.
 	 */
 	async writeFile(file: TFile, content: string): Promise<void> {
 		this.lastSelfWrite = { path: file.path, content };
@@ -188,8 +196,14 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	private async handleVaultModify(file: unknown): Promise<void> {
 		if (!(file instanceof TFile) || file.extension !== "md") return;
-		if (await this.isSelfTriggeredWrite(file)) return;
-		this.refreshViews();
+		if (
+			parseDateFromDailyNotePath(file.path, this.getDailyNoteFormat(), this.getDailyNoteFolder()) === null
+		) return;
+		if (await this.isSelfTriggeredWrite(file)) {
+			this.scheduleRefresh(false);
+			return;
+		}
+		this.scheduleRefresh();
 	}
 
 	private async isSelfTriggeredWrite(file: TFile): Promise<boolean> {
@@ -211,11 +225,30 @@ export default class DailyWorkLogPlugin extends Plugin {
 		// so colour/folder changes take effect in open editors immediately.
 		this.refreshCategoryBadgeExtension();
 
+		this.refreshDataViews();
+	}
+
+	private scheduleRefresh(refreshTimeline = true): void {
+		this.refreshTimelineAfterDebounce ||= refreshTimeline;
+		if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
+		this.refreshTimer = window.setTimeout(() => {
+			this.refreshTimer = null;
+			const refreshTimelineAfterDebounce = this.refreshTimelineAfterDebounce;
+			this.refreshTimelineAfterDebounce = false;
+			this.refreshDataViews(refreshTimelineAfterDebounce);
+		}, 500);
+	}
+
+	private refreshTimelineView(): void {
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DAILY_WORK_LOG)) {
 			if (leaf.view instanceof DailyWorkLogView) {
 				void leaf.view.refresh();
 			}
 		}
+	}
+
+	private refreshDataViews(refreshTimeline = true): void {
+		if (refreshTimeline) this.refreshTimelineView();
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD)) {
 			if (leaf.view instanceof DashboardView) {
 				void leaf.view.refresh();

@@ -14,6 +14,12 @@ interface DailyNoteFile {
 	date: Date;
 }
 
+interface CachedDailyNote {
+	mtime: number;
+	headingConfigKey: string;
+	parsed: ParsedDailyNote;
+}
+
 /**
  * Central "Dashboard" panel — a vault-wide summary of daily notes, opened
  * as a normal tab in the main workspace area (not the right sidebar).
@@ -24,6 +30,7 @@ export class DashboardView extends ItemView {
 	// Same re-entrancy guard as DailyWorkLogView.refresh() — see AGENTS.md 3.
 	private refreshToken = 0;
 	private selectedWindowDays = 30; // 7, 30, 90, 0 (all)
+	private readonly parsedNotes = new Map<string, CachedDailyNote>();
 
 	constructor(leaf: WorkspaceLeaf, plugin: DailyWorkLogPlugin) {
 		super(leaf);
@@ -55,16 +62,21 @@ export class DashboardView extends ItemView {
 		const language = this.plugin.getUiLanguage();
 
 		const container = this.contentEl;
-		container.empty();
 		container.addClass("dwl-dashboard-view");
+		const nextContent = document.createElement("div");
 
 		const allNotes = this.collectDailyNoteFiles();
+		const activePaths = new Set(allNotes.map(({ file }) => file.path));
+		for (const path of this.parsedNotes.keys()) {
+			if (!activePaths.has(path)) this.parsedNotes.delete(path);
+		}
 
 		// Header area with Title & Window Dropdown
-		this.renderHeader(container, language);
+		this.renderHeader(nextContent, language);
 
 		if (allNotes.length === 0) {
-			container.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardEmptyVault", language) });
+			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardEmptyVault", language) });
+			container.replaceChildren(...Array.from(nextContent.childNodes));
 			return;
 		}
 
@@ -90,7 +102,7 @@ export class DashboardView extends ItemView {
 			const batchResults = await Promise.all(
 				batch.map(async (note) => ({
 					date: note.date,
-					parsed: parseDailyNote(await this.app.vault.cachedRead(note.file), this.plugin.getEventHeadingConfig()),
+					parsed: await this.getParsedNote(note.file),
 				}))
 			);
 			recentParsed.push(...batchResults);
@@ -99,7 +111,8 @@ export class DashboardView extends ItemView {
 		if (token !== this.refreshToken) return; // superseded by a newer refresh() call meanwhile
 
 		if (!hasPastOrPresentNotes) {
-			container.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardFutureOnlyNotice", language) });
+			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardFutureOnlyNotice", language) });
+			container.replaceChildren(...Array.from(nextContent.childNodes));
 			return;
 		}
 
@@ -113,13 +126,28 @@ export class DashboardView extends ItemView {
 		);
 
 		// KPI Grid
-		this.renderKpiGrid(container, stats, language);
+		this.renderKpiGrid(nextContent, stats, language);
 
 		// Category Distribution Bar
-		this.renderCategoryDistribution(container, stats, language);
+		this.renderCategoryDistribution(nextContent, stats, language);
 
 		// Bottom 2-Column Layout (Recent Activity + Summary)
-		this.renderBottomLayout(container, stats, recentNotes, language);
+		this.renderBottomLayout(nextContent, stats, recentNotes, language);
+		if (token !== this.refreshToken) return;
+		container.replaceChildren(...Array.from(nextContent.childNodes));
+	}
+
+	private async getParsedNote(file: TFile): Promise<ParsedDailyNote> {
+		const headingConfig = this.plugin.getEventHeadingConfig();
+		const headingConfigKey = JSON.stringify([headingConfig.level, headingConfig.text]);
+		const cached = this.parsedNotes.get(file.path);
+		if (cached?.mtime === file.stat.mtime && cached.headingConfigKey === headingConfigKey) {
+			return cached.parsed;
+		}
+
+		const parsed = parseDailyNote(await this.app.vault.cachedRead(file), headingConfig);
+		this.parsedNotes.set(file.path, { mtime: file.stat.mtime, headingConfigKey, parsed });
+		return parsed;
 	}
 
 	/**
@@ -128,13 +156,14 @@ export class DashboardView extends ItemView {
 	private collectDailyNoteFiles(): DailyNoteFile[] {
 		const result: DailyNoteFile[] = [];
 		const folderSetting = this.plugin.getDailyNoteFolder();
+		const dateFormat = this.plugin.getDailyNoteFormat();
 		const normalizedFolder = folderSetting.trim().replace(/^\/+|\/+$/g, "");
 
 		const consider = (file: TAbstractFile) => {
 			if (!(file instanceof TFile) || file.extension !== "md") return;
 			const date = parseDateFromDailyNotePath(
 				file.path,
-				this.plugin.getDailyNoteFormat(),
+				dateFormat,
 				folderSetting
 			);
 			if (date) result.push({ file, date });
@@ -148,7 +177,7 @@ export class DashboardView extends ItemView {
 		if (scopedFolder) {
 			Vault.recurseChildren(scopedFolder, consider);
 		} else {
-			this.app.vault.getFiles().forEach(consider);
+			this.app.vault.getMarkdownFiles().forEach(consider);
 		}
 		return result;
 	}

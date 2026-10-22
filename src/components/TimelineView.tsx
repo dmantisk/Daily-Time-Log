@@ -42,6 +42,10 @@ export interface TimelineViewProps {
 const CELL_MINUTES = 10;
 const CELLS_PER_HOUR = 60 / CELL_MINUTES;
 
+function errorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
 function buildTimelineLine(values: EventEntryValues): string {
 	const categoryPart = values.category ? `[${values.category}] ` : "";
 	return `- ${values.start} - ${values.end} ${categoryPart}${values.description}`.trimEnd();
@@ -67,8 +71,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	/**
 	 * Latch that guarantees a single drag is turned into a single Event.
 	 *
-	 * A release fires TWO handlers: the grid cell's React `onMouseUp` and
-	 * the window-level `mouseup` listener (the native event bubbles from
+	 * A release fires TWO handlers: the grid cell's React `onPointerUp` and
+	 * the window-level `pointerup` listener (the native event bubbles from
 	 * the cell up to `window`). Both run within the same event dispatch,
 	 * so no re-render happens in between and `isDragging` is still true
 	 * for both calls — the state-based guard cannot suppress the second
@@ -81,7 +85,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	const { startHour, endHour } = plugin.settings;
 
 	const reloadFile = async (file: TFile): Promise<void> => {
-		const content = await plugin.app.vault.read(file);
+		const content = await plugin.app.vault.cachedRead(file);
 		const parsed = parseDailyNote(content, plugin.getEventHeadingConfig());
 		setTimeline(parsed.timeline);
 		setHasEventSection(hasEventBlock(content, plugin.getEventHeadingConfig()));
@@ -116,7 +120,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 				setHasEventSection(true);
 				return;
 			}
-			const content = await plugin.app.vault.read(resolved);
+			const content = await plugin.app.vault.cachedRead(resolved);
 			if (cancelled) return;
 			const parsed = parseDailyNote(content, plugin.getEventHeadingConfig());
 			setTimeline(parsed.timeline);
@@ -129,13 +133,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 		};
 	}, [refreshToken, plugin]);
 
-	// Catches drag-release outside the grid (design parity with the mouse-leave handler on the grid itself).
+	// Catches drag-release outside the grid.
 	useEffect(() => {
-		const onWindowMouseUp = (): void => {
-			if (isDragging) handleMouseUp();
+		const onWindowPointerUp = (): void => {
+			if (isDragging) handlePointerUp();
 		};
-		window.addEventListener("mouseup", onWindowMouseUp);
-		return () => window.removeEventListener("mouseup", onWindowMouseUp);
+		window.addEventListener("pointerup", onWindowPointerUp);
+		return () => window.removeEventListener("pointerup", onWindowPointerUp);
 	}, [isDragging, dragStart, dragEnd]);
 
 	// ── Event (Timeline) ──────────────────────────────────────────────
@@ -150,7 +154,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			);
 			await reloadFile(activeFile);
 		} catch (e) {
-			new Notice(`Failed to save event: ${(e as Error).message ?? String(e)}`);
+			new Notice(`${t("noticeSaveEventFailed", language)}: ${errorMessage(e)}`);
 		}
 	};
 
@@ -166,7 +170,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			await plugin.writeFile(activeFile, replaceLineRangeAt(content, item.line, item.lineCount, buildTimelineLine(values)));
 			await reloadFile(activeFile);
 		} catch (e) {
-			new Notice(`Failed to update event: ${(e as Error).message ?? String(e)}`);
+			new Notice(`${t("noticeUpdateEventFailed", language)}: ${errorMessage(e)}`);
 		}
 	};
 
@@ -182,7 +186,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 			await plugin.writeFile(activeFile, removeLineRangeAt(content, item.line, item.lineCount));
 			await reloadFile(activeFile);
 		} catch (e) {
-			new Notice(`Failed to delete event: ${(e as Error).message ?? String(e)}`);
+			new Notice(`${t("noticeDeleteEventFailed", language)}: ${errorMessage(e)}`);
 		}
 	};
 
@@ -218,18 +222,18 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 	// ── Drag-to-select ────────────────────────────────────────────────
 
-	const handleMouseDown = (cellIndex: number): void => {
+	const handlePointerDown = (cellIndex: number): void => {
 		dragHandledRef.current = false;
 		setIsDragging(true);
 		setDragStart(cellIndex);
 		setDragEnd(cellIndex);
 	};
 
-	const handleMouseEnter = (cellIndex: number): void => {
+	const handlePointerEnter = (cellIndex: number): void => {
 		if (isDragging) setDragEnd(cellIndex);
 	};
 
-	const handleMouseUp = (): void => {
+	const handlePointerUp = (): void => {
 		if (!isDragging || dragStart === null || dragEnd === null) return;
 		// The window listener runs right after the cell's own handler for
 		// the same release — only the first one may create the Event.
@@ -293,7 +297,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 							if (prevFile && prevFile instanceof TFile) {
 								plugin.app.workspace.getLeaf(false).openFile(prevFile);
 							} else {
-								new Notice(`Previous daily note not found: ${prevFileName}`);
+								new Notice(t("noticeDailyNoteNotFound", language).replace("%s", prevFileName));
 							}
 						}}
 					>
@@ -314,7 +318,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 							if (nextFile && nextFile instanceof TFile) {
 								plugin.app.workspace.getLeaf(false).openFile(nextFile);
 							} else {
-								new Notice(`Next daily note not found: ${nextFileName}`);
+								new Notice(t("noticeDailyNoteNotFound", language).replace("%s", nextFileName));
 							}
 						}}
 					>
@@ -334,8 +338,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 			<div
 				className="dwl-grid-wrap"
-				onMouseLeave={() => {
-					if (isDragging) handleMouseUp();
+				onPointerLeave={() => {
+					if (isDragging) handlePointerUp();
 				}}
 			>
 				<div className="dwl-grid">
@@ -381,9 +385,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 											<div
 												key={colIndex}
 												className={`dwl-grid-cell${isSelecting ? " is-selecting" : ""}`}
-												onMouseDown={() => handleMouseDown(cellIndex)}
-												onMouseEnter={() => handleMouseEnter(cellIndex)}
-												onMouseUp={handleMouseUp}
+												onPointerDown={() => handlePointerDown(cellIndex)}
+												onPointerEnter={() => handlePointerEnter(cellIndex)}
+												onPointerUp={handlePointerUp}
 											/>
 										);
 									})}
@@ -428,7 +432,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 													evt.stopPropagation();
 													openEventModal(item, item.start, item.end);
 												}}
-												onMouseDown={(evt) => evt.stopPropagation()}
+												onPointerDown={(evt) => evt.stopPropagation()}
 											>
 												{/* The bar shows the category name only — the time range is
 								    already conveyed by the block's position and width on

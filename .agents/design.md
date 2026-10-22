@@ -1,7 +1,7 @@
 # Daily Time Log — UI/UX Design Guide
 
 > This document collects the design principles and component specs to consult when implementing the plugin UI.
-> For the full set of development rules, see [`AGENTS.md`](./AGENTS.md).
+> For the full set of development rules, see [`AGENTS-reference.md`](./AGENTS-reference.md).
 
 > [!NOTE]
 > Sections marked *(historical)* describe the 0.1.0–0.2.x implementation. They are kept because they explain why the current design looks the way it does — the Calendar and the To-Do section were both removed, and the current spec grew out of them. They are **not** a description of the plugin today.
@@ -15,7 +15,7 @@
 3. **Native modals first** — title, background, overlay and default buttons use Obsidian's `Modal` styling.
 4. **Popups follow the Obsidian theme** — Obsidian's default `Modal` styling and active theme. See §3 for details.
 5. **Obsidian CSS variables first** — the sidebar and the central dashboard view use Obsidian variables such as `--text-normal` and `--background-secondary` so they follow the active theme.
-6. **Multi-language support (EN / KO)** *(added)* — the default follows Obsidian's UI language, and English/Korean can be selected explicitly in the plugin settings. Only the **UI strings** switch according to the configured language — the Event heading is part of the note FORMAT, not a UI string, so it never changes with the interface language (AGENTS.md §2). See §9 for details.
+6. **Multi-language support (EN / KO)** *(added)* — the default follows Obsidian's UI language, and English/Korean can be selected explicitly in the plugin settings. Only the **UI strings** switch according to the configured language — the Event heading is part of the note FORMAT, not a UI string, so it never changes with the interface language (AGENTS-reference.md §2). See §9 for details.
 7. **Theme consistency** — the sidebar, the dashboard and the modals all follow the Obsidian theme. Only the category colors are kept as user-configured data.
 8. **The category pastel palette is identical to DayTime Tracker's defaults** *(confirmed 2026-08-05)* — the 5-color palette in §2.1 was confirmed to match DayTime Tracker's `DEFAULT_CATEGORIES` (Work/Study/Rest/Reading/Exercise) color values exactly. When porting the category feature, reuse this palette as the default category colors as-is.
 
@@ -39,23 +39,23 @@
 | **Edit/delete a timeline entry** | Click an existing entry → edit modal | Edits or removes that line |
 
 > [!NOTE]
-> File writes always go through `plugin.writeFile()` (main.ts) — which includes the self-write event guard (AGENTS.md §3)
+> File writes always go through `plugin.writeFile()` (main.ts) — which includes the self-write event guard (AGENTS-reference.md §3)
 
 ### 1.2 Grid drag input *(shipped — ported from DayTime Tracker)*
 
 | Feature | How to reach it | Result |
 |---|---|---|
-| **Add a timeline entry** | Drag-select cells on the grid (10-minute cells) → the modal opens automatically (start/end times pre-filled) | Pick a category and write a note, then save → appends `- HH:mm - HH:mm [Category] note` to the end of the Event block's own content (AGENTS.md §1.4.1) |
+| **Add a timeline entry** | Drag-select cells on the grid (10-minute cells) → the modal opens automatically (start/end times pre-filled) | Pick a category and write a note, then save → appends `- HH:mm - HH:mm [Category] note` to the end of the Event block's own content (AGENTS-reference.md §1.4.1) |
 | **Edit/delete a timeline entry** | Click a colored block on the grid → edit modal (with a delete button) | Edits or removes that line |
 
-- The data source and write path are **the same `parser.ts` body parsing + `plugin.writeFile()` as before**, not DayTime Tracker's frontmatter approach (AGENTS.md §1.1) — this is the single most important caveat when porting.
+- The data source and write path are **the same `parser.ts` body parsing + `plugin.writeFile()` as before**, not DayTime Tracker's frontmatter approach (AGENTS-reference.md §1.1) — this is the single most important caveat when porting.
 - The category chip UI, the color calculation (`getTextColorForBackground`) and the drag-cell selection logic are ported as-is from DayTime Tracker's `TimelineView.tsx` / `TimelineModal.tsx`.
 
 ### 1.3 To-Do section — removed in 0.5.0
 
 The To-Do feature no longer exists. To-Do parsing, the sidebar To-Do panel, the dashboard's To-Do completion metric and the To-Do export were all removed, and the `TodoItem` type, `parseTodo`, `todoRangeMatches` and `todoLineMatches` were deleted from `parser.ts`.
 
-Checkbox lines (`- [ ]` / `- [x]`) are now **ordinary note content**: they are never parsed as tasks, never rendered in the sidebar and never counted in dashboard metrics. The parser still recognizes a checkbox line as a "top-level" shape so that it is not silently absorbed as an Event's continuation text (AGENTS.md §1.4.2).
+Checkbox lines (`- [ ]` / `- [x]`) are now **ordinary note content**: they are never parsed as tasks, never rendered in the sidebar and never counted in dashboard metrics. The parser still recognizes a checkbox line as a "top-level" shape so that it is not silently absorbed as an Event's continuation text (AGENTS-reference.md §1.4.2).
 
 > [!NOTE]
 > The §1.1 rows and the §4.1 / §5 layout blocks that mention a To-Do section are historical records of the removed feature, not a spec for building it again.
@@ -195,8 +195,8 @@ Calendar
 └─────────────────────────────────────────┘
 ```
 
-- Without the Calendar, the sidebar always reflects **only the currently active file**. If there is no active file, or it is not a daily note, only the empty-state message and the "open/create today's note" button are shown (§1.2, AGENTS.md §3 "New Daily Note Creation & Confirmation Policy").
-- The grid's display range follows the `startHour`/`endHour` settings (AGENTS.md §2).
+- Without the Calendar, the sidebar always reflects **only the currently active file**. If there is no active file, or it is not a daily note, only the empty-state message and the "open/create today's note" button are shown (§1.2, AGENTS-reference.md §3 "New Daily Note Creation & Confirmation Policy").
+- The grid's display range follows the `startHour`/`endHour` settings (AGENTS-reference.md §2).
 - There is **no To-Do panel** — the feature was removed in 0.5.0 (§1.3).
 
 ---
@@ -209,7 +209,7 @@ All classes use the `dwl-*` prefix. The table below lists the classes that are *
 |---|---|
 | `dwl-view-container` / `dwl-view` | The sidebar view and its inner container |
 | `dwl-view-header` / `dwl-view-date-title` | Sidebar header and the date it shows |
-| `dwl-missing-heading-banner` | "No Event section" banner (AGENTS.md §1.7) |
+| `dwl-missing-heading-banner` | "No Event section" banner (AGENTS-reference.md §1.7) |
 | `dwl-empty-state-block` | The empty state shown when there is no daily note to show |
 | `dwl-category-chips` / `dwl-category-chip` / `dwl-category-chip-preview` | Category picker in the add/edit modal |
 | `dwl-cat-badge` | The `[Category]` badge rendered in a note (also `dwl-cat-badge--<slug>` for the per-category variant) |
@@ -286,7 +286,7 @@ Each phase builds and tests independently.
 
 ## 9. Multi-language (i18n) UI Strings
 
-> This is a **separate concern** from the parser's heading recognition (AGENTS.md §1.3). The parser recognizes exactly ONE configured heading, whatever the interface language; what is covered here are the **on-screen strings** shown in the sidebar (button labels, section titles, placeholders, modal text, etc.), which follow the single configured language.
+> This is a **separate concern** from the parser's heading recognition (AGENTS-reference.md §1.3). The parser recognizes exactly ONE configured heading, whatever the interface language; what is covered here are the **on-screen strings** shown in the sidebar (button labels, section titles, placeholders, modal text, etc.), which follow the single configured language.
 
 ### 9.1 Structure
 
@@ -351,7 +351,7 @@ Category colors are user data stored in settings, and are applied to the timelin
 | Recording period (oldest ~ most recent) | Whole vault | Same as above. A note dated after today is excluded |
 | Current streak (consecutive days) | Whole vault | Counting back from today until a break. 0 if there is no note for today |
 | Total event time recorded | Selected window | Reads file contents (`app.vault.cachedRead`). The window is user-selectable (7d / 30d / 90d / All) |
-| Daily average | Selected window | The window's total ÷ the number of distinct days that **recorded** time (AGENTS.md §1.8) |
+| Daily average | Selected window | The window's total ÷ the number of distinct days that **recorded** time (AGENTS-reference.md §1.8) |
 | Top category | Selected window | The category with the most recorded time in the window |
 
 **Performance consideration**: statistics that need to read file contents are limited to the selected window. Even if the vault has accumulated years of notes, opening the dashboard does not re-read everything — the "All Time" window is the only one that reads every daily note.

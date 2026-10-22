@@ -13,7 +13,7 @@
  * assert that every metric carries an explanation.
  */
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 
 installObsidianDomHelpers();
@@ -39,19 +39,22 @@ function createPluginStub(): never {
 }
 
 /** A vault holding one daily note, dated today. */
-function createAppStub(noteContent: string): never {
+function createAppStub(noteContent: string, cachedRead = async () => noteContent): never {
 	const file = new TFile();
-	file.path = "2026-07-14.md";
-	file.name = "2026-07-14.md";
-	file.basename = "2026-07-14";
+	const today = new Date();
+	const datePath = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.md`;
+	file.path = datePath;
+	file.name = datePath;
+	file.basename = datePath.slice(0, -3);
 	file.extension = "md";
+	file.stat = { ctime: Date.now(), mtime: Date.now(), size: noteContent.length };
 
 	return {
 		workspace: { openLinkText: () => {} },
 		vault: {
-			getFiles: () => [file],
+			getMarkdownFiles: () => [file],
 			getFolderByPath: () => null,
-			cachedRead: async () => noteContent,
+			cachedRead,
 		},
 	} as never;
 }
@@ -157,5 +160,18 @@ describe("DashboardView metric tooltips", () => {
 		expect(refresh).not.toBeNull();
 		expect(refresh.getAttribute("aria-label")).toBe("Refresh");
 		expect(container.querySelector(".dwl-dashboard-refresh-btn")).toBeNull();
+	});
+
+	it("reuses parsed note content until the file's modification time changes", async () => {
+		const noteContent = "# Event\n- 09:00 - 10:00 [Work] a\n";
+		const cachedRead = vi.fn(async () => noteContent);
+		const view = new DashboardView({} as never, createPluginStub());
+		(view as unknown as { app: unknown }).app = createAppStub(noteContent, cachedRead);
+		(view as unknown as { contentEl: HTMLElement }).contentEl = document.createElement("div");
+
+		await view.refresh();
+		await view.refresh();
+
+		expect(cachedRead).toHaveBeenCalledTimes(1);
 	});
 });
