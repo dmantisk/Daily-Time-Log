@@ -340,6 +340,14 @@ export class Setting {
 		this.descEl.textContent = desc;
 		return this;
 	}
+	setClass(cls: string): this {
+		// The real implementation splits on whitespace and adds each
+		// class separately.
+		for (const name of cls.split(" ").filter(Boolean)) {
+			this.settingEl.classList.add(name);
+		}
+		return this;
+	}
 	setHeading(): this {
 		this.settingEl.classList.add("setting-item-heading");
 		return this;

@@ -216,7 +216,7 @@ All classes use the `dwl-*` prefix. The table below lists the classes that are *
 | `dwl-modal-body` / `dwl-modal-text` | Modal shell and its body text |
 | `dwl-modal-field` / `dwl-modal-label` | A labelled modal field |
 | `dwl-modal-time-row` / `dwl-modal-time-input` / `dwl-modal-textarea` | The time inputs and the description textarea |
-| `dwl-category-setting-item` | Per-category row in Settings |
+| `dwl-category-setting-item` | Per-category row in Settings — hides the row's (empty) name/description block so the text input, colour picker and delete button read as one line |
 
 > [!NOTE]
 > The `dwl-todo-*` and `dwl-timeline-item` classes this table used to list no longer exist — the To-Do feature was removed in 0.5.0 (§1.3) and the timeline list was replaced by the grid.

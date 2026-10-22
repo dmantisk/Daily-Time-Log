@@ -114,4 +114,52 @@ describe("DailyWorkLogSettingTab", () => {
 		expect(plugin.settings.eventHeadingText).toBe("Activity");
 		expect(plugin.refreshViews).toHaveBeenCalled();
 	}, 5000);
+
+	it("gives each category row the structure its CSS depends on", () => {
+		renderTab();
+
+		// The per-category rows are the ones tagged `dwl-category-setting-item`.
+		// They are identified by the class rather than by "has a colour
+		// picker", because the "Add New Category" row has a colour picker
+		// too but is an ordinary named setting.
+		const categoryRows = Setting.created.filter((setting) =>
+			setting.settingEl.classList.contains("dwl-category-setting-item")
+		);
+		expect(categoryRows.length).toBe(2);
+
+		for (const row of categoryRows) {
+			// The name element is empty — the text input IS the name.
+			expect(row.nameEl.textContent).toBe("");
+
+			// Obsidian's own structure: the name/description live in
+			// `.setting-item-info`, the controls in a sibling
+			// `.setting-item-control`. The plugin's CSS hides the info
+			// block, so the structure has to be exactly this.
+			expect(row.infoEl.contains(row.nameEl)).toBe(true);
+			expect(row.infoEl.contains(row.descEl)).toBe(true);
+			expect(row.settingEl.contains(row.infoEl)).toBe(true);
+			expect(row.settingEl.contains(row.controlEl)).toBe(true);
+			expect(row.controlEl.contains(row.infoEl)).toBe(false);
+
+			// The controls live in the control block, not in the info one.
+			expect(row.controlEl.querySelector("input[type='text']")).not.toBeNull();
+		}
+	});
+
+	it("gives the category section's description to the heading row", () => {
+		renderTab();
+
+		// The section description rides on the heading row's own
+		// `.setting-item-description`, rather than on a hand-rolled
+		// `<p>` between two setting rows.
+		const heading = Setting.created.find(
+			(setting) =>
+				setting.settingEl.classList.contains("setting-item-heading") &&
+				setting.nameEl.textContent === "Category Management"
+		);
+		expect(heading).toBeDefined();
+		expect(heading?.descEl.textContent).toBe(
+			"Customize the categories and colors used in your daily logs."
+		);
+	});
 });

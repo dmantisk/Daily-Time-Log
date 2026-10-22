@@ -173,7 +173,12 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			.addButton((btn) => {
 				btn
 					.setButtonText(t("btnReset", lang))
-					.setWarning()
+					// The app's "destructive primary action" — the same
+					// combination Obsidian uses for its own delete
+					// confirmation. `setWarning()` did exactly this, but
+					// it is deprecated in favour of the explicit pair.
+					.setDestructive()
+					.setCta()
 					.onClick(async () => {
 						this.plugin.settings.categories = createDefaultCategories();
 						await this.plugin.saveSettings();
@@ -185,8 +190,22 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 
 		const categories = this.plugin.settings.categories;
 		categories.forEach((cat, idx) => {
-			const row = new Setting(containerEl).setName("");
-			row.settingEl.addClass("dwl-category-setting-item");
+			// A per-category row carries no name and no description — the
+			// text input IS the category's name, so a name element beside
+			// it would duplicate it.
+			//
+			// Obsidian lays a setting out as
+			//   .setting-item > .setting-item-info + .setting-item-control
+			// and gives `.setting-item-info` `flex: 1 1 auto`, so an
+			// empty info element would still take up half the row. The
+			// `dwl-category-setting-item` class hides it and lets the
+			// control take the full width; see styles.css.
+			//
+			// `setName("")` is what leaves the name element empty — the
+			// CSS then hides the whole info block. `setClass()` is the
+			// public API for tagging the row (0.9.7), so the class does
+			// not depend on reaching into `settingEl` directly.
+			const row = new Setting(containerEl).setName("").setClass("dwl-category-setting-item");
 
 			row.addText((text) => {
 				text
@@ -224,7 +243,11 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				row.addButton((btn) => {
 					btn
 						.setButtonText("✕")
-						.setWarning()
+						// Exactly what `setWarning()` did — a destructive
+						// primary button. Written out so the deprecated
+						// method is not used.
+						.setDestructive()
+						.setCta()
 						.onClick(async () => {
 							categories.splice(idx, 1);
 							await this.plugin.saveSettings();

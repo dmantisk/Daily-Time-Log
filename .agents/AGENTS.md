@@ -159,7 +159,8 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 - *(added 2026-10-30)* **Prefer Obsidian's own components over hand-rolled markup.** A control that Obsidian already ships — `ButtonComponent`, `TextComponent`, `TextAreaComponent`, `DropdownComponent`, `Setting`, `ConfirmationModal` — must be used rather than re-implemented in plugin CSS, so the control follows the active theme, the user's accessibility settings and Obsidian's own keyboard handling. The only custom UI left is what Obsidian has no equivalent for (the category chips, the timeline grid, the dashboard's multi-segment distribution bar).
   - Do NOT re-style a native component's colours, borders or focus ring in `styles.css` — that is exactly the duplication this rule exists to prevent. Only the sizing Obsidian does not provide (e.g. `input[type="text"]` and `textarea` carry no width in the app's stylesheet) may be set by the plugin.
   - `ButtonComponent` has no `setSecondary()` — that method belongs to `ConfirmationButton`. The `mod-secondary` **class** is plain CSS and applies to any element, so use `.setClass("mod-secondary")` when a button must be pushed to the far left of a `.modal-button-container` row.
-  - Use `.setDestructive().setCta()` for a destructive primary action — that is the combination Obsidian uses for its own delete confirmation. `setWarning()` does exactly the same thing but is deprecated in favour of the explicit pair.
+  - Use `.setDestructive().setCta()` for a destructive primary action — that is the combination Obsidian uses for its own delete confirmation. `setWarning()` does exactly the same thing but is deprecated in favour of the explicit pair, so do not use it.
+  - Prefer a component's own `setClass()` over reaching into its element (`settingEl.addClass(...)`) — `Setting.setClass()` and `ButtonComponent.setClass()` are public API and are what the plugin's own CSS keys off.
 - **Avoid Raw Node `fs` API**: Always use Obsidian's Vault and Workspace APIs (`this.app.vault.read()`, `this.app.vault.modify()`, `this.app.workspace.getActiveFile()`) to modify and read note contents. Using node's native filesystem library bypasses Obsidian's sync mechanisms and may corrupt indices.
 - **Event Listeners**:
   - Listen to `layout-change` or `active-leaf-change` on `this.app.workspace` to update the view state dynamically when the user switches documents.
@@ -181,6 +182,14 @@ The Event block is identified by **one user-configured heading** (`eventHeadingT
 
 - **Decoupled Parser Strategy**: `src/parser.ts` MUST be implemented as a pure TypeScript utility with ZERO dependencies on the Obsidian API. This allows developers to run high-speed unit tests on parsing logic in a pure Node/Vitest environment.
 - **Build Pipeline**: The build script utilizes `esbuild` to bundle code. Always compile changes using the configured scripts (e.g., `npm run dev` or `npm run build`).
+- **Testing a build in a real vault**: the plugin folder in a test vault is a set of **hard links** to `dist/` (`main.js`, `styles.css`, `manifest.json`), so a rebuild is picked up without copying anything. `data.json` is deliberately **NOT** linked — it is the vault's own file, because it holds that vault's plugin settings and writing to it must not change the repository's `dist/` copy. To set this up:
+  ```powershell
+  $v = "<vault>\.obsidian\plugins\daily-time-log"; $d = "<repo>\dist"
+  New-Item -ItemType Directory -Path $v -Force
+  "main.js","styles.css","manifest.json" | ForEach-Object { New-Item -ItemType HardLink -Path "$v\$_" -Target "$d\$_" -Force }
+  Copy-Item "$d\data.json" "$v\data.json" -Force
+  ```
+  Do **not** point the plugin folder at `dist/` with a directory junction — that shares `data.json` too, and the vault's settings would then overwrite the repository's copy.
 - **Safety First**: Do not overwrite or modify existing user data structure without validating the parser behavior first. Unit tests in `src/parser.ts` are a prerequisite before making modifications to parsing logic.
 - **Required parser test coverage** (in addition to existing regex/line-index cases):
   - Files with a leading YAML frontmatter block (frontmatter must be stripped, not mistaken for the Event heading).

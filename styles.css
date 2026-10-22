@@ -654,6 +654,20 @@
 
 /* Settings tab — category management rows (design.md §14) */
 
+/* A per-category row in Settings carries no name and no description — the
+   text input IS the category's name.
+
+   Obsidian lays a setting out as
+     .setting-item > .setting-item-info + .setting-item-control
+   and gives `.setting-item-info` `flex: 1 1 auto`, so an EMPTY info
+   element would still claim half the row and push the control off to
+   the side. These rules hide the info block and let the control take the
+   full width, which is what makes the row read as a single line of
+   [name input] [colour] [delete].
+
+   The row is tagged with `dwl-category-setting-item` through the public
+   `Setting.setClass()` API (SettingTab.ts), so this styling is tied to
+   that one call site rather than to any class Obsidian owns. */
 .dwl-category-setting-item.dwl-category-setting-item {
 	display: flex;
 	justify-content: flex-start;
