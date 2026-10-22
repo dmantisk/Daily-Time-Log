@@ -2,7 +2,11 @@
 
 An Obsidian plugin that visualizes time-tracking Events directly from your daily markdown notes — no YAML frontmatter required.
 
-A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by SeongChan Hong, maintained by [dmantisk](https://github.com/dmantisk), used under the MIT License.
+A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by SeongChan Hong, used under the MIT License.
+
+> [!NOTE]
+> Vibe coded!
+> Almost all commits since the fork are written by AI
 
 ## Features
 
