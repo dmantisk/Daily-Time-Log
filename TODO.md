@@ -37,6 +37,194 @@ been fixed and is recorded in the section below._
 
 ---
 
+## Findings — native Obsidian component review (v0.7.0)
+
+A review of every custom element in the plugin, looking for controls
+Obsidian already ships. The rule this established is now in
+`.agents/AGENTS.md` §3: **prefer Obsidian's own components over
+hand-rolled markup**, so a control follows the active theme, the user's
+accessibility settings and Obsidian's own keyboard handling.
+
+Every API claim below was checked against Obsidian 1.13.4's own `app.js`
+and `app.css`, not against the type docs alone.
+
+| # | Severity | Finding | Native replacement | Since |
+|---|----------|---------|-------------------|-------|
+| 1 | High | The delete-confirmation modal hand-rolls its button row | `ConfirmationModal` | 1.13.0 |
+| 2 | High | The add/edit entry modal hand-rolls its inputs, textarea and buttons | `TextComponent`, `TextAreaComponent`, `ButtonComponent` | 0.9.7 |
+| 3 | Medium | The dashboard's window selector is a hand-rolled `<select>` | `DropdownComponent` | 0.9.7 |
+| 4 | Medium | The dashboard's refresh button is a hand-rolled `<button>` | `ButtonComponent` (`setIcon`/`setTooltip`) | 0.9.7 / 1.1.0 |
+| 5 | Medium | Both views reach into `containerEl.children[1]` for their content area | `ItemView.contentEl` | 0.9.7 |
+| 6 | Low | The Settings section description is a hand-rolled `<p>` | `Setting.setDesc` | 0.9.7 |
+| 7 | Low | Dead CSS classes left over from the removed components | — (remove) | — |
+
+### 1. The delete-confirmation modal hand-rolls its button row — **High**
+
+- **Status:** done — v0.7.0 (`src/modals/ConfirmDeleteModal.ts`)
+- **Location:** `src/modals/ConfirmDeleteModal.ts`
+- **Severity:** High — the button row, the cancel/confirm pairing and
+  the destructive styling were all re-implemented in plugin CSS, so they
+  drifted from the app's own dialogs
+
+**What happens**
+
+`ConfirmDeleteModal` extended `Modal` and built its own `<button>` row
+and its own "Cancel"/"OK" pairing, then styled them to look like an
+Obsidian dialog. The result was a second, drifting copy of a dialog
+Obsidian already provides — and the copy did not carry the app's own
+behaviour, such as the destructive button's focus handling.
+
+**Fix**
+
+Extend Obsidian's `ConfirmationModal` (1.13.0) and let it own the button
+row: `addButton()` for the confirm action, `addCancelButton()` for the
+dismissal.
+
+### 2. The add/edit entry modal hand-rolls its inputs, textarea and buttons — **High**
+
+- **Status:** done — v0.7.0 (`src/modals/TimelineModal.ts`)
+- **Location:** `src/modals/TimelineModal.ts`
+- **Severity:** High — the modal was the only React tree left in the
+  plugin, and its controls were plain `<input>`/`<textarea>`/`<button>`
+  elements re-styled by the plugin
+
+**What happens**
+
+The modal was a React tree built on bare HTML controls, with the plugin
+re-implementing Obsidian's input styling in `styles.css`
+(`padding`, `border`, `border-radius`, `background`, `outline`,
+`box-shadow`, plus a hand-written `:focus` ring). The controls therefore
+ignored the active theme's own focus treatment, and the button row was a
+hand-rolled `.dwl-modal-buttons` flexbox rather than Obsidian's
+`.modal-button-container`.
+
+**Fix**
+
+Rebuild the modal imperatively (it no longer needs React) from
+`TextComponent`, `TextAreaComponent` and `ButtonComponent`, with the
+actions in a `.modal-button-container` row. The delete button uses
+`mod-destructive` plus `mod-secondary` — the class Obsidian's own rule
+pushes to the far left of the row, which is where the delete action
+belongs.
+
+Two details that the rewrite had to keep:
+
+- **The raw-markup rule.** The textarea shows the HTML-stripped form of
+  the description, but the original markup is restored on save when the
+  field was never touched — so a plugin like Editing Toolbar does not
+  lose its `<font>`/`<b>` tags just from opening and re-saving an entry.
+- **The validation order.** Time format → blank-line capping →
+  continuation-line rejection, unchanged.
+
+`src/modals/TimelineModal.test.ts` now guards all of it, and
+`src/modals/ConfirmDeleteModal.test.ts` guards the confirmation dialog.
+
+### 3. The dashboard's window selector is a hand-rolled `<select>` — **Medium**
+
+- **Status:** done — v0.7.0 (`src/DashboardView.ts`)
+- **Location:** `src/DashboardView.ts`
+- **Severity:** Medium
+
+**What happens**
+
+The selector was a plain `<select>` with the plugin's own border,
+background, radius, padding and focus handling, which is a second copy
+of the app's own dropdown styling.
+
+**Fix**
+
+Use `DropdownComponent`. The component creates the `<select>` itself and
+sizes it to its widest option, so the plugin's CSS for it is gone.
+
+### 4. The dashboard's refresh button is a hand-rolled `<button>` — **Medium**
+
+- **Status:** done — v0.7.0 (`src/DashboardView.ts`)
+- **Location:** `src/DashboardView.ts`
+- **Severity:** Medium
+
+**What happens**
+
+The button carried the plugin's own background, border, radius, padding
+and hover transition — again a copy of a control Obsidian renders
+everywhere.
+
+**Fix**
+
+Use `ButtonComponent` with `setIcon("refresh-cw")` and the `btnRefresh`
+label as its tooltip, matching the icon-only buttons in Obsidian's own
+toolbars.
+
+### 5. Both views reach into `containerEl.children[1]` — **Medium**
+
+- **Status:** done — v0.7.0 (`src/view.tsx`, `src/DashboardView.ts`)
+- **Location:** `src/view.tsx`, `src/DashboardView.ts`
+- **Severity:** Medium
+
+**What happens**
+
+Both views rendered into `this.containerEl.children[1]`, which depends
+on the internal shape of Obsidian's view DOM. The second child is not a
+contract — it is an accident of the current layout.
+
+**Fix**
+
+Render into `this.contentEl`, which `ItemView` exposes for exactly this
+purpose.
+
+### 6. The Settings section description is a hand-rolled `<p>` — **Low**
+
+- **Status:** done — v0.7.0 (`src/SettingTab.ts`)
+- **Location:** `src/SettingTab.ts`
+- **Severity:** Low
+
+**What happens**
+
+The "Category Management" section description was a hand-styled
+`<p class="dwl-category-section-desc">` sitting between two `Setting`
+rows, styled to approximate `.setting-item-description`.
+
+**Fix**
+
+Put it on the heading row with `setDesc(...)`, so Obsidian renders it in
+its own `.setting-item-description` element.
+
+### 7. Dead CSS classes left over from the removed components — **Low**
+
+- **Status:** done — v0.7.0 (`styles.css`)
+- **Location:** `styles.css`
+- **Severity:** Low — dead code only
+
+**What happens**
+
+`dwl-dashboard-subtitle`, `dwl-section`, `dwl-section-header` and
+`dwl-section-title` were referenced by nothing; `dwl-modal-buttons`,
+`dwl-modal-btn-delete`, `dwl-dashboard-select` and
+`dwl-dashboard-refresh-btn` were referenced only by the components that
+the findings above replaced. The modal inputs also carried a full set
+of hand-rolled colours and a hand-written `:focus` ring that duplicated
+the app's own.
+
+**Fix**
+
+Delete them, keeping only the sizing Obsidian does not provide: a
+`width` for the inputs and the textarea (neither carries one in the
+app's stylesheet) and a `height` for the textarea.
+
+### 8. The dashboard's multi-segment progress bar — **rejected**
+
+- **Status:** rejected — `ProgressBarComponent` is not a drop-in
+- **Location:** `src/DashboardView.ts`
+- **Severity:** n/a
+
+`ProgressBarComponent` (1.4.4) shows a single 0–100 value. The
+dashboard's "Time Distribution by Category" bar is a **stack of
+segments**, one per category, each with its own colour and share of
+the total — a single-value component cannot express that, and wrapping
+it per category would produce a row of separate bars rather than one
+stacked bar. The hand-rolled markup stays.
+
+---
+
 ## Findings (all resolved)
 
 ### 0. CRLF line endings silently destroy Events — **High**

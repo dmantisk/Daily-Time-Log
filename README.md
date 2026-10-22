@@ -108,6 +108,18 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.7.0 (2026-10-30)
+
+A release that replaces the plugin's hand-rolled controls with Obsidian's own, so they match the app and your theme instead of approximating it.
+
+- **Made the add/edit entry dialog use Obsidian's own controls.** The time fields, the description box and the buttons at the bottom of the dialog are now the app's own, so they pick up your theme's colours, its focus ring and its spacing. The **Delete** button keeps its place at the far left of the row, and the **Save** button keeps its accent colour. Nothing about how an entry is validated has changed: the same time format is required, the same blank-line rule applies, and a description whose second line would be read as a separate Event is still refused.
+- **Made the delete confirmation use Obsidian's own dialog.** The confirmation is now the app's standard confirm dialog, so its buttons, their order and the destructive styling are the same as everywhere else in Obsidian.
+- **Made the dashboard's window dropdown Obsidian's own.** The "Last 7 Days / Last 30 Days / Last 90 Days / All Time" selector now looks and behaves like the dropdowns in the rest of the app.
+- **Made the dashboard's refresh button an icon button.** The **Refresh** button is now the app's usual small refresh icon, with the word "Refresh" as its tooltip on hover.
+- **Removed the plugin's own copies of Obsidian's control styling.** The hand-written borders, backgrounds, hover effects and focus rings that imitated Obsidian's inputs and buttons are gone, along with a set of CSS classes that no longer referred to anything.
+
+> **Requires Obsidian 1.13.0 or later.**
+
 ### 0.6.0 (2026-10-22)
 
 A readability release for the sidebar grid: what each bar says, and how a bar too narrow for its label handles it.

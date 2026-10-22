@@ -17,30 +17,6 @@
 	overflow: hidden;
 }
 
-/* Event section — design.md §6 */
-
-.dwl-section {
-	display: flex;
-	flex-direction: column;
-	gap: 0.4rem;
-}
-
-.dwl-section-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
-
-.dwl-section-title {
-	font-size: var(--font-ui-smaller);
-	font-weight: 600;
-	color: var(--text-muted);
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	display: flex;
-	align-items: center;
-}
-
 /* View header and hour labels use Obsidian's secondary surface color. */
 
 .dwl-view-header {
@@ -300,42 +276,21 @@
 	gap: 0.4rem;
 }
 
+/* The time inputs and the textarea are Obsidian's own components, so their
+   colours, borders and focus ring come from the theme. Only the sizing the
+   app does not provide is set here: neither `input[type="text"]` nor
+   `textarea` carries a width in Obsidian's stylesheet, and a textarea
+   carries no height either. */
 .dwl-modal-time-input.dwl-modal-time-input,
 .dwl-modal-textarea.dwl-modal-textarea {
 	width: 100%;
 	min-width: 0;
-	padding: 0.3rem 0.5rem;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	font-size: var(--font-ui-small);
-	font-family: inherit;
-	color: var(--text-normal);
-	background: var(--background-primary);
-	outline: none;
-	box-shadow: none;
-}
-
-.dwl-modal-time-input.dwl-modal-time-input:focus,
-.dwl-modal-textarea.dwl-modal-textarea:focus {
-	border-color: var(--interactive-accent);
-	box-shadow: none;
 }
 
 .dwl-modal-textarea {
 	resize: vertical;
 	min-height: 48px;
 	max-height: 90px;
-}
-
-.dwl-modal-buttons {
-	display: flex;
-	justify-content: flex-end;
-	gap: 0.4rem;
-	margin-top: 0.5rem;
-}
-
-.dwl-modal-btn-delete {
-	margin-right: auto;
 }
 
 /* Dashboard uses Obsidian's theme variables directly. */
@@ -388,47 +343,18 @@
 	color: var(--text-normal);
 }
 
-.dwl-dashboard-subtitle {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	margin-top: 0.2rem;
-}
-
 .dwl-dashboard-controls {
 	display: flex;
 	align-items: center;
 	gap: 0.6rem;
 }
 
-.dwl-dashboard-select {
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	padding: 0.35rem 0.6rem;
-	font-size: var(--font-ui-small);
+/* The window selector is Obsidian's own `DropdownComponent`. It sizes
+   itself to its widest option and carries the app's own appearance, so
+   the only thing left to set here is the pointer cursor — the app's
+   stylesheet does not give a `<select>` one. */
+.dwl-dashboard-controls select {
 	cursor: pointer;
-	outline: none;
-}
-
-.dwl-dashboard-select:hover {
-	background: var(--background-modifier-hover);
-}
-
-.dwl-dashboard-refresh-btn {
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	padding: 0.35rem 0.8rem;
-	cursor: pointer;
-	font-size: var(--font-ui-small);
-	font-weight: 500;
-	transition: background 0.15s ease;
-}
-
-.dwl-dashboard-refresh-btn:hover {
-	background: var(--background-modifier-hover);
 }
 
 .dwl-dashboard-empty {
@@ -748,13 +674,6 @@
 
 .dwl-category-setting-item .setting-item-control input[type="text"] {
 	max-width: 160px;
-}
-
-.dwl-category-section-desc {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	margin-top: 0;
-	margin-bottom: 12px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

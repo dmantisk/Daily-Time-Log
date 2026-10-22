@@ -31,7 +31,7 @@ export class DailyWorkLogView extends ItemView {
 	}
 
 	onOpen(): Promise<void> {
-		const container = this.containerEl.children[1] as HTMLElement;
+		const container = this.contentEl;
 		container.empty();
 		container.addClass("dwl-view-container");
 		this.root = createRoot(container);

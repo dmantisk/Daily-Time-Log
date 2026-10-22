@@ -65,19 +65,14 @@ async function renderDashboard(noteContent = "# Event\n- 09:00 - 10:00 [Work] a\
 	const view = new DashboardView({} as never, createPluginStub());
 	(view as unknown as { app: unknown }).app = createAppStub(noteContent);
 
-	const container = document.createElement("div");
-	container.children[1] = document.createElement("div");
-	// `container.children[1]` is the view's content area; Obsidian's DOM
-	// helpers expect a real child element to render into.
-	const viewEl = document.createElement("div");
-	viewEl.appendChild(document.createElement("div"));
-	viewEl.appendChild(document.createElement("div"));
-	(view as unknown as { containerEl: HTMLElement }).containerEl = viewEl;
+	// The view renders into `ItemView.contentEl` — Obsidian's own content
+	// area for a view — rather than a hand-picked child of `containerEl`.
+	const contentEl = document.createElement("div");
+	(view as unknown as { contentEl: HTMLElement }).contentEl = contentEl;
 
 	await view.refresh();
-	return viewEl.children[1] as HTMLElement;
+	return contentEl;
 }
-
 /** The tooltip text attached to an element, or undefined. */
 function tooltipOf(el: Element | null | undefined): string | undefined {
 	return el?.getAttribute("aria-label") ?? undefined;
@@ -145,5 +140,21 @@ describe("DashboardView metric tooltips", () => {
 			el.textContent?.startsWith("Event Time")
 		);
 		expect(eventTime?.textContent).toContain("30");
+	});
+
+	it("builds its controls from Obsidian's own components", () => {
+		// The window selector is a `DropdownComponent`, so the `<select>`
+		// it creates carries Obsidian's own `dropdown` class — not one
+		// of the plugin's.
+		const select = container.querySelector("select") as HTMLSelectElement;
+		expect(select.classList.contains("dropdown")).toBe(true);
+		expect(container.querySelector(".dwl-dashboard-select")).toBeNull();
+
+		// The refresh control is a `ButtonComponent` with the app's own
+		// icon-button class and the "Refresh" label as its tooltip.
+		const refresh = container.querySelector(".clickable-icon") as HTMLButtonElement;
+		expect(refresh).not.toBeNull();
+		expect(refresh.getAttribute("aria-label")).toBe("Refresh");
+		expect(container.querySelector(".dwl-dashboard-refresh-btn")).toBeNull();
 	});
 });

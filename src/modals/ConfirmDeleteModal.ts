@@ -1,11 +1,15 @@
-import { App, Modal } from "obsidian";
+import { App, ConfirmationModal } from "obsidian";
 
 /**
  * Generic confirm/cancel dialog reused for Event deletion (design.md §4.3).
  * Callers own the copy (title/message/button
  * labels) so this stays purely presentational and i18n-agnostic.
+ *
+ * Built on Obsidian's native `ConfirmationModal` (1.13.0) so the button
+ * row, the cancel/confirm pairing and the destructive styling are the
+ * app's own rather than hand-rolled markup.
  */
-export class ConfirmDeleteModal extends Modal {
+export class ConfirmDeleteModal extends ConfirmationModal {
 	constructor(
 		app: App,
 		private readonly titleText: string,
@@ -18,21 +22,28 @@ export class ConfirmDeleteModal extends Modal {
 	}
 
 	onOpen(): void {
-		const { contentEl } = this;
-		this.titleEl.setText(this.titleText);
+		this.setTitle(this.titleText);
+		this.contentEl.createEl("p", { cls: "dwl-modal-text", text: this.message });
 
-		contentEl.createEl("p", { cls: "dwl-modal-text", text: this.message });
-
-		const buttonRow = contentEl.createDiv({ cls: "dwl-modal-buttons" });
-
-		const cancelBtn = buttonRow.createEl("button", { text: this.cancelText });
-		cancelBtn.addEventListener("click", () => this.close());
-
-		const okBtn = buttonRow.createEl("button", { cls: "mod-cta", text: this.okText });
-		okBtn.addEventListener("click", () => {
-			this.onConfirm();
-			this.close();
+		// The confirm button closes the modal by itself once the handler
+		// resolves, so the handler only has to do the work.
+		//
+		// `setDestructive().setCta()` is the app's own "destructive primary
+		// action" — the same combination Obsidian uses for its own delete
+		// confirmation. (`setWarning()` does exactly this, but it is
+		// deprecated in favour of the explicit pair.)
+		this.addButton((btn) => {
+			btn
+				.setButtonText(this.okText)
+				.setDestructive()
+				.setCta()
+				.setInitialFocus()
+				.onClick(() => {
+					this.onConfirm();
+				});
 		});
+
+		this.addCancelButton(this.cancelText);
 	}
 
 	onClose(): void {

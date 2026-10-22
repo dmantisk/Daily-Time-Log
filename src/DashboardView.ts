@@ -1,4 +1,4 @@
-import { ItemView, setTooltip, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
+import { ButtonComponent, DropdownComponent, ItemView, setTooltip, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import type DailyWorkLogPlugin from "./main";
 import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./parser";
 import { formatDateBasename, isInDailyNoteFolder, parseDateFromBasename } from "./dailyNote";
@@ -54,7 +54,7 @@ export class DashboardView extends ItemView {
 		const token = ++this.refreshToken;
 		const language = this.plugin.getUiLanguage();
 
-		const container = this.containerEl.children[1] as HTMLElement;
+		const container = this.contentEl;
 		container.empty();
 		container.addClass("dwl-dashboard-view");
 
@@ -152,9 +152,9 @@ export class DashboardView extends ItemView {
 
 		const controls = header.createDiv({ cls: "dwl-dashboard-controls" });
 
-
-		// Window selector dropdown
-		const select = controls.createEl("select", { cls: "dwl-dashboard-select" });
+		// Window selector dropdown — Obsidian's own `DropdownComponent`, so
+		// the control follows the active theme instead of the plugin's
+		// hand-rolled imitation of a `<select>`.
 		const options: Array<{ label: string; value: number }> = [
 			{ label: t("window7Days", language), value: 7 },
 			{ label: t("window30Days", language), value: 30 },
@@ -162,23 +162,23 @@ export class DashboardView extends ItemView {
 			{ label: t("windowAllTime", language), value: 0 },
 		];
 
+		const dropdown = new DropdownComponent(controls);
 		for (const opt of options) {
-			const el = select.createEl("option", { text: opt.label, value: String(opt.value) });
-			if (opt.value === this.selectedWindowDays) el.selected = true;
+			dropdown.addOption(String(opt.value), opt.label);
 		}
-
-		select.addEventListener("change", (e) => {
-			const target = e.target as HTMLSelectElement;
-			this.selectedWindowDays = Number(target.value);
+		dropdown.setValue(String(this.selectedWindowDays));
+		dropdown.onChange((value) => {
+			this.selectedWindowDays = Number(value);
 			void this.refresh();
 		});
 
-		// Refresh Button
-		const refreshBtn = controls.createEl("button", {
-			cls: "dwl-dashboard-refresh-btn",
-			text: t("btnRefresh", language),
-		});
-		refreshBtn.addEventListener("click", () => void this.refresh());
+		// Refresh button — an icon-only native button, matching the icon
+		// buttons Obsidian puts in its own toolbars.
+		new ButtonComponent(controls)
+			.setIcon("refresh-cw")
+			.setClass("clickable-icon")
+			.setTooltip(t("btnRefresh", language))
+			.onClick(() => void this.refresh());
 	}
 
 	private renderKpiGrid(container: HTMLElement, stats: DashboardStats, language: MarkerLanguage): void {

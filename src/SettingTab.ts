@@ -162,11 +162,10 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 	}
 
 	private renderCategorySection(containerEl: HTMLElement, lang: MarkerLanguage): void {
-		new Setting(containerEl).setName(t("settingCategoriesSection", lang)).setHeading();
-		containerEl.createEl("p", {
-			text: t("settingCategoriesDesc", lang),
-			cls: "dwl-category-section-desc",
-		});
+		// The section description rides on the heading row itself —
+		// Obsidian's own `Setting` renders `.setting-item-description`
+		// under the heading name, so no hand-rolled `<p>` is needed.
+		new Setting(containerEl).setName(t("settingCategoriesSection", lang)).setDesc(t("settingCategoriesDesc", lang)).setHeading();
 
 		new Setting(containerEl)
 			.setName(t("settingResetCategoriesName", lang))

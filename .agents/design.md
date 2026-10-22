@@ -70,13 +70,16 @@ These are the default category colors stored in `settings.ts`, not theme colors 
 
 ### 2.2 Buttons and controls
 
-Use Obsidian's native styles for modal actions: `.mod-cta` for save/confirm and `.mod-warning` for destructive actions. Other controls should inherit Obsidian's active-theme styling.
+Use Obsidian's native styles for modal actions: `.mod-cta` for save/confirm and `.mod-destructive` for destructive actions. Other controls should inherit Obsidian's active-theme styling.
+
+> [!NOTE]
+> *(updated 2026-10-30)* Prefer Obsidian's own **components** over hand-rolled markup wherever one exists — `ButtonComponent`, `TextComponent`, `TextAreaComponent`, `DropdownComponent`, `Setting`, `ConfirmationModal`. A destructive primary action uses `.setDestructive().setCta()`, the combination Obsidian's own delete confirmation uses. A button that must sit apart from the rest of a row uses the `mod-secondary` class (Obsidian's own rule pushes it to the far left of a `.modal-button-container`); note that `ButtonComponent` has no `setSecondary()` method — that belongs to `ConfirmationButton` — so the class is set with `.setClass("mod-secondary")`.
 
 ---
 
 ## 3. Modal Styling Principles
 
-The modal shell, title, background, overlay and default buttons use Obsidian `Modal`'s native styling. Additional CSS is used only for content layout and input sizing, and references Obsidian CSS variables for colors. The save/delete actions use Obsidian's `.mod-cta` / `.mod-warning` styles respectively.
+The modal shell, title, background, overlay and default buttons use Obsidian `Modal`'s native styling. Additional CSS is used only for content layout and input sizing, and references Obsidian CSS variables for colors. The save/delete actions use Obsidian's `.mod-cta` / `.mod-destructive` styles respectively.
 
 ---
 
@@ -125,13 +128,16 @@ The modal shell, title, background, overlay and default buttons use Obsidian `Mo
 
 | Field | Type | Format | Validation |
 |---|---|---|---|
-| Start time | `<input type="text">` | `HH:mm` | `TIME_VALUE_REGEX` from `parser.ts` (checks the hour 00-23 and minute 00-59 ranges — the digit-count-only `/\d{1,2}:\d{2}/` was discarded because it also let `99:99` through) |
-| End time | `<input type="text">` | `HH:mm` | Same as above |
-| Content | `<textarea>` | Free text | None (empty values allowed) |
+| Start time | `TextComponent` | `HH:mm` | `TIME_VALUE_REGEX` from `parser.ts` (checks the hour 00-23 and minute 00-59 ranges — the digit-count-only `/\d{1,2}:\d{2}/` was discarded because it also let `99:99` through) |
+| End time | `TextComponent` | `HH:mm` | Same as above, plus `24:00` (the end of the day) |
+| Content | `TextAreaComponent` | Free text | None (empty values allowed) |
 
 - **Delete button**: hidden when adding, shown when editing
 - **Save result**: appended to the end of the Event block's own content in the `- HH:mm - HH:mm content` format (right below the configured Event heading, before any subheading)
 - **Edit**: that line is replaced in place (after re-validating the line index)
+
+> [!NOTE]
+> *(updated 2026-10-30)* The modal is **imperative, not React** — it is built directly in `Modal.contentEl` from Obsidian's own `TextComponent`, `TextAreaComponent` and `ButtonComponent`. The button row is Obsidian's own `.modal-button-container`; the save button is `.mod-cta` and the delete button is `.mod-destructive` + `.mod-secondary` (the last is what pushes it to the far left of the row). Only the **category chips** remain hand-rolled, because Obsidian has no native control for a set of coloured category labels. The validation rules are unchanged from the React version, and `src/modals/TimelineModal.test.ts` guards them.
 
 ### 4.3 Confirmation Popup
 
@@ -146,7 +152,7 @@ The modal shell, title, background, overlay and default buttons use Obsidian `Mo
 ```
 
 - Width: `280px`
-- Inherits the Obsidian `Modal` class → newly created under `src/modals/`
+- Built on Obsidian's native `ConfirmationModal` (1.13.0) → newly created under `src/modals/`
 - `ConfirmDeleteModal` is **generic and presentational** — the caller owns the title, message and button labels, so the same modal serves every destructive action. The copy comes from the i18n table (`confirmDeleteEvent`).
 
 ---
@@ -201,9 +207,6 @@ All classes use the `dwl-*` prefix. The table below lists the classes that are *
 
 | Class | Description |
 |---|---|
-| `dwl-section` | Shared section wrapper |
-| `dwl-section-header` | Section header row (title) |
-| `dwl-section-title` | Section header title text |
 | `dwl-view-container` / `dwl-view` | The sidebar view and its inner container |
 | `dwl-view-header` / `dwl-view-date-title` | Sidebar header and the date it shows |
 | `dwl-missing-heading-banner` | "No Event section" banner (AGENTS.md §1.7) |
@@ -213,11 +216,13 @@ All classes use the `dwl-*` prefix. The table below lists the classes that are *
 | `dwl-modal-body` / `dwl-modal-text` | Modal shell and its body text |
 | `dwl-modal-field` / `dwl-modal-label` | A labelled modal field |
 | `dwl-modal-time-row` / `dwl-modal-time-input` / `dwl-modal-textarea` | The time inputs and the description textarea |
-| `dwl-modal-buttons` / `dwl-modal-btn-delete` | Modal button row, and the delete button |
-| `dwl-category-setting-item` / `dwl-category-section-desc` | Per-category row and the section description in Settings |
+| `dwl-category-setting-item` | Per-category row in Settings |
 
 > [!NOTE]
-> The `dwl-todo-*` and `dwl-timeline-item` classes this table used to list no longer exist — the To-Do feature was removed in 0.5.0 (§1.3) and the timeline list was replaced by the grid. The modal's save/cancel buttons use Obsidian's own `.mod-cta` styling rather than project classes (§2.2).
+> The `dwl-todo-*` and `dwl-timeline-item` classes this table used to list no longer exist — the To-Do feature was removed in 0.5.0 (§1.3) and the timeline list was replaced by the grid.
+
+> [!NOTE]
+> *(updated 2026-10-30)* The modal's controls are **Obsidian's own components** — `TextComponent`, `TextAreaComponent` and `ButtonComponent` in a `.modal-button-container` row — so their colours, borders and focus ring come from the theme, not from `styles.css`. The plugin only sets the sizing Obsidian does not provide (a width for the inputs and the textarea, a height for the textarea). The `dwl-section*`, `dwl-dashboard-subtitle`, `dwl-dashboard-select`, `dwl-dashboard-refresh-btn`, `dwl-modal-buttons`, `dwl-modal-btn-delete` and `dwl-category-section-desc` classes were removed with that change; the delete button is now a native `.mod-secondary` button, and the Settings section description rides on the heading row's own `.setting-item-description`.
 
 ### 6.1 Grid/category classes *(shipped — ported from DayTime Tracker)*
 
@@ -355,7 +360,7 @@ Category colors are user data stored in settings, and are applied to the timelin
 
 ```
 ┌─────────────────────────────────────────┐
-│ Work Insights        [window ▾] [Refresh]│
+│ Work Insights        [window ▾]    [↻]  │
 ├─────────────────────────────────────────┤
 │ [Total Notes]  [Event Time (30)]  [Top Category] │
 ├─────────────────────────────────────────┤
@@ -368,6 +373,9 @@ Category colors are user data stored in settings, and are applied to the timelin
 - KPI cards: `dwl-dashboard-kpi-card` (label + badge, value, and a footer sub-line)
 - Clicking a recent-note list item opens that note via `workspace.openLinkText(file.path, "", false)`
 - If there is not a single daily note, only the empty-state message (`dashboardEmptyVault`) is shown. If every daily note is dated in the **future**, a notice (`dashboardFutureOnlyNotice`) explains that those days have not happened yet
+
+> [!NOTE]
+> *(updated 2026-10-30)* The window selector is Obsidian's own `DropdownComponent` and the refresh control is an icon-only `ButtonComponent` (`refresh-cw`, with the `btnRefresh` label as its tooltip) — both follow the theme rather than the plugin's hand-rolled imitation. The view renders into `ItemView.contentEl`, not into a hand-picked child of `containerEl`.
 
 ### 11.2.1 Metric tooltips
 
