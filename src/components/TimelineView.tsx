@@ -14,7 +14,6 @@ import type DailyWorkLogPlugin from "../main";
 import {
 	appendLineToBlock,
 	hasEventBlock,
-	minutesToTime,
 	parseDailyNote,
 	removeLineRangeAt,
 	replaceLineRangeAt,
@@ -27,6 +26,13 @@ import {
 } from "../parser";
 import { getTextColorForBackground } from "./colorUtils";
 import { findCategoryByDisplayName } from "../settings";
+import {
+	buildTimelineLine,
+	cellIndexForHour,
+	CELLS_PER_HOUR,
+	dragRangeToTimes,
+	timelineBlockGeometry,
+} from "../timelineLogic";
 
 export interface TimelineViewProps {
 	plugin: DailyWorkLogPlugin;
@@ -39,16 +45,8 @@ export interface TimelineViewProps {
 	refreshToken: number;
 }
 
-const CELL_MINUTES = 10;
-const CELLS_PER_HOUR = 60 / CELL_MINUTES;
-
 function errorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
-}
-
-function buildTimelineLine(values: EventEntryValues): string {
-	const categoryPart = values.category ? `[${values.category}] ` : "";
-	return `- ${values.start} - ${values.end} ${categoryPart}${values.description}`.trimEnd();
 }
 
 function formatDateHeader(date: Date, language: MarkerLanguage, dateFormat: string): string {
@@ -243,7 +241,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 
 		const startIdx = Math.min(dragStart, dragEnd);
 		const endIdx = Math.max(dragStart, dragEnd);
-		openEventModal(null, minutesToTime(startIdx * CELL_MINUTES), minutesToTime((endIdx + 1) * CELL_MINUTES));
+		const range = dragRangeToTimes(startIdx, endIdx);
+		openEventModal(null, range.start, range.end);
 
 		setDragStart(null);
 		setDragEnd(null);
@@ -380,7 +379,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 								</div>
 								<div className="dwl-grid-cells">
 									{Array.from({ length: CELLS_PER_HOUR }).map((_, colIndex) => {
-										const cellIndex = hour * CELLS_PER_HOUR + colIndex;
+										const cellIndex = cellIndexForHour(hour, colIndex);
 										let isSelecting = false;
 										if (isDragging && dragStart !== null && dragEnd !== null) {
 											const min = Math.min(dragStart, dragEnd);
@@ -405,12 +404,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 									})}
 
 									{overlapping.map(({ item, segment, key }) => {
-										const overlapStart = Math.max(segment.start, hourStartMin);
-										const overlapEnd = Math.min(segment.end, hourEndMin);
-										const startCol = (overlapStart - hourStartMin) / CELL_MINUTES;
-										const endCol = (overlapEnd - hourStartMin) / CELL_MINUTES;
-										const leftPercent = (startCol / CELLS_PER_HOUR) * 100;
-										const widthPercent = ((endCol - startCol) / CELLS_PER_HOUR) * 100;
+										const geometry = timelineBlockGeometry(
+											segment.start,
+											segment.end,
+											hourStartMin,
+											hourEndMin
+										);
+										if (!geometry) return null;
 
 										const catObj = findCategoryByDisplayName(categories, item.category);
 										const bgColor = catObj?.color ?? "var(--background-modifier-hover)";
@@ -422,7 +422,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 										   bar anchors its label to the left edge instead, and the label
 										   is allowed to run past the bar's right edge so it still reads
 										   from its first letter. */
-										const isShort = overlapEnd - overlapStart <= CELL_MINUTES;
+										const { leftPercent, widthPercent, isShort } = geometry;
 
 										return (
 											<div
