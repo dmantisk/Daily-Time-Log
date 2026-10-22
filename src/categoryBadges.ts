@@ -98,6 +98,22 @@ function makeBadgeSpan(token: string, categories: CustomCategory[]): HTMLSpanEle
 	return span;
 }
 
+interface ReadingViewSectionHeadings {
+	lineStart: number;
+	lineEnd: number;
+	before: HeadingInfo[];
+	local: HeadingInfo[];
+	after: HeadingInfo[];
+}
+
+// A post-processor receives one rendered Markdown section, not the whole note.
+const readingViewSectionHeadings = new Map<
+	string,
+	Map<number, ReadingViewSectionHeadings>
+>();
+const MAX_READING_VIEW_DOCUMENTS = 32;
+const MAX_READING_VIEW_SECTIONS_PER_DOCUMENT = 512;
+
 // ---------------------------------------------------------------------------
 // CodeMirror WidgetType (live editor)
 // ---------------------------------------------------------------------------
@@ -144,7 +160,6 @@ export function buildCategoryBadgeEditorPlugin(
 	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
 	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
 ) {
-	const blockCache = new Map<string, { block: { start: number; end: number } | null; line: number }>();
 	const matcher = new MatchDecorator({
 		regexp: new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g"),
 		decoration: (match, view, pos) => {
@@ -153,7 +168,7 @@ export function buildCategoryBadgeEditorPlugin(
 			if (!findCategory(match[1], categories)) return null;
 			// Strict scoping: the token must sit inside the Event block, so a
 			// `[Category]` typed outside the configured heading stays plain text.
-			if (!isInsideEventBlock(view, pos, eventHeading, blockCache)) return null;
+			if (!isInsideEventBlock(view, pos, eventHeading)) return null;
 			return Decoration.replace({
 				widget: new CategoryBadgeWidget(match[1], categories),
 			});
@@ -185,24 +200,16 @@ export function buildCategoryBadgeEditorPlugin(
  * True when the character offset `pos` sits inside the configured Event
  * block of the document currently in the editor.
  *
- * The block is recomputed from the document text on every match — the
- * editor's content changes on every keystroke, so caching a block range
- * would go stale the moment the user edits a heading. The document is
- * small (a daily note), so the linear scan is cheap.
+ * The document changes as the user edits, so the block range must be derived
+ * from the current content rather than cached across editor updates.
  */
 function isInsideEventBlock(
 	view: EditorView,
 	pos: number,
-	eventHeading: EventHeadingConfig,
-	cache?: Map<string, { block: { start: number; end: number } | null; line: number }>
+	eventHeading: EventHeadingConfig
 ): boolean {
 	const text = view.state.doc.toString();
-	const cacheKey = eventHeading.text + "|" + eventHeading.level;
-	let block = cache?.get(cacheKey)?.block ?? null;
-	if (!cache || !cache.has(cacheKey)) {
-		block = findEventBlockInContent(text, eventHeading);
-		cache?.set(cacheKey, { block, line: 0 });
-	}
+	const block = findEventBlockInContent(text, eventHeading);
 	if (!block) return false;
 	const line = view.state.doc.lineAt(pos).number - 1;
 	return line >= block.start && line <= block.end;
@@ -309,17 +316,43 @@ export function processCategoryBadgesInReadingView(
 
 	const regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
 	const targets: Text[] = [];
+	const sectionInfo =
+		typeof ctx.getSectionInfo === "function" ? ctx.getSectionInfo(el) : null;
+	const sectionStates = sectionInfo
+		? getReadingViewSectionStates(ctx.sourcePath)
+		: null;
+	let headingsBefore: HeadingInfo[] = [];
+
+	if (sectionInfo && sectionStates) {
+		const current = sectionStates.get(sectionInfo.lineStart);
+		if (current) {
+			headingsBefore = current.before;
+		} else {
+			let previousLineStart = -1;
+			for (const previous of sectionStates.values()) {
+				if (
+					previous.lineEnd < sectionInfo.lineStart &&
+					previous.lineStart > previousLineStart
+				) {
+					headingsBefore = previous.after;
+					previousLineStart = previous.lineStart;
+				}
+			}
+		}
+	}
 
 	// Single document-order pass. `headings` accumulates every heading seen
 	// SO FAR, so when a text node is reached the accumulated list is exactly
 	// the set of headings that precede it — which is what the scoping rule
 	// needs to locate the Event section and its end.
-	const headings: HeadingInfo[] = [];
+	const headings = [...headingsBefore];
+	const localHeadings: HeadingInfo[] = [];
 
 	walkDocumentOrder(
 		el,
 		(heading) => {
 			headings.push(heading);
+			localHeadings.push(heading);
 		},
 		(node) => {
 			// Skip text already inside a badge span (avoid double-processing).
@@ -337,6 +370,37 @@ export function processCategoryBadgesInReadingView(
 			}
 		}
 	);
+
+	if (sectionInfo && sectionStates) {
+		const current: ReadingViewSectionHeadings = {
+			lineStart: sectionInfo.lineStart,
+			lineEnd: sectionInfo.lineEnd,
+			before: headingsBefore,
+			local: localHeadings,
+			after: headings,
+		};
+		sectionStates.set(sectionInfo.lineStart, current);
+
+		let preceding = current;
+		for (const following of Array.from(sectionStates.values())
+			.filter((section) => section.lineStart > current.lineStart)
+			.sort((left, right) => left.lineStart - right.lineStart)) {
+			following.before = preceding.after;
+			following.after = [...following.before, ...following.local];
+			preceding = following;
+		}
+
+		if (sectionStates.size > MAX_READING_VIEW_SECTIONS_PER_DOCUMENT) {
+			const oldestLine = Math.min(...sectionStates.keys());
+			sectionStates.delete(oldestLine);
+		}
+		if (readingViewSectionHeadings.size > MAX_READING_VIEW_DOCUMENTS) {
+			const oldestPath = readingViewSectionHeadings.keys().next().value;
+			if (oldestPath !== undefined) {
+				readingViewSectionHeadings.delete(oldestPath);
+			}
+		}
+	}
 
 	targets.forEach((textNode) => {
 		const text = textNode.textContent ?? "";
@@ -369,4 +433,16 @@ export function processCategoryBadgesInReadingView(
 
 		textNode.parentNode?.replaceChild(frag, textNode);
 	});
+}
+
+function getReadingViewSectionStates(
+	sourcePath: string
+): Map<number, ReadingViewSectionHeadings> {
+	let states = readingViewSectionHeadings.get(sourcePath);
+	if (!states) {
+		states = new Map();
+	}
+	readingViewSectionHeadings.delete(sourcePath);
+	readingViewSectionHeadings.set(sourcePath, states);
+	return states;
 }

@@ -21,7 +21,10 @@ import type { EventHeadingConfig } from "./parser";
 
 const CATEGORIES: CustomCategory[] = [
 	{ name: "Work", displayName: "Work", color: "#d0e1fd" },
+	{ name: "Study", displayName: "Study", color: "#ebd3f8" },
 	{ name: "Rest", displayName: "Rest", color: "#d1f2e5" },
+	{ name: "Reading", displayName: "Reading", color: "#fdecd0" },
+	{ name: "Exercise", displayName: "Exercise", color: "#e2e5e9" },
 ];
 
 const DEFAULT_CONFIG: EventHeadingConfig = { text: "Event", level: 1 };
@@ -57,6 +60,27 @@ function process(
 	);
 }
 
+function processSection(
+	el: HTMLElement,
+	docId: string,
+	lineStart: number,
+	lineEnd: number,
+	sourcePath = "Log/2026/10/22.md"
+): void {
+	processCategoryBadgesInReadingView(
+		el,
+		{
+			sourcePath,
+			docId,
+			getSectionInfo: () => ({ text: "", lineStart, lineEnd }),
+		} as never,
+		CATEGORIES,
+		"Log",
+		DEFAULT_CONFIG,
+		"YYYY/MM/DD"
+	);
+}
+
 /** Number of rendered badge spans in `el`. */
 function badgeCount(el: HTMLElement): number {
 	return el.querySelectorAll("span.dwl-cat-badge").length;
@@ -68,6 +92,67 @@ function badgeTexts(el: HTMLElement): string[] {
 }
 
 describe("processCategoryBadgesInReadingView — Event section scoping", () => {
+	it("keeps Event scope across Obsidian preview sections", () => {
+		const firstSection = renderEl(
+			"<h1>Event</h1><ul>" +
+				"<li>09:00 - 12:20 [Study]</li>" +
+				"<li>12:20 - 14:30 [Exercise]</li>" +
+				"</ul>"
+		);
+		const nextSection = renderEl(
+			"<ul>" +
+				"<li>14:30 - 17:40 [Work]</li>" +
+				"<li>17:40 - 19:50 [Study]</li>" +
+				"</ul>"
+		);
+
+		processSection(firstSection, "sectioned-note", 6, 8);
+		processSection(nextSection, "rerendered-note", 9, 10);
+
+		expect(badgeTexts(firstSection)).toEqual(["Study", "Exercise"]);
+		expect(badgeTexts(nextSection)).toEqual(["Work", "Study"]);
+
+		const editedSection = renderEl(
+			"<ul>" +
+				"<li>14:30 - 17:40 [Work]</li>" +
+				"<li>17:40 - 19:50 [Work]</li>" +
+				"</ul>"
+		);
+		processSection(editedSection, "edited-note-render", 9, 10);
+
+		expect(badgeTexts(editedSection)).toEqual(["Work", "Work"]);
+	});
+
+	it("stops rendering after a same-level heading in a later section", () => {
+		const eventSection = renderEl(
+			"<h1>Event</h1><p>09:00 - 12:20 [Study]</p>"
+		);
+		const otherSection = renderEl(
+			"<h1>Other</h1><p>12:20 - 14:30 [Exercise]</p>"
+		);
+
+		processSection(eventSection, "scoped-section-note", 6, 7, "Log/2026/10/23.md");
+		processSection(otherSection, "scoped-section-note", 8, 9, "Log/2026/10/23.md");
+
+		expect(badgeTexts(eventSection)).toEqual(["Study"]);
+		expect(badgeCount(otherSection)).toBe(0);
+	});
+
+	it("renders every category badge in the configured daily-note list", () => {
+		const el = renderEl(
+			"<h1>Event</h1><ul>" +
+				"<li>09:00 - 12:20 [Study]</li>" +
+				"<li>12:20 - 14:30 [Exercise]</li>" +
+				"<li>14:30 - 17:40 [Work]</li>" +
+				"<li>17:40 - 19:50 [Study]</li>" +
+				"</ul>"
+		);
+		process(el, DEFAULT_CONFIG, "Log/2026/10/22.md", "Log", "YYYY/MM/DD");
+
+		expect(badgeCount(el)).toBe(4);
+		expect(badgeTexts(el)).toEqual(["Study", "Exercise", "Work", "Study"]);
+	});
+
 	it("renders a badge for a category token under the configured heading", () => {
 		const el = renderEl(
 			"<h1>Event</h1><p>- 9:00 - 10:00 [Work] Team meeting</p>"

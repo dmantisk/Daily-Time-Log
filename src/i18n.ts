@@ -94,6 +94,7 @@ export type UIStringKey =
 	| "periodSummaryTitle"
 	| "activityNotesTitle"
 	| "todayDateSuffix"
+	| "noticeLoadTimelineFailed"
 	| "noticeSaveEventFailed"
 	| "noticeUpdateEventFailed"
 	| "noticeDeleteEventFailed"
@@ -114,6 +115,7 @@ export type UIStringKey =
 export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 	en: {
 		todayDateSuffix: "(Today)",
+		noticeLoadTimelineFailed: "Failed to load timeline",
 		noticeSaveEventFailed: "Failed to save event",
 		noticeUpdateEventFailed: "Failed to update event",
 		noticeDeleteEventFailed: "Failed to delete event",
@@ -218,6 +220,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 
 	ko: {
 		todayDateSuffix: "(오늘)",
+		noticeLoadTimelineFailed: "타임라인 불러오기 실패",
 		noticeSaveEventFailed: "일과 저장 실패",
 		noticeUpdateEventFailed: "일과 수정 실패",
 		noticeDeleteEventFailed: "일과 삭제 실패",

@@ -172,7 +172,7 @@ export class TimelineModal extends Modal {
 	/**
 	 * Validates the entry and hands it to the caller.
 	 *
-	 * Every rule here matches the one the React version applied, in the
+	 * Every rule here preserves the existing sidebar behavior, in the
 	 * same order, so the two behave identically:
 	 *
 	 * 1. The end time may be `24:00` (midnight at the end of the day) —

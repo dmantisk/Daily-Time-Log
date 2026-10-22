@@ -28,6 +28,7 @@
 .dwl-nav-btn {
 	padding: 4px 8px;
 	font-size: 0.85em;
+	min-height: 44px;
 	cursor: pointer;
 	display: inline-flex;
 	align-items: center;
@@ -107,7 +108,6 @@
 .dwl-grid {
 	display: flex;
 	flex-direction: column;
-	touch-action: none;
 	border-top: 1px solid var(--background-modifier-border);
 	border-left: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
@@ -117,18 +117,18 @@
 	   fractional border widths to whole pixels — which would make the
 	   horizontal and vertical gaps disagree. Every gap in the grid is
 	   exactly this wide on both axes. */
-	--dwl-block-gap: 5px;
+	--dwl-block-gap: 0.3125rem;
 }
 
 .dwl-grid-row {
 	display: flex;
-	height: 36px;
+	height: 2.25rem;
 	align-items: stretch;
 }
 
 .dwl-grid-hour-label {
-	width: 44px;
-	min-width: 44px;
+	width: 2.75rem;
+	min-width: 2.75rem;
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
@@ -180,10 +180,10 @@
 	position: absolute;
 	/* The vertical gutter is split evenly above and below the bar, and the
 	   horizontal gutter is applied by the inline left/width offsets in
-	   TimelineView.tsx. Both read the same --dwl-block-gap, so the grid's
+	   TimelineController. Both read the same --dwl-block-gap, so the grid's
 	   horizontal and vertical gaps always match. */
-	height: calc(100% - var(--dwl-block-gap, 5px));
-	top: calc(var(--dwl-block-gap, 5px) / 2);
+	height: calc(100% - var(--dwl-block-gap, 0.3125rem));
+	top: calc(var(--dwl-block-gap, 0.3125rem) / 2);
 	border-radius: 4px;
 	display: flex;
 	align-items: center;
@@ -232,13 +232,23 @@
    that the name is cut short, and an ellipsis at this size reads as part
    of the category's name rather than as a truncation mark. */
 .dwl-grid-block.is-short .dwl-grid-block-label {
-	max-width: var(--dwl-short-label-width, 120px);
+	max-width: var(--dwl-short-label-width, 7.5rem);
 	text-overflow: clip;
 }
 
 .dwl-grid-block:hover {
 	transform: scaleY(1.04);
 	filter: brightness(1.1);
+}
+
+@media (pointer: coarse) {
+	.dwl-grid-row {
+		height: 3.0625rem;
+	}
+
+	.dwl-grid-block {
+		min-height: 2.75rem;
+	}
 }
 
 /* Modal layout; colors and control styles come from Obsidian's active theme. */

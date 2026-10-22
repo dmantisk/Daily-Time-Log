@@ -18,6 +18,7 @@
  */
 
 import moment from "moment";
+import { StateField } from "@codemirror/state";
 
 export { moment };
 
@@ -30,11 +31,12 @@ export { moment };
  * to learn the active file path. The real implementation is a CodeMirror
  * `StateField`; tests only need a stable identity to key off.
  */
-export const editorInfoField = { name: "editorInfoField" } as unknown as {
-	name: string;
-	init: (value: unknown) => unknown;
-	of: (value: unknown) => unknown;
-};
+export const editorInfoField = StateField.define<{
+	file: { path: string } | null;
+}>({
+	create: () => ({ file: null }),
+	update: (value) => value,
+});
 
 // ---------------------------------------------------------------------------
 // Locale
