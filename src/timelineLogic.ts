@@ -2,6 +2,16 @@ import { minutesToTime } from "./parser";
 
 export const CELL_MINUTES = 10;
 export const CELLS_PER_HOUR = 60 / CELL_MINUTES;
+export const LONG_PRESS_DURATION_MS = 250;
+export const TOUCH_MOVE_CANCEL_THRESHOLD = 8;
+
+export interface PendingTouchPress {
+	pointerId: number;
+	cellIndex: number;
+	startX: number;
+	startY: number;
+	timerId: number;
+}
 
 export interface TimelineEventLineValues {
 	start: string;
@@ -27,6 +37,24 @@ export function dragRangeToTimes(startIndex: number, endIndex: number): { start:
 		start: minutesToTime(firstCell * CELL_MINUTES),
 		end: minutesToTime((lastCell + 1) * CELL_MINUTES),
 	};
+}
+
+export function touchTapRangeToTimes(cellIndex: number, endHour: number): { start: string; end: string } {
+	const endCellIndex = endHour * CELLS_PER_HOUR;
+	const cellCount = Math.max(0, endCellIndex);
+	const startIndex = Math.min(Math.max(0, cellIndex), Math.max(0, cellCount - 3));
+	const endIndex = Math.min(startIndex + 2, cellCount - 1);
+	return dragRangeToTimes(startIndex, endIndex);
+}
+
+export function shouldCancelPendingTouchPress(
+	pending: PendingTouchPress,
+	pointerId: number,
+	clientX: number,
+	clientY: number
+): boolean {
+	if (pending.pointerId !== pointerId) return false;
+	return Math.hypot(clientX - pending.startX, clientY - pending.startY) > TOUCH_MOVE_CANCEL_THRESHOLD;
 }
 
 export function buildTimelineLine(values: TimelineEventLineValues): string {

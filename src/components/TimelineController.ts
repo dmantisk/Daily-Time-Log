@@ -29,12 +29,18 @@ import {
 	cellIndexForHour,
 	CELLS_PER_HOUR,
 	dragRangeToTimes,
+	LONG_PRESS_DURATION_MS,
+	shouldCancelPendingTouchPress,
 	timelineBlockGeometry,
+	touchTapRangeToTimes,
+	type PendingTouchPress,
 } from "../timelineLogic";
 
 interface DragRange {
 	start: number;
 	end: number;
+	pointerId: number;
+	pointerType: string;
 }
 
 interface TimelineState {
@@ -42,6 +48,7 @@ interface TimelineState {
 	timeline: TimelineItem[];
 	hasEventSection: boolean;
 	drag: DragRange | null;
+	pendingTouch: PendingTouchPress | null;
 }
 
 function errorMessage(error: unknown): string {
@@ -62,25 +69,43 @@ export class TimelineController {
 		timeline: [],
 		hasEventSection: true,
 		drag: null,
+		pendingTouch: null,
 	};
 	private readonly gridCells: HTMLElement[] = [];
+	private gridElement: HTMLElement | null = null;
+	private readonly activeWindow: Window;
 	private loadToken = 0;
 	private destroyed = false;
 
-	private readonly onWindowPointerUp = (): void => {
-		this.finishDrag();
+	private readonly onWindowPointerMove = (event: PointerEvent): void => {
+		this.handlePointerMove(event);
+	};
+
+	private readonly onWindowPointerUp = (event: PointerEvent): void => {
+		this.handlePointerUp(event);
+	};
+
+	private readonly onWindowPointerCancel = (event: PointerEvent): void => {
+		this.cancelPointer(event);
 	};
 
 	constructor(
 		private readonly plugin: DailyWorkLogPlugin,
 		private readonly container: HTMLElement
 	) {
-		window.addEventListener("pointerup", this.onWindowPointerUp);
+		const activeWindow = container.ownerDocument.defaultView;
+		if (!activeWindow) throw new Error("TimelineController requires a document with an active window");
+		this.activeWindow = activeWindow;
+		activeWindow.addEventListener("pointermove", this.onWindowPointerMove);
+		activeWindow.addEventListener("pointerup", this.onWindowPointerUp);
+		activeWindow.addEventListener("pointercancel", this.onWindowPointerCancel);
 		this.refresh();
 	}
 
 	refresh(): void {
 		if (this.destroyed) return;
+		this.clearPendingTouchPress();
+		this.clearDrag();
 		this.state.drag = null;
 		this.render();
 		void this.syncFromActiveFile();
@@ -90,9 +115,14 @@ export class TimelineController {
 		if (this.destroyed) return;
 		this.destroyed = true;
 		this.loadToken++;
-		window.removeEventListener("pointerup", this.onWindowPointerUp);
+		this.clearPendingTouchPress();
+		this.clearDrag();
+		this.activeWindow.removeEventListener("pointermove", this.onWindowPointerMove);
+		this.activeWindow.removeEventListener("pointerup", this.onWindowPointerUp);
+		this.activeWindow.removeEventListener("pointercancel", this.onWindowPointerCancel);
 		this.container.empty();
 		this.gridCells.length = 0;
+		this.gridElement = null;
 	}
 
 	private async syncFromActiveFile(): Promise<void> {
@@ -222,17 +252,111 @@ export class TimelineController {
 		).open();
 	}
 
-	private startDrag(cellIndex: number): void {
+	private startPointer(cellIndex: number, event: PointerEvent): void {
+		if (!event.isPrimary) return;
+		const target = event.currentTarget as HTMLElement;
+		if (target.hasPointerCapture?.(event.pointerId)) {
+			target.releasePointerCapture(event.pointerId);
+		}
+
+		this.clearPendingTouchPress();
+		this.clearDrag();
+
+		if (event.pointerType === "touch") {
+			const pending: PendingTouchPress = {
+				pointerId: event.pointerId,
+				cellIndex,
+				startX: event.clientX,
+				startY: event.clientY,
+				timerId: 0,
+			};
+			pending.timerId = this.activeWindow.setTimeout(() => {
+				if (this.state.pendingTouch?.pointerId !== pending.pointerId) return;
+				this.state.pendingTouch = null;
+				this.state.drag = {
+					start: cellIndex,
+					end: cellIndex,
+					pointerId: event.pointerId,
+					pointerType: event.pointerType,
+				};
+				this.gridElement?.style.setProperty("touch-action", "none");
+				this.updateSelectionClasses(null, this.state.drag);
+				this.vibrateForTouchSelection();
+			}, LONG_PRESS_DURATION_MS);
+			this.state.pendingTouch = pending;
+			return;
+		}
+
+		this.state.drag = {
+			start: cellIndex,
+			end: cellIndex,
+			pointerId: event.pointerId,
+			pointerType: event.pointerType,
+		};
+		this.updateSelectionClasses(null, this.state.drag);
+	}
+
+	private moveDrag(cellIndex: number, pointerId: number): void {
 		const previous = this.state.drag;
-		this.state.drag = { start: cellIndex, end: cellIndex };
+		if (!previous || previous.pointerId !== pointerId) return;
+		this.state.drag = { ...previous, end: cellIndex };
 		this.updateSelectionClasses(previous, this.state.drag);
 	}
 
-	private moveDrag(cellIndex: number): void {
-		const previous = this.state.drag;
-		if (!previous) return;
-		this.state.drag = { start: previous.start, end: cellIndex };
-		this.updateSelectionClasses(previous, this.state.drag);
+	private handlePointerMove(event: PointerEvent): void {
+		if (!event.isPrimary) return;
+
+		const pending = this.state.pendingTouch;
+		if (pending) {
+			if (
+				shouldCancelPendingTouchPress(
+					pending,
+					event.pointerId,
+					event.clientX,
+					event.clientY
+				)
+			) {
+				this.clearPendingTouchPress();
+			}
+			return;
+		}
+
+		const drag = this.state.drag;
+		if (!drag || drag.pointerId !== event.pointerId) return;
+		const target = this.container.ownerDocument.elementFromPoint(event.clientX, event.clientY);
+		const cell = target?.closest<HTMLElement>(".dwl-grid-cell");
+		const cellIndex = cell?.dataset.cellIndex;
+		if (!cell || !this.container.contains(cell) || cellIndex === undefined) return;
+		this.moveDrag(Number(cellIndex), event.pointerId);
+	}
+
+	private handlePointerUp(event: PointerEvent): void {
+		if (!event.isPrimary) return;
+
+		const pending = this.state.pendingTouch;
+		if (pending?.pointerId === event.pointerId) {
+			this.clearPendingTouchPress();
+			const { endHour } = this.plugin.settings;
+			const range = touchTapRangeToTimes(pending.cellIndex, endHour);
+			this.openEventModal(null, range.start, range.end);
+			return;
+		}
+
+		if (this.state.drag?.pointerId === event.pointerId) this.finishDrag();
+	}
+
+	private handlePointerLeave(event: PointerEvent): void {
+		if (this.state.pendingTouch?.pointerId === event.pointerId) {
+			this.clearPendingTouchPress();
+			return;
+		}
+		const drag = this.state.drag;
+		if (!drag || drag.pointerId !== event.pointerId) return;
+		if (drag.pointerType === "touch") {
+			this.clearDrag();
+			return;
+		}
+		this.finishDrag();
 	}
 
 	private finishDrag(): void {
@@ -240,15 +364,44 @@ export class TimelineController {
 		if (!drag) return;
 		this.state.drag = null;
 		this.updateSelectionClasses(drag, null);
+		this.clearTouchAction();
 		const range = dragRangeToTimes(drag.start, drag.end);
 		this.openEventModal(null, range.start, range.end);
 	}
 
-	private cancelDrag(): void {
+	private cancelPointer(event: PointerEvent): void {
+		if (!event.isPrimary) return;
+		if (this.state.pendingTouch?.pointerId === event.pointerId) {
+			this.clearPendingTouchPress();
+		}
+		if (this.state.drag?.pointerId !== event.pointerId) return;
+		this.clearDrag();
+	}
+
+	private clearPendingTouchPress(): void {
+		const pending = this.state.pendingTouch;
+		if (!pending) return;
+		this.activeWindow.clearTimeout(pending.timerId);
+		this.state.pendingTouch = null;
+	}
+
+	private clearDrag(): void {
 		const drag = this.state.drag;
 		if (!drag) return;
 		this.state.drag = null;
 		this.updateSelectionClasses(drag, null);
+		this.clearTouchAction();
+	}
+
+	private clearTouchAction(): void {
+		if (this.gridElement) this.gridElement.style.touchAction = "";
+	}
+
+	private vibrateForTouchSelection(): void {
+		const navigator = this.activeWindow.navigator;
+		if ("vibrate" in navigator && typeof navigator.vibrate === "function") {
+			navigator.vibrate(10);
+		}
 	}
 
 	private updateSelectionClasses(previous: DragRange | null, next: DragRange | null): void {
@@ -345,10 +498,14 @@ export class TimelineController {
 	private renderGrid(root: HTMLElement, language: MarkerLanguage): void {
 		const { startHour, endHour } = this.plugin.settings;
 		const wrap = root.createDiv({ cls: "dwl-grid-wrap" });
-		wrap.addEventListener("pointerleave", () => this.finishDrag());
-		wrap.addEventListener("pointercancel", () => this.cancelDrag());
 
 		const grid = wrap.createDiv({ cls: "dwl-grid" });
+		this.gridElement = grid;
+		if (this.state.drag?.pointerType === "touch") {
+			grid.style.setProperty("touch-action", "none");
+		}
+		wrap.addEventListener("pointerleave", (event) => this.handlePointerLeave(event));
+		wrap.addEventListener("pointercancel", (event) => this.cancelPointer(event));
 		for (let hour = startHour; hour < endHour; hour++) {
 			const hourStartMin = hour * 60;
 			const hourEndMin = (hour + 1) * 60;
@@ -366,17 +523,12 @@ export class TimelineController {
 				const selected = this.isSelected(cellIndex);
 				const cell = cells.createDiv({
 					cls: `dwl-grid-cell${selected ? " is-selecting" : ""}`,
+					attr: { "data-cell-index": String(cellIndex) },
 				});
 				this.gridCells[cellIndex] = cell;
-				cell.addEventListener("pointerdown", (event) => {
-					const target = event.currentTarget as HTMLElement;
-					if (target.hasPointerCapture?.(event.pointerId)) {
-						target.releasePointerCapture(event.pointerId);
-					}
-					this.startDrag(cellIndex);
-				});
-				cell.addEventListener("pointerenter", () => this.moveDrag(cellIndex));
-				cell.addEventListener("pointerup", () => this.finishDrag());
+				cell.addEventListener("pointerdown", (event) => this.startPointer(cellIndex, event));
+				cell.addEventListener("pointerenter", (event) => this.moveDrag(cellIndex, event.pointerId));
+				cell.addEventListener("pointerup", (event) => this.handlePointerUp(event));
 			}
 
 			this.renderBlocks(cells, hourStartMin, hourEndMin, language);
@@ -412,8 +564,8 @@ export class TimelineController {
 					cls: `dwl-grid-block${geometry.isShort ? " is-short" : ""}`,
 					title: `${item.start} ~ ${item.end} | ${label}${item.description ? `\n${stripHtml(item.description)}` : ""}`,
 				});
-				block.style.left = `calc(${geometry.leftPercent}% + var(--dwl-block-gap, 5px) / 2)`;
-				block.style.width = `calc(${geometry.widthPercent}% - var(--dwl-block-gap, 5px))`;
+				block.style.left = `calc(${geometry.leftPercent}% + var(--dwl-block-gap, 0.3125rem) / 2)`;
+				block.style.width = `calc(${geometry.widthPercent}% - var(--dwl-block-gap, 0.3125rem))`;
 				block.style.backgroundColor = category?.color ?? "var(--background-modifier-hover)";
 				block.style.color = category ? getTextColorForBackground(category.color) : "var(--text-normal)";
 				block.addEventListener("click", (event) => {

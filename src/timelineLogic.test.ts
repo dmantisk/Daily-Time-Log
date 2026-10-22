@@ -3,7 +3,10 @@ import {
 	buildTimelineLine,
 	cellIndexForHour,
 	dragRangeToTimes,
+	shouldCancelPendingTouchPress,
 	timelineBlockGeometry,
+	touchTapRangeToTimes,
+	type PendingTouchPress,
 } from "./timelineLogic";
 
 describe("cellIndexForHour", () => {
@@ -25,6 +28,35 @@ describe("dragRangeToTimes", () => {
 
 	it("allows the final grid cell to end at midnight", () => {
 		expect(dragRangeToTimes(143, 143)).toEqual({ start: "23:50", end: "24:00" });
+	});
+});
+
+describe("touchTapRangeToTimes", () => {
+	it("uses a 30-minute default range beginning at the tapped cell", () => {
+		expect(touchTapRangeToTimes(5, 24)).toEqual({ start: "00:50", end: "01:20" });
+	});
+
+	it("shifts the default range earlier so late-day taps still last 30 minutes", () => {
+		expect(touchTapRangeToTimes(143, 24)).toEqual({ start: "23:30", end: "24:00" });
+	});
+});
+
+describe("shouldCancelPendingTouchPress", () => {
+	const pending: PendingTouchPress = {
+		pointerId: 3,
+		cellIndex: 6,
+		startX: 10,
+		startY: 20,
+		timerId: 1,
+	};
+
+	it("keeps the press pending for the same pointer within the movement threshold", () => {
+		expect(shouldCancelPendingTouchPress(pending, 3, 16, 20)).toBe(false);
+		expect(shouldCancelPendingTouchPress(pending, 4, 100, 100)).toBe(false);
+	});
+
+	it("cancels the press when the same pointer moves beyond the threshold", () => {
+		expect(shouldCancelPendingTouchPress(pending, 3, 19, 20)).toBe(true);
 	});
 });
 

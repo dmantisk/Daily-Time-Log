@@ -1,7 +1,7 @@
 /**
  * Picks a readable text color (near-black or white) for a given category
  * background hex color, by relative luminance. Ported from DayTime Tracker's
- * TimelineView — same formula, so category chips/blocks read consistently
+ * timeline sidebar — same formula, so category chips/blocks read consistently
  * with the reference implementation this UI was ported from.
  */
 export function getTextColorForBackground(hexColor: string): string {

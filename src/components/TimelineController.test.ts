@@ -68,6 +68,10 @@ function createFile(path: string): TFile {
 	return file;
 }
 
+function pointerEvent(type: string, init: PointerEventInit = {}): PointerEvent {
+	return new PointerEvent(type, { bubbles: true, isPrimary: true, ...init });
+}
+
 function createPluginStub(
 	initialContent = DAILY_NOTE_CONTENT,
 	initialPath = "2026-10-16.md",
@@ -211,25 +215,25 @@ describe("TimelineController", () => {
 		const overnightBlocks = blocks.filter((block) => block !== shortBlock);
 		expect(rows.findIndex((row) => row.contains(overnightBlocks[0]))).toBe(0);
 		expect(rows.findIndex((row) => row.contains(overnightBlocks[1]))).toBe(23);
-		expect(shortBlock?.style.left).toMatch(/^calc\([\d.]+% \+ var\(--dwl-block-gap, 5px\) \/ 2\)$/);
-		expect(shortBlock?.style.width).toMatch(/^calc\([\d.]+% - var\(--dwl-block-gap, 5px\)\)$/);
+		expect(shortBlock?.style.left).toMatch(/^calc\([\d.]+% \+ var\(--dwl-block-gap, 0\.3125rem\) \/ 2\)$/);
+		expect(shortBlock?.style.width).toMatch(/^calc\([\d.]+% - var\(--dwl-block-gap, 0\.3125rem\)\)$/);
 	});
 
 	it("opens exactly one add modal for a drag released on a cell or outside the grid", async () => {
 		const { container } = await renderController();
 		const gridCells = cells(container);
 
-		gridCells[0].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-		gridCells[1].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
-		gridCells[2].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
-		gridCells[2].dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+		gridCells[0].dispatchEvent(pointerEvent("pointerdown"));
+		gridCells[1].dispatchEvent(pointerEvent("pointerenter"));
+		gridCells[2].dispatchEvent(pointerEvent("pointerenter"));
+		gridCells[2].dispatchEvent(pointerEvent("pointerup"));
 		expect(modalCalls).toHaveLength(1);
 		expect(modalCalls[0][4]).toBe("00:00");
 		expect(modalCalls[0][5]).toBe("00:30");
 
-		gridCells[5].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-		gridCells[7].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
-		document.body.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+		gridCells[5].dispatchEvent(pointerEvent("pointerdown"));
+		gridCells[7].dispatchEvent(pointerEvent("pointerenter"));
+		document.body.dispatchEvent(pointerEvent("pointerup"));
 		expect(modalCalls).toHaveLength(2);
 		expect(modalCalls[1][4]).toBe("00:50");
 		expect(modalCalls[1][5]).toBe("01:20");
@@ -239,15 +243,15 @@ describe("TimelineController", () => {
 		const { container } = await renderController();
 		const gridCells = cells(container);
 
-		gridCells[8].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-		gridCells[6].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
-		container.querySelector(".dwl-grid-wrap")?.dispatchEvent(new PointerEvent("pointerleave"));
+		gridCells[8].dispatchEvent(pointerEvent("pointerdown"));
+		gridCells[6].dispatchEvent(pointerEvent("pointerenter"));
+		container.querySelector(".dwl-grid-wrap")?.dispatchEvent(pointerEvent("pointerleave"));
 		expect(modalCalls).toHaveLength(1);
 		expect(modalCalls[0][4]).toBe("01:00");
 		expect(modalCalls[0][5]).toBe("01:30");
 
-		gridCells[3].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-		gridCells[4].dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+		gridCells[3].dispatchEvent(pointerEvent("pointerdown"));
+		gridCells[4].dispatchEvent(pointerEvent("pointerup"));
 		expect(modalCalls).toHaveLength(2);
 	});
 
@@ -258,13 +262,191 @@ describe("TimelineController", () => {
 		firstCell.hasPointerCapture = () => true;
 		firstCell.releasePointerCapture = releaseCapture;
 
-		firstCell.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 4 }));
+		firstCell.dispatchEvent(pointerEvent("pointerdown", { pointerId: 4 }));
 		expect(releaseCapture).toHaveBeenCalledWith(4);
-		firstCell.dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
-		container.querySelector(".dwl-grid-wrap")?.dispatchEvent(new PointerEvent("pointercancel"));
+		firstCell.dispatchEvent(pointerEvent("pointerenter", { pointerId: 4 }));
+		container.querySelector(".dwl-grid-wrap")?.dispatchEvent(pointerEvent("pointercancel", { pointerId: 4 }));
 
 		expect(firstCell.classList.contains("is-selecting")).toBe(false);
 		expect(modalCalls).toHaveLength(0);
+	});
+
+	it("opens a 30-minute add range for a touch tap before the long-press threshold", async () => {
+		const { container } = await renderController();
+		const cell = cells(container)[5];
+		const grid = container.querySelector<HTMLElement>(".dwl-grid");
+
+		cell.dispatchEvent(pointerEvent("pointerdown", { pointerId: 9, pointerType: "touch" }));
+		expect(grid?.style.touchAction).toBe("");
+		cell.dispatchEvent(pointerEvent("pointerup", { pointerId: 9, pointerType: "touch" }));
+
+		expect(modalCalls).toHaveLength(1);
+		expect(modalCalls[0][4]).toBe("00:50");
+		expect(modalCalls[0][5]).toBe("01:20");
+		expect(grid?.style.touchAction).toBe("");
+	});
+
+	it("starts touch selection after a long press and follows pointermove hit testing", async () => {
+		vi.useFakeTimers();
+		try {
+			const fixture = createPluginStub();
+			const container = document.createElement("div");
+			document.body.appendChild(container);
+			containers.push(container);
+			const controller = new TimelineController(fixture.plugin, container);
+			controllers.push(controller);
+			await Promise.resolve();
+
+			const gridCells = cells(container);
+			const grid = container.querySelector<HTMLElement>(".dwl-grid");
+			const activeWindow = container.ownerDocument.defaultView;
+			const targetCell = gridCells[3];
+			Object.defineProperty(container.ownerDocument, "elementFromPoint", {
+				configurable: true,
+				value: () => targetCell,
+			});
+
+			gridCells[0].dispatchEvent(pointerEvent("pointerdown", {
+				pointerId: 12,
+				pointerType: "touch",
+				clientX: 10,
+				clientY: 10,
+			}));
+			await vi.advanceTimersByTimeAsync(249);
+			expect(gridCells[0].classList.contains("is-selecting")).toBe(false);
+			await vi.advanceTimersByTimeAsync(1);
+			expect(gridCells[0].classList.contains("is-selecting")).toBe(true);
+			expect(grid?.style.touchAction).toBe("none");
+
+			activeWindow?.dispatchEvent(pointerEvent("pointermove", {
+				pointerId: 12,
+				pointerType: "touch",
+				clientX: 40,
+				clientY: 10,
+			}));
+			expect(gridCells.slice(0, 4).every((cell) => cell.classList.contains("is-selecting"))).toBe(true);
+			activeWindow?.dispatchEvent(pointerEvent("pointerup", {
+				pointerId: 12,
+				pointerType: "touch",
+			}));
+
+			expect(modalCalls).toHaveLength(1);
+			expect(modalCalls[0][4]).toBe("00:00");
+			expect(modalCalls[0][5]).toBe("00:40");
+			expect(grid?.style.touchAction).toBe("");
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("cancels an unarmed long press when the finger moves to scroll", async () => {
+		vi.useFakeTimers();
+		try {
+			const fixture = createPluginStub();
+			const container = document.createElement("div");
+			document.body.appendChild(container);
+			containers.push(container);
+			const controller = new TimelineController(fixture.plugin, container);
+			controllers.push(controller);
+			await Promise.resolve();
+			const cell = cells(container)[0];
+			const activeWindow = container.ownerDocument.defaultView;
+
+			cell.dispatchEvent(pointerEvent("pointerdown", {
+				pointerId: 15,
+				pointerType: "touch",
+				clientX: 10,
+				clientY: 10,
+			}));
+			activeWindow?.dispatchEvent(pointerEvent("pointermove", {
+				pointerId: 15,
+				pointerType: "touch",
+				clientX: 10,
+				clientY: 25,
+			}));
+			await vi.advanceTimersByTimeAsync(250);
+
+			expect(cell.classList.contains("is-selecting")).toBe(false);
+			expect(modalCalls).toHaveLength(0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("ignores non-primary touch pointers and resets an active touch drag on cancel", async () => {
+		vi.useFakeTimers();
+		try {
+			const fixture = createPluginStub();
+			const container = document.createElement("div");
+			document.body.appendChild(container);
+			containers.push(container);
+			const controller = new TimelineController(fixture.plugin, container);
+			controllers.push(controller);
+			await Promise.resolve();
+			const gridCells = cells(container);
+			const grid = container.querySelector<HTMLElement>(".dwl-grid");
+			const activeWindow = container.ownerDocument.defaultView;
+
+			gridCells[0].dispatchEvent(pointerEvent("pointerdown", {
+				pointerId: 20,
+				pointerType: "touch",
+				isPrimary: false,
+			}));
+			gridCells[0].dispatchEvent(pointerEvent("pointerup", {
+				pointerId: 20,
+				pointerType: "touch",
+				isPrimary: false,
+			}));
+			expect(modalCalls).toHaveLength(0);
+
+			gridCells[1].dispatchEvent(pointerEvent("pointerdown", {
+				pointerId: 21,
+				pointerType: "touch",
+			}));
+			await vi.advanceTimersByTimeAsync(250);
+			expect(grid?.style.touchAction).toBe("none");
+			activeWindow?.dispatchEvent(pointerEvent("pointercancel", {
+				pointerId: 21,
+				pointerType: "touch",
+			}));
+
+			expect(gridCells[1].classList.contains("is-selecting")).toBe(false);
+			expect(grid?.style.touchAction).toBe("");
+			expect(modalCalls).toHaveLength(0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("clears an active touch selection on pointerleave without opening a modal", async () => {
+		vi.useFakeTimers();
+		try {
+			const fixture = createPluginStub();
+			const container = document.createElement("div");
+			document.body.appendChild(container);
+			containers.push(container);
+			const controller = new TimelineController(fixture.plugin, container);
+			controllers.push(controller);
+			await Promise.resolve();
+			const cell = cells(container)[0];
+			const grid = container.querySelector<HTMLElement>(".dwl-grid");
+
+			cell.dispatchEvent(pointerEvent("pointerdown", {
+				pointerId: 27,
+				pointerType: "touch",
+			}));
+			await vi.advanceTimersByTimeAsync(250);
+			container.querySelector(".dwl-grid-wrap")?.dispatchEvent(pointerEvent("pointerleave", {
+				pointerId: 27,
+				pointerType: "touch",
+			}));
+
+			expect(cell.classList.contains("is-selecting")).toBe(false);
+			expect(grid?.style.touchAction).toBe("");
+			expect(modalCalls).toHaveLength(0);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("updates selection classes without rebuilding the grid", async () => {
@@ -272,8 +454,8 @@ describe("TimelineController", () => {
 		const grid = container.querySelector(".dwl-grid");
 		const initialCells = cells(container);
 
-		initialCells[0].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-		initialCells[2].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
+		initialCells[0].dispatchEvent(pointerEvent("pointerdown"));
+		initialCells[2].dispatchEvent(pointerEvent("pointerenter"));
 
 		expect(container.querySelector(".dwl-grid")).toBe(grid);
 		expect(cells(container)[0]).toBe(initialCells[0]);
@@ -284,8 +466,8 @@ describe("TimelineController", () => {
 	it("writes a new event and reloads the active note", async () => {
 		const { container, fixture } = await renderController(createPluginStub("# Event\n"));
 		const gridCells = cells(container);
-		gridCells[0].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-		gridCells[1].dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+		gridCells[0].dispatchEvent(pointerEvent("pointerdown"));
+		gridCells[1].dispatchEvent(pointerEvent("pointerup"));
 		const save = modalCalls[0][6] as (values: EventEntryValues) => void;
 
 		save({ start: "00:00", end: "00:20", category: "Work", description: "Created" });
@@ -300,6 +482,8 @@ describe("TimelineController", () => {
 		const { container } = await renderController(fixture);
 		const block = container.querySelector<HTMLElement>(".dwl-grid-block");
 		expect(block).not.toBeNull();
+		block?.dispatchEvent(pointerEvent("pointerdown", { pointerId: 25, pointerType: "touch" }));
+		block?.dispatchEvent(pointerEvent("pointerup", { pointerId: 25, pointerType: "touch" }));
 		block?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 		const update = modalCalls[0][6] as (values: EventEntryValues) => void;
 
@@ -361,9 +545,9 @@ describe("TimelineController", () => {
 		expect(container.querySelector(".dwl-grid-block")?.getAttribute("title")).toContain("New");
 		expect(container.textContent).not.toContain("Old");
 
-		cells(container)[0].dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+		cells(container)[0].dispatchEvent(pointerEvent("pointerdown"));
 		controller.destroy();
-		document.body.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+		document.body.dispatchEvent(pointerEvent("pointerup"));
 		expect(container.childElementCount).toBe(0);
 		expect(modalCalls).toHaveLength(0);
 	});

@@ -4,7 +4,7 @@
  * The Add/Edit Timeline Entry modal.
  *
  * The modal is built from Obsidian's own components, so what matters here
- * is that the *rules* survived the move off React:
+ * is that the *rules* survived the DOM rewrite:
  *
  * - the time format is still validated, and the end time still accepts
  *   `24:00` while the start time does not;
