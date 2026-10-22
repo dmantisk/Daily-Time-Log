@@ -108,6 +108,14 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.6.0 (2026-10-22)
+
+A readability release for the sidebar grid: what each bar says, and how a bar too narrow for its label handles it.
+
+- **Made each grid bar show the category name only.** A bar used to read `Work (09:00-10:00)`, but the bar's position and width on the grid already say that — the name was the only part that needed spelling out. The time range was also what pushed the name out of view, because a centred label that is too long gets clipped at *both* ends, which cuts the middle out of the word: `Exercise` could read as `xercis`. The bar now shows the category name alone, the name is truncated at its right edge in the usual way, and the time range stays where it already was — in the bar's tooltip, which also shows the Event's description.
+- **Fixed a narrow bar showing the middle of the category name.** A bar at most one 10-minute cell wide cannot fit the name, and centring the text in it left only the middle of the word on screen — `Read` could read as `ea`. Such a bar is now recognised as a short one: its label is anchored to the bar's left edge and is allowed to run past the right edge, so the name reads from its first letter instead of from its middle.
+- **Removed the trailing ellipsis from a short bar's label.** The bar is already too narrow for the name, so it is obvious that the name is cut short — and at that size an ellipsis reads as part of the category's name rather than as a truncation mark. The cut is now clean. A longer bar keeps the ellipsis, since there it is the normal "this does not fit" signal.
+
 ### 0.5.5 (2026-10-21)
 
 A batch of correctness fixes found in a full review of the plugin — one of them could delete a line from your note.
