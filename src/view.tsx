@@ -1,7 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import * as React from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { TimelineView } from "./components/TimelineView";
+import { TimelineController } from "./components/TimelineController";
 import { t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 
@@ -9,9 +7,7 @@ export const VIEW_TYPE_DAILY_WORK_LOG = "daily-work-log-view";
 
 export class DailyWorkLogView extends ItemView {
 	private readonly plugin: DailyWorkLogPlugin;
-	private root: Root | null = null;
-	/** Bumped on every refresh() call and passed down as a prop — see TimelineView's refreshToken doc. */
-	private refreshToken = 0;
+	private controller: TimelineController | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: DailyWorkLogPlugin) {
 		super(leaf);
@@ -34,32 +30,17 @@ export class DailyWorkLogView extends ItemView {
 		const container = this.contentEl;
 		container.empty();
 		container.addClass("dwl-view-container");
-		this.root = createRoot(container);
-		this.paint();
+		this.controller = new TimelineController(this.plugin, container);
 		return Promise.resolve();
 	}
 
 	refresh(): void {
-		this.refreshToken++;
-		this.paint();
-	}
-
-	/** Renders the React tree. Safe to call repeatedly — React reconciles, it doesn't remount. */
-	private paint(): void {
-		if (!this.root) return;
-
-		this.root.render(
-			<React.StrictMode>
-				<TimelineView plugin={this.plugin} refreshToken={this.refreshToken} />
-			</React.StrictMode>
-		);
+		this.controller?.refresh();
 	}
 
 	onClose(): Promise<void> {
-		if (this.root) {
-			this.root.unmount();
-			this.root = null;
-		}
+		this.controller?.destroy();
+		this.controller = null;
 		return Promise.resolve();
 	}
 }
