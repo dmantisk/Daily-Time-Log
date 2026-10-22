@@ -237,6 +237,43 @@ describe("TimelineView — grid rendering", () => {
 		expect(rendered[0].getAttribute("title")).toContain("09:00");
 	});
 
+	it("marks a bar of one 10-minute cell or less as short", async () => {
+		// A bar that is at most one cell wide cannot fit the category name.
+		// Such a bar is marked so the CSS can anchor its label to the left
+		// edge — centring it would leave only the middle of the word
+		// visible.
+		await renderView("# Event\n- 09:00 - 09:10 [Work] Short\n");
+
+		const rendered = blocks();
+		expect(rendered).toHaveLength(1);
+		expect(rendered[0].classList.contains("is-short")).toBe(true);
+	});
+
+	it("does NOT mark a longer bar as short", async () => {
+		// A bar wider than a single cell has room for its label, so it stays
+		// centred as before.
+		await renderView("# Event\n- 09:00 - 10:00 [Work] Long\n");
+
+		const rendered = blocks();
+		expect(rendered).toHaveLength(1);
+		expect(rendered[0].classList.contains("is-short")).toBe(false);
+	});
+
+	it("renders the category name inside a dedicated label element", async () => {
+		// The label sits in its own box so it can be truncated cleanly.
+		// A flex container centres an over-long text node and clips BOTH
+		// ends, which cuts the middle out of the word — so the text must be
+		// inside an element the CSS can ellipsise on its own.
+		await renderView("# Event\n- 09:00 - 09:10 [Work] Short\n");
+
+		const rendered = blocks();
+		expect(rendered).toHaveLength(1);
+
+		const label = rendered[0].querySelector(".dwl-grid-block-label");
+		expect(label).not.toBeNull();
+		expect(label?.textContent).toBe("Work");
+	});
+
 	it("renders an overnight Event as a bar in the evening AND in the morning", async () => {
 		// An Event crossing midnight occupies two in-day segments. The
 		// dashboard already counted its full duration, but the grid used

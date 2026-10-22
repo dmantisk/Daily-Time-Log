@@ -331,11 +331,18 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 										const bgColor = catObj?.color ?? "var(--background-modifier-hover)";
 										const textColor = catObj ? getTextColorForBackground(catObj.color) : "var(--text-normal)";
 										const label = item.category ?? t("uncategorized", language);
+										/* A bar at most one 10-minute cell wide cannot fit the category
+										   name. Centring the text would cut it in the MIDDLE — the
+										   visible slice would be the middle of the word — so a short
+										   bar anchors its label to the left edge instead, and the label
+										   is allowed to run past the bar's right edge so it still reads
+										   from its first letter. */
+										const isShort = overlapEnd - overlapStart <= CELL_MINUTES;
 
 										return (
 											<div
 												key={key}
-												className="dwl-grid-block"
+												className={`dwl-grid-block${isShort ? " is-short" : ""}`}
 												style={{
 										/* The gutter between neighbouring bars is applied here, as
 										   geometry rather than as a border: Chrome floors fractional
@@ -356,8 +363,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 											>
 												{/* The bar shows the category name only — the time range is
 								    already conveyed by the block's position and width on
-								    the grid, and it stays available in the tooltip. */}
-												{label}
+								    the grid, and it stays available in the tooltip.
+
+								    The label sits in its own box so it can be truncated
+								    cleanly: a flex container centres an over-long text
+								    node and clips BOTH ends, which cuts the middle out
+								    of the word. */}
+												<span className="dwl-grid-block-label">{label}</span>
 											</div>
 										);
 									})}

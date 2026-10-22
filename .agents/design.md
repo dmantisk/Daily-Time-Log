@@ -231,7 +231,14 @@ DayTime Tracker's `timeline-*` classes were ported with the **`dwl-` prefix** to
 | `dwl-grid-hour-label` / `dwl-grid-hour-num` / `dwl-grid-hour-ampm` | The hour label and its number/AM-PM parts |
 | `dwl-grid-cells` | The cells of one hour row |
 | `dwl-grid-cell` | A single 10-minute cell; `.is-selecting` marks it during a drag |
-| `dwl-grid-block` | A rendered Event block on the grid |
+| `dwl-grid-block` | A rendered Event block on the grid; `.is-short` marks a bar of at most one 10-minute cell |
+| `dwl-grid-block-label` | The category name inside a block, in its own box so it can be truncated cleanly |
+
+**Block label.** The block shows the **category name only** — the time range is already conveyed by the block's position and width on the grid, and it stays available in the block's tooltip. The name sits in a `dwl-grid-block-label` element rather than as a bare text node: a flex container centres an over-long text node and clips **both** ends, which cuts the middle out of the word.
+
+**Short blocks.** A bar at most one 10-minute cell wide (`overlapEnd - overlapStart <= CELL_MINUTES`) cannot fit the category name. Such a bar is marked `is-short` and its label is anchored to the bar's **left** edge (`justify-content: flex-start`) instead of being centred — centring it would leave only the middle of the word visible. The short bar's `overflow` is `visible`, so the label may run past the bar's right edge and still read from its first letter; the label itself is then truncated at a fixed width (`--dwl-short-label-width`) instead of by the bar.
+
+**The short bar's cut is clean — no trailing ellipsis** (`text-overflow: clip`). The bar itself already signals that the name is cut short, and an ellipsis at that size reads as part of the category's name rather than as a truncation mark. A **longer** bar keeps the ellipsis: it is a box of its own, so the ellipsis is the normal "this does not fit" signal.
 
 **Grid gutter.** The gap between neighbouring Event blocks is set by the `--dwl-block-gap` custom property on `.dwl-grid` (default `5px`). It is applied as **geometry**, not as borders: the vertical gutter splits the gap above and below each block (`height: calc(100% - var(--dwl-block-gap))`, `top: calc(var(--dwl-block-gap) / 2)`), and the horizontal gutter insets each block by half a gap on either side (the inline `left`/`width` `calc()` offsets in `TimelineView.tsx`). Both axes read the same property, so the horizontal and vertical gutters always match. Borders are deliberately avoided here, because Chrome floors fractional border widths to whole pixels and the two axes would drift apart.
 

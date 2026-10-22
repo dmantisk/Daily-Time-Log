@@ -213,6 +213,37 @@
 	background-clip: border-box;
 }
 
+/* The label lives in its own box so the truncation is clean. A flex
+   container centres an over-long text node and clips BOTH ends, which cuts
+   the middle out of the word; here the label is a block that fills the bar
+   and ellipsises at its right edge instead. */
+.dwl-grid-block-label {
+	display: block;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* A bar at most one 10-minute cell wide cannot fit the category name.
+   Centring it would leave only the middle of the word visible, so the
+   label is anchored to the bar's LEFT edge and is allowed to run past the
+   bar's right edge, so it still reads from its first letter. */
+.dwl-grid-block.is-short {
+	justify-content: flex-start;
+	overflow: visible;
+}
+
+/* On a short bar the label is not clipped by the bar, so it needs its own
+   truncation: it is limited to a fixed width instead. The cut is a clean
+   one — no trailing ellipsis — because the bar itself already signals
+   that the name is cut short, and an ellipsis at this size reads as part
+   of the category's name rather than as a truncation mark. */
+.dwl-grid-block.is-short .dwl-grid-block-label {
+	max-width: var(--dwl-short-label-width, 120px);
+	text-overflow: clip;
+}
+
 .dwl-grid-block:hover {
 	transform: scaleY(1.04);
 	filter: brightness(1.1);
