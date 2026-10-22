@@ -108,6 +108,15 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.5.5 (2026-10-21)
+
+A batch of correctness fixes found in a full review of the plugin — one of them could delete a line from your note.
+
+- **Fixed a note saved with Windows line endings showing no Events at all.** A file whose lines end in `\r\n` was split on `\n` alone, so every Event line kept a trailing `\r` that made it fail to match — the note parsed as having no Events, and the dashboard reported zero minutes for a day you had recorded hours in. Notes are now read the same way whether they use Windows or Unix line endings, and editing one line in such a note no longer leaves the file with mixed line endings.
+- **Fixed a fenced code block inside the Event section hiding every Event after it.** A `#` line inside a ``` block was read as a real heading, which ended the Event section — so a single code block in the middle of your Events made everything below it disappear, with no error. A fenced block is now a boundary, exactly as it is when the note is rendered: a `#` inside it is code rather than a heading, an Event-shaped line inside it stays plain text, and the block itself is no longer swallowed into the Event above it.
+- **Fixed an indented to-do being deleted by the next edit of the Event above it.** `  - [ ] nested task` was read as detail belonging to the Event above it rather than as a to-do, so editing or deleting that Event removed the to-do from your note as well. An indented to-do is now recognised as a to-do at any indentation, and it survives any edit or delete of the Event above it.
+- **Fixed a mistyped time inflating the dashboard.** The time on an Event line was never range-checked, so a typo like `99:99` counted as 91.6 hours of recorded time in a single line. The line still parses and still shows in the sidebar — only the number it contributes is now bounded to a single day.
+
 ### 0.5.4 (2026-10-21)
 
 A cosmetic release: the category name and the note badges both read more like the text around them.

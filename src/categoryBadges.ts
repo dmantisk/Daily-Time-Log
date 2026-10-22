@@ -233,10 +233,20 @@ function walkDocumentOrder(
 
 	let current: Node | null;
 	while ((current = walker.nextNode())) {
+		// A node inside a <pre>/<code> element is CODE, not note content:
+		// the Markdown renderer renders a fenced block as <pre><code>, so a
+		// `#` line inside a fence never becomes a heading element, and an
+		// event-shaped line inside a fence never becomes a paragraph the
+		// badge rule should pick up. The parser treats a fence as a
+		// boundary too (AGENTS.md 1.3), so skipping these keeps the two
+		// sides in agreement.
+		if (isInsideCodeElement(current)) continue;
+
 		if (current.nodeType === Node.TEXT_NODE) {
 			onText(current as Text);
 			continue;
 		}
+
 		const level = headingLevelOfElement(current);
 		if (level !== null) {
 			// The DOM already holds the RENDERED heading text, so only
@@ -248,6 +258,22 @@ function walkDocumentOrder(
 			});
 		}
 	}
+}
+
+/**
+ * True when `node` is inside a `<pre>` or `<code>` element — i.e. it is
+ * part of a rendered code block rather than ordinary note content.
+ */
+function isInsideCodeElement(node: Node): boolean {
+	let current: Node | null = node;
+	while (current) {
+		if (current.nodeType === Node.ELEMENT_NODE) {
+			const tag = (current as Element).tagName.toUpperCase();
+			if (tag === "PRE" || tag === "CODE") return true;
+		}
+		current = current.parentNode;
+	}
+	return false;
 }
 
 /**

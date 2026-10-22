@@ -346,4 +346,17 @@ describe("computeDashboardStats", () => {
 		);
 		expect(stats.recentEventMinutes).toBe(0);
 	});
+
+	it("does not let an out-of-range time inflate the totals", () => {
+		// TIME_RANGE_REGEX is shape-only, so a typo like "99:99" still
+		// parses as an Event line. It must not report more than a day.
+		const today = new Date(2026, 6, 14);
+		const parsed: ParsedDailyNote = {
+			timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "99:99", category: "Work", description: "typo" }],
+		};
+		const stats = computeDashboardStats([today], [{ date: today, parsed }], today);
+
+		expect(stats.recentEventMinutes).toBe(900);
+		expect(stats.recentEventMinutes).toBeLessThanOrEqual(24 * 60);
+	});
 });

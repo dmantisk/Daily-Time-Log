@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { computeDashboardStats } from "./dashboardCollector";
 import {
 	appendLineToBlock,
 	DEFAULT_EVENT_HEADING,
@@ -45,6 +46,53 @@ describe("stripFrontmatter", () => {
 
 	it("recognizes delimiters in CRLF files", () => {
 		expect(stripFrontmatter("---\r\ntags: [work]\r\n---\r\n# Event").bodyStart).toBe(3);
+	});
+});
+
+describe("CRLF line endings", () => {
+	const CRLF_NOTE = "# Event\r\n- 09:00 - 10:00 [Admin] A\r\n- 10:00 - 11:00 [Admin] B\r\n";
+	const LF_NOTE = "# Event\n- 09:00 - 10:00 [Admin] A\n- 10:00 - 11:00 [Admin] B\n";
+
+	it("parses every event in a CRLF note", () => {
+		// TIME_RANGE_REGEX ends in `(.*)$`, and JS `.` does not match `\r` —
+		// without normalization a CRLF note parses as having NO events.
+		expect(parseDailyNote(CRLF_NOTE).timeline).toHaveLength(2);
+	});
+
+	it("parses a CRLF note to exactly the same events as the LF note", () => {
+		expect(parseDailyNote(CRLF_NOTE).timeline).toEqual(parseDailyNote(LF_NOTE).timeline);
+	});
+
+	it("reports the same dashboard minutes for a CRLF note as for the LF note", () => {
+		const date = new Date(2026, 6, 14);
+		const crlfStats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(CRLF_NOTE) }], date);
+		const lfStats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(LF_NOTE) }], date);
+		expect(crlfStats.recentEventMinutes).toBe(lfStats.recentEventMinutes);
+		expect(crlfStats.recentEventMinutes).toBe(120);
+	});
+
+	it("keeps a CRLF note CRLF when a line is replaced", () => {
+		const edited = replaceLineRangeAt(CRLF_NOTE, 1, 1, "- 09:00 - 10:00 [Admin] EDITED");
+		expect(edited).toBe("# Event\r\n- 09:00 - 10:00 [Admin] EDITED\r\n- 10:00 - 11:00 [Admin] B\r\n");
+		// No lone LF was introduced anywhere in the file.
+		expect(edited.replace(/\r\n/g, "")).not.toContain("\n");
+	});
+
+	it("keeps a CRLF note CRLF when a line is removed", () => {
+		const edited = removeLineRangeAt(CRLF_NOTE, 1, 1);
+		expect(edited).toBe("# Event\r\n- 10:00 - 11:00 [Admin] B\r\n");
+		expect(edited.replace(/\r\n/g, "")).not.toContain("\n");
+	});
+
+	it("keeps a CRLF note CRLF when a line is appended", () => {
+		const edited = appendLineToBlock(CRLF_NOTE, "- 11:00 - 12:00 [Admin] C");
+		expect(edited.replace(/\r\n/g, "")).not.toContain("\n");
+		expect(parseDailyNote(edited).timeline).toHaveLength(3);
+	});
+
+	it("leaves an LF note LF", () => {
+		const edited = replaceLineRangeAt(LF_NOTE, 1, 1, "- 09:00 - 10:00 [Admin] EDITED");
+		expect(edited).not.toContain("\r");
 	});
 });
 
@@ -297,6 +345,61 @@ describe("isWithinEventHeading", () => {
 	});
 });
 
+describe("fenced code blocks", () => {
+	const NOTE_WITH_FENCE = [
+		"# Event",
+		"- 09:00 - 10:00 [Work] a",
+		"```",
+		"# config",
+		"```",
+		"- 10:00 - 11:00 [Work] b",
+		"- 11:00 - 12:00 [Work] c",
+	].join("\n");
+
+	it("does not let a heading inside a fence close the Event section", () => {
+		// The fence renders as <pre><code>, so the `#` inside it is CODE,
+		// not a heading — and must not end the section.
+		expect(findEventBlockInContent(NOTE_WITH_FENCE, DEFAULT_EVENT_HEADING)).toEqual({ start: 0, end: 6 });
+		expect(parseDailyNote(NOTE_WITH_FENCE).timeline).toHaveLength(3);
+	});
+
+	it("does not parse an event-shaped line inside a fence as an Event", () => {
+		const content = ["# Event", "```", "- 99:99 - 99:99 [Work] fake", "```", "- 10:00 - 11:00 [Work] real"].join(
+			"\n"
+		);
+		const items = parseDailyNote(content).timeline;
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({ start: "10:00", end: "11:00", description: "real" });
+	});
+
+	it("does not leak a fence into the previous event's description", () => {
+		const content = ["# Event", "- 09:00 - 10:00 [Work] first", "```", "key: value", "```"].join("\n");
+		const items = parseDailyNote(content).timeline;
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({ description: "first", lineCount: 1 });
+	});
+
+	it("treats a tilde fence as a boundary too", () => {
+		const content = ["# Event", "- 09:00 - 10:00 [Work] a", "~~~", "# config", "~~~", "- 10:00 - 11:00 [Work] b"].join(
+			"\n"
+		);
+		expect(parseDailyNote(content).timeline).toHaveLength(2);
+	});
+
+	it("does not let a backtick fence be closed by a tilde fence", () => {
+		const content = ["# Event", "- 09:00 - 10:00 [Work] a", "```", "~~~", "# config", "```", "- 10:00 - 11:00 [Work] b"].join(
+			"\n"
+		);
+		expect(parseDailyNote(content).timeline).toHaveLength(2);
+	});
+
+	it("keeps the section open when a fence appears before the Event heading", () => {
+		const content = ["```", "# not a heading", "```", "# Event", "- 09:00 - 10:00 [Work] a"].join("\n");
+		expect(findEventBlockInContent(content, DEFAULT_EVENT_HEADING)).toEqual({ start: 3, end: 4 });
+		expect(parseDailyNote(content).timeline).toHaveLength(1);
+	});
+});
+
 describe("parseTimeline", () => {
 	it("extracts time, category, description and physical line indexes", () => {
 		const items = parseTimeline(["# Event", "- 09:00 - 10:30 [업무] 회의 준비"], { start: 0, end: 1 });
@@ -331,6 +434,46 @@ describe("parseTimeline", () => {
 		expect(isTopLevelOrMarker("plain note")).toBe(false);
 		expect(parseTimeline(["- 9:00 - 10:00 work", "- [ ] independent task", "note"], { start: 0, end: 2 })[0])
 			.toMatchObject({ lineCount: 1, description: "work" });
+	});
+});
+
+describe("indented checkboxes", () => {
+	const NESTED = "# Event\n- 09:00 - 10:00 [Work] a\n  - [ ] nested task\n";
+
+	it("does not absorb an indented checkbox into the event's description", () => {
+		// An indented to-do is still a to-do: it belongs to the user, not to
+		// the event above it. Absorbing it made the next edit or delete of
+		// that event silently remove the checkbox with it.
+		const [item] = parseDailyNote(NESTED).timeline;
+		expect(item.description).toBe("a");
+		expect(item.lineCount).toBe(1);
+	});
+
+	it("treats an indented checkbox as a top-level marker", () => {
+		expect(isTopLevelOrMarker("  - [ ] nested task")).toBe(true);
+		expect(isTopLevelOrMarker("\t- [x] nested task")).toBe(true);
+		expect(isTopLevelOrMarker("   * [X] nested task")).toBe(true);
+	});
+
+	it("keeps an indented checkbox in the file after an edit", () => {
+		const [item] = parseDailyNote(NESTED).timeline;
+		const edited = replaceLineRangeAt(NESTED, item.line, item.lineCount, "- 09:00 - 10:00 [Work] EDITED");
+		expect(edited).toBe("# Event\n- 09:00 - 10:00 [Work] EDITED\n  - [ ] nested task\n");
+	});
+
+	it("keeps an indented checkbox in the file after a delete", () => {
+		const [item] = parseDailyNote(NESTED).timeline;
+		const deleted = removeLineRangeAt(NESTED, item.line, item.lineCount);
+		expect(deleted).toBe("# Event\n  - [ ] nested task\n");
+	});
+
+	it("still absorbs an indented line that is not a marker", () => {
+		// Only the marker shapes are excluded - ordinary indented detail is
+		// still absorbed verbatim, as before.
+		const content = "# Event\n- 09:00 - 10:00 [Work] a\n  - nested detail";
+		const [item] = parseDailyNote(content).timeline;
+		expect(item.description).toBe("a\n  - nested detail");
+		expect(item.lineCount).toBe(2);
 	});
 });
 
@@ -452,6 +595,26 @@ describe("time helpers", () => {
 	it("measures a 24:00 end time as the end of the day", () => {
 		expect(timeToMinutes("24:00")).toBe(1440);
 		expect(timelineDurationMinutes({ start: "23:50", end: "24:00" })).toBe(10);
+	});
+
+	it("clamps an out-of-range time to a single day", () => {
+		// TIME_RANGE_REGEX is deliberately shape-only, so a typo like
+		// "99:99" still parses as an Event line. Without the clamp it
+		// contributed 6039 - 540 = 5499 minutes (91.6 hours) to the
+		// dashboard from a single line.
+		expect(timeToMinutes("99:99")).toBe(1440);
+		expect(timeToMinutes("25:00")).toBe(1440);
+		expect(timeToMinutes("24:30")).toBe(1440);
+		expect(timeToMinutes("09:99")).toBe(599);
+		expect(minutesToTime(6039)).toBe("24:00");
+		expect(minutesToTime(-30)).toBe("00:00");
+	});
+
+	it("keeps an out-of-range time from inflating a duration", () => {
+		// The shape of the line stays permissive - a note with a typo still
+		// parses - but the numbers it contributes are bounded.
+		expect(timelineDurationMinutes({ start: "09:00", end: "99:99" })).toBe(900);
+		expect(timelineDurationMinutes({ start: "99:99", end: "09:00" })).toBe(540);
 	});
 });
 

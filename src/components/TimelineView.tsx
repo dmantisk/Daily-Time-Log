@@ -13,6 +13,7 @@ import {
 	parseDailyNote,
 	removeLineRangeAt,
 	replaceLineRangeAt,
+	splitContentLines,
 	stripHtml,
 	timelineDaySegments,
 	timelineRangeMatches,
@@ -145,7 +146,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	const updateEvent = async (item: TimelineItem, values: EventEntryValues): Promise<void> => {
 		if (!activeFile) return;
 		const content = await plugin.app.vault.read(activeFile);
-		const lines = content.split("\n");
+		const lines = splitContentLines(content);
 		if (!timelineRangeMatches(lines, item)) {
 			await reloadFile(activeFile);
 			return;
@@ -157,7 +158,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ plugin, refreshToken
 	const deleteEvent = async (item: TimelineItem): Promise<void> => {
 		if (!activeFile) return;
 		const content = await plugin.app.vault.read(activeFile);
-		const lines = content.split("\n");
+		const lines = splitContentLines(content);
 		if (!timelineRangeMatches(lines, item)) {
 			await reloadFile(activeFile);
 			return;
