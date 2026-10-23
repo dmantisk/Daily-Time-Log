@@ -13,7 +13,6 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
 - **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — and up to 10 in total), stored as a `[Category]` tag right in the note body.
 - **Daily note location and format**: follows the core Daily Notes plugin's "New file location" and date format, including formats that create nested paths such as `YYYY/MM/DD`.
-- **Navigation scope**: previous/next buttons find the adjacent dated note under the core plugin's configured location.
 - **Configurable Event heading**: choose its text and Markdown heading level; only the configured heading is recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
@@ -112,6 +111,10 @@ npm run build   # type-check (tsc) + production build
 ```
 
 ## Changelog
+
+### 0.8.3 (2026-10-23)
+
+- Removed the previous/next timeline navigation buttons.
 
 ### 0.8.1 (2026-10-22)
 

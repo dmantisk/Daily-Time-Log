@@ -1,4 +1,4 @@
-import { Notice, setIcon, TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import {
 	formatDateBasename,
 	isSameDate,
@@ -636,4 +636,3 @@ export class TimelineController {
 		});
 	}
 }
-
