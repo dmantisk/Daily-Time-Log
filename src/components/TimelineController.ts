@@ -72,7 +72,6 @@ export class TimelineController {
 		pendingTouch: null,
 	};
 	private readonly gridCells: HTMLElement[] = [];
-	private gridElement: HTMLElement | null = null;
 	private readonly activeWindow: Window;
 	private loadToken = 0;
 	private destroyed = false;
@@ -89,6 +88,18 @@ export class TimelineController {
 		this.cancelPointer(event);
 	};
 
+	private readonly onWindowTouchMove = (event: TouchEvent): void => {
+		this.handleTouchMove(event);
+	};
+
+	private readonly onWindowTouchEnd = (event: TouchEvent): void => {
+		this.handleTouchEnd(event);
+	};
+
+	private readonly onWindowTouchCancel = (event: TouchEvent): void => {
+		this.handleTouchCancel(event);
+	};
+
 	constructor(
 		private readonly plugin: DailyWorkLogPlugin,
 		private readonly container: HTMLElement
@@ -99,6 +110,9 @@ export class TimelineController {
 		activeWindow.addEventListener("pointermove", this.onWindowPointerMove);
 		activeWindow.addEventListener("pointerup", this.onWindowPointerUp);
 		activeWindow.addEventListener("pointercancel", this.onWindowPointerCancel);
+		activeWindow.addEventListener("touchmove", this.onWindowTouchMove, { passive: false });
+		activeWindow.addEventListener("touchend", this.onWindowTouchEnd);
+		activeWindow.addEventListener("touchcancel", this.onWindowTouchCancel);
 		this.refresh();
 	}
 
@@ -119,9 +133,11 @@ export class TimelineController {
 		this.activeWindow.removeEventListener("pointermove", this.onWindowPointerMove);
 		this.activeWindow.removeEventListener("pointerup", this.onWindowPointerUp);
 		this.activeWindow.removeEventListener("pointercancel", this.onWindowPointerCancel);
+		this.activeWindow.removeEventListener("touchmove", this.onWindowTouchMove);
+		this.activeWindow.removeEventListener("touchend", this.onWindowTouchEnd);
+		this.activeWindow.removeEventListener("touchcancel", this.onWindowTouchCancel);
 		this.container.empty();
 		this.gridCells.length = 0;
-		this.gridElement = null;
 	}
 
 	private async syncFromActiveFile(): Promise<void> {
@@ -257,7 +273,7 @@ export class TimelineController {
 	}
 
 	private startPointer(cellIndex: number, event: PointerEvent): void {
-		if (!event.isPrimary) return;
+		if (!event.isPrimary || event.pointerType === "touch") return;
 		const target = event.currentTarget as HTMLElement;
 		if (target.hasPointerCapture?.(event.pointerId)) {
 			target.releasePointerCapture(event.pointerId);
@@ -265,31 +281,6 @@ export class TimelineController {
 
 		this.clearPendingTouchPress();
 		this.clearDrag();
-
-		if (event.pointerType === "touch") {
-			const pending: PendingTouchPress = {
-				pointerId: event.pointerId,
-				cellIndex,
-				startX: event.clientX,
-				startY: event.clientY,
-				timerId: 0,
-			};
-			pending.timerId = this.activeWindow.setTimeout(() => {
-				if (this.state.pendingTouch?.pointerId !== pending.pointerId) return;
-				this.state.pendingTouch = null;
-				this.state.drag = {
-					start: cellIndex,
-					end: cellIndex,
-					pointerId: event.pointerId,
-					pointerType: event.pointerType,
-				};
-				this.gridElement?.style.setProperty("touch-action", "none");
-				this.updateSelectionClasses(null, this.state.drag);
-				this.vibrateForTouchSelection();
-			}, LONG_PRESS_DURATION_MS);
-			this.state.pendingTouch = pending;
-			return;
-		}
 
 		this.state.drag = {
 			start: cellIndex,
@@ -300,6 +291,115 @@ export class TimelineController {
 		this.updateSelectionClasses(null, this.state.drag);
 	}
 
+	private startTouchPress(cellIndex: number, touch: Touch): void {
+		this.clearPendingTouchPress();
+		this.clearDrag();
+
+		const pending: PendingTouchPress = {
+			pointerId: touch.identifier,
+			cellIndex,
+			startX: touch.clientX,
+			startY: touch.clientY,
+			timerId: 0,
+		};
+		pending.timerId = this.activeWindow.setTimeout(() => {
+			if (this.state.pendingTouch?.pointerId !== pending.pointerId) return;
+			this.state.pendingTouch = null;
+			this.state.drag = {
+				start: cellIndex,
+				end: cellIndex,
+				pointerId: touch.identifier,
+				pointerType: "touch",
+			};
+			this.updateSelectionClasses(null, this.state.drag);
+			this.vibrateForTouchSelection();
+		}, LONG_PRESS_DURATION_MS);
+		this.state.pendingTouch = pending;
+	}
+
+	private handleTouchStart(cellIndex: number, event: TouchEvent): void {
+		if (event.touches.length !== 1) {
+			this.clearPendingTouchPress();
+			if (this.state.drag?.pointerType === "touch") this.clearDrag();
+			return;
+		}
+		const touch = event.changedTouches[0];
+		if (touch) this.startTouchPress(cellIndex, touch);
+	}
+
+	private handleTouchMove(event: TouchEvent): void {
+		if (event.touches.length !== 1) {
+			this.clearPendingTouchPress();
+			if (this.state.drag?.pointerType === "touch") this.clearDrag();
+			return;
+		}
+
+		const pending = this.state.pendingTouch;
+		const drag = this.state.drag?.pointerType === "touch" ? this.state.drag : null;
+		const touchId = pending?.pointerId ?? drag?.pointerId;
+		if (touchId === undefined) return;
+		const touch = Array.from(event.touches).find((item) => item.identifier === touchId);
+		if (!touch) return;
+
+		if (pending) {
+			if (
+				shouldCancelPendingTouchPress(
+					pending,
+					touch.identifier,
+					touch.clientX,
+					touch.clientY
+				)
+			) {
+				this.clearPendingTouchPress();
+			}
+			return;
+		}
+
+		if (!drag) return;
+		event.preventDefault();
+		const target = this.container.ownerDocument.elementFromPoint(touch.clientX, touch.clientY);
+		const cell = target?.closest<HTMLElement>(".dwl-grid-cell");
+		const cellIndex = cell?.dataset.cellIndex;
+		if (!cell || !this.container.contains(cell) || cellIndex === undefined) return;
+		this.moveDrag(Number(cellIndex), touch.identifier);
+	}
+
+	private handleTouchEnd(event: TouchEvent): void {
+		const changedTouches = Array.from(event.changedTouches);
+		const pending = this.state.pendingTouch;
+		if (pending && changedTouches.some((touch) => touch.identifier === pending.pointerId)) {
+			this.clearPendingTouchPress();
+			const { endHour } = this.plugin.settings;
+			const range = touchTapRangeToTimes(pending.cellIndex, endHour);
+			this.openEventModal(null, range.start, range.end);
+			return;
+		}
+
+		const drag = this.state.drag;
+		if (
+			drag?.pointerType === "touch" &&
+			changedTouches.some((touch) => touch.identifier === drag.pointerId)
+		) {
+			this.finishDrag();
+		}
+	}
+
+	private handleTouchCancel(event: TouchEvent): void {
+		const changedTouches = Array.from(event.changedTouches);
+		const pending = this.state.pendingTouch;
+		if (pending && changedTouches.some((touch) => touch.identifier === pending.pointerId)) {
+			this.clearPendingTouchPress();
+		}
+
+		const drag = this.state.drag;
+		if (
+			drag?.pointerType === "touch" &&
+			changedTouches.some((touch) => touch.identifier === drag.pointerId)
+		) {
+			this.clearDrag();
+		}
+	}
+
 	private moveDrag(cellIndex: number, pointerId: number): void {
 		const previous = this.state.drag;
 		if (!previous || previous.pointerId !== pointerId) return;
@@ -308,22 +408,7 @@ export class TimelineController {
 	}
 
 	private handlePointerMove(event: PointerEvent): void {
-		if (!event.isPrimary) return;
-
-		const pending = this.state.pendingTouch;
-		if (pending) {
-			if (
-				shouldCancelPendingTouchPress(
-					pending,
-					event.pointerId,
-					event.clientX,
-					event.clientY
-				)
-			) {
-				this.clearPendingTouchPress();
-			}
-			return;
-		}
+		if (!event.isPrimary || event.pointerType === "touch") return;
 
 		const drag = this.state.drag;
 		if (!drag || drag.pointerId !== event.pointerId) return;
@@ -335,31 +420,15 @@ export class TimelineController {
 	}
 
 	private handlePointerUp(event: PointerEvent): void {
-		if (!event.isPrimary) return;
-
-		const pending = this.state.pendingTouch;
-		if (pending?.pointerId === event.pointerId) {
-			this.clearPendingTouchPress();
-			const { endHour } = this.plugin.settings;
-			const range = touchTapRangeToTimes(pending.cellIndex, endHour);
-			this.openEventModal(null, range.start, range.end);
-			return;
-		}
+		if (!event.isPrimary || event.pointerType === "touch") return;
 
 		if (this.state.drag?.pointerId === event.pointerId) this.finishDrag();
 	}
 
 	private handlePointerLeave(event: PointerEvent): void {
-		if (this.state.pendingTouch?.pointerId === event.pointerId) {
-			this.clearPendingTouchPress();
-			return;
-		}
+		if (event.pointerType === "touch") return;
 		const drag = this.state.drag;
 		if (!drag || drag.pointerId !== event.pointerId) return;
-		if (drag.pointerType === "touch") {
-			this.clearDrag();
-			return;
-		}
 		this.finishDrag();
 	}
 
@@ -368,16 +437,12 @@ export class TimelineController {
 		if (!drag) return;
 		this.state.drag = null;
 		this.updateSelectionClasses(drag, null);
-		this.clearTouchAction();
 		const range = dragRangeToTimes(drag.start, drag.end);
 		this.openEventModal(null, range.start, range.end);
 	}
 
 	private cancelPointer(event: PointerEvent): void {
-		if (!event.isPrimary) return;
-		if (this.state.pendingTouch?.pointerId === event.pointerId) {
-			this.clearPendingTouchPress();
-		}
+		if (!event.isPrimary || event.pointerType === "touch") return;
 		if (this.state.drag?.pointerId !== event.pointerId) return;
 		this.clearDrag();
 	}
@@ -394,11 +459,6 @@ export class TimelineController {
 		if (!drag) return;
 		this.state.drag = null;
 		this.updateSelectionClasses(drag, null);
-		this.clearTouchAction();
-	}
-
-	private clearTouchAction(): void {
-		if (this.gridElement) this.gridElement.style.touchAction = "";
 	}
 
 	private vibrateForTouchSelection(): void {
@@ -504,10 +564,6 @@ export class TimelineController {
 		const wrap = root.createDiv({ cls: "dwl-grid-wrap" });
 
 		const grid = wrap.createDiv({ cls: "dwl-grid" });
-		this.gridElement = grid;
-		if (this.state.drag?.pointerType === "touch") {
-			grid.style.setProperty("touch-action", "none");
-		}
 		wrap.addEventListener("pointerleave", (event) => this.handlePointerLeave(event));
 		wrap.addEventListener("pointercancel", (event) => this.cancelPointer(event));
 		for (let hour = startHour; hour < endHour; hour++) {
@@ -531,7 +587,14 @@ export class TimelineController {
 				});
 				this.gridCells[cellIndex] = cell;
 				cell.addEventListener("pointerdown", (event) => this.startPointer(cellIndex, event));
-				cell.addEventListener("pointerenter", (event) => this.moveDrag(cellIndex, event.pointerId));
+				cell.addEventListener(
+					"touchstart",
+					(event) => this.handleTouchStart(cellIndex, event),
+					{ passive: true }
+				);
+				cell.addEventListener("pointerenter", (event) => {
+					if (event.pointerType !== "touch") this.moveDrag(cellIndex, event.pointerId);
+				});
 				cell.addEventListener("pointerup", (event) => this.handlePointerUp(event));
 			}
 

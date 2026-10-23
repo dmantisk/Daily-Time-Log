@@ -72,6 +72,21 @@ function pointerEvent(type: string, init: PointerEventInit = {}): PointerEvent {
 	return new PointerEvent(type, { bubbles: true, isPrimary: true, ...init });
 }
 
+interface TouchPoint {
+	identifier: number;
+	clientX: number;
+	clientY: number;
+}
+
+function touchEvent(type: string, touches: TouchPoint[], changedTouches: TouchPoint[] = touches): TouchEvent {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	Object.defineProperties(event, {
+		touches: { value: touches },
+		changedTouches: { value: changedTouches },
+	});
+	return event as unknown as TouchEvent;
+}
+
 function createPluginStub(
 	initialContent = DAILY_NOTE_CONTENT,
 	initialPath = "2026-10-16.md",
@@ -274,19 +289,18 @@ describe("TimelineController", () => {
 	it("opens a 30-minute add range for a touch tap before the long-press threshold", async () => {
 		const { container } = await renderController();
 		const cell = cells(container)[5];
-		const grid = container.querySelector<HTMLElement>(".dwl-grid");
+		const activeWindow = container.ownerDocument.defaultView;
+		const touch = { identifier: 9, clientX: 10, clientY: 10 };
 
-		cell.dispatchEvent(pointerEvent("pointerdown", { pointerId: 9, pointerType: "touch" }));
-		expect(grid?.style.touchAction).toBe("");
-		cell.dispatchEvent(pointerEvent("pointerup", { pointerId: 9, pointerType: "touch" }));
+		cell.dispatchEvent(touchEvent("touchstart", [touch]));
+		activeWindow?.dispatchEvent(touchEvent("touchend", [], [touch]));
 
 		expect(modalCalls).toHaveLength(1);
 		expect(modalCalls[0][4]).toBe("00:50");
 		expect(modalCalls[0][5]).toBe("01:20");
-		expect(grid?.style.touchAction).toBe("");
 	});
 
-	it("starts touch selection after a long press and follows pointermove hit testing", async () => {
+	it("starts touch selection after a long press and drags across multiple cells", async () => {
 		vi.useFakeTimers();
 		try {
 			const fixture = createPluginStub();
@@ -296,44 +310,31 @@ describe("TimelineController", () => {
 			const controller = new TimelineController(fixture.plugin, container);
 			controllers.push(controller);
 			await Promise.resolve();
-
 			const gridCells = cells(container);
-			const grid = container.querySelector<HTMLElement>(".dwl-grid");
 			const activeWindow = container.ownerDocument.defaultView;
-			const targetCell = gridCells[3];
+			const targetCell = gridCells[18];
 			Object.defineProperty(container.ownerDocument, "elementFromPoint", {
 				configurable: true,
 				value: () => targetCell,
 			});
 
-			gridCells[0].dispatchEvent(pointerEvent("pointerdown", {
-				pointerId: 12,
-				pointerType: "touch",
-				clientX: 10,
-				clientY: 10,
-			}));
+			const startTouch = { identifier: 12, clientX: 10, clientY: 10 };
+			gridCells[0].dispatchEvent(touchEvent("touchstart", [startTouch]));
 			await vi.advanceTimersByTimeAsync(249);
 			expect(gridCells[0].classList.contains("is-selecting")).toBe(false);
 			await vi.advanceTimersByTimeAsync(1);
 			expect(gridCells[0].classList.contains("is-selecting")).toBe(true);
-			expect(grid?.style.touchAction).toBe("none");
 
-			activeWindow?.dispatchEvent(pointerEvent("pointermove", {
-				pointerId: 12,
-				pointerType: "touch",
-				clientX: 40,
-				clientY: 10,
-			}));
-			expect(gridCells.slice(0, 4).every((cell) => cell.classList.contains("is-selecting"))).toBe(true);
-			activeWindow?.dispatchEvent(pointerEvent("pointerup", {
-				pointerId: 12,
-				pointerType: "touch",
-			}));
+			const endTouch = { ...startTouch, clientX: 40, clientY: 10 };
+			const moveEvent = touchEvent("touchmove", [endTouch]);
+			activeWindow?.dispatchEvent(moveEvent);
+			expect(gridCells.slice(0, 19).every((cell) => cell.classList.contains("is-selecting"))).toBe(true);
+			expect(moveEvent.defaultPrevented).toBe(true);
+			activeWindow?.dispatchEvent(touchEvent("touchend", [], [endTouch]));
 
 			expect(modalCalls).toHaveLength(1);
 			expect(modalCalls[0][4]).toBe("00:00");
-			expect(modalCalls[0][5]).toBe("00:40");
-			expect(grid?.style.touchAction).toBe("");
+			expect(modalCalls[0][5]).toBe("03:10");
 		} finally {
 			vi.useRealTimers();
 		}
@@ -351,23 +352,19 @@ describe("TimelineController", () => {
 			await Promise.resolve();
 			const cell = cells(container)[0];
 			const activeWindow = container.ownerDocument.defaultView;
+			const startTouch = { identifier: 15, clientX: 10, clientY: 10 };
 
-			cell.dispatchEvent(pointerEvent("pointerdown", {
-				pointerId: 15,
-				pointerType: "touch",
-				clientX: 10,
-				clientY: 10,
-			}));
-			activeWindow?.dispatchEvent(pointerEvent("pointermove", {
-				pointerId: 15,
-				pointerType: "touch",
-				clientX: 10,
+			cell.dispatchEvent(touchEvent("touchstart", [startTouch]));
+			const scrollMove = touchEvent("touchmove", [{
+				...startTouch,
 				clientY: 25,
-			}));
+			}]);
+			activeWindow?.dispatchEvent(scrollMove);
 			await vi.advanceTimersByTimeAsync(250);
 
 			expect(cell.classList.contains("is-selecting")).toBe(false);
 			expect(modalCalls).toHaveLength(0);
+			expect(scrollMove.defaultPrevented).toBe(false);
 		} finally {
 			vi.useRealTimers();
 		}
@@ -384,7 +381,6 @@ describe("TimelineController", () => {
 			controllers.push(controller);
 			await Promise.resolve();
 			const gridCells = cells(container);
-			const grid = container.querySelector<HTMLElement>(".dwl-grid");
 			const activeWindow = container.ownerDocument.defaultView;
 
 			gridCells[0].dispatchEvent(pointerEvent("pointerdown", {
@@ -399,26 +395,19 @@ describe("TimelineController", () => {
 			}));
 			expect(modalCalls).toHaveLength(0);
 
-			gridCells[1].dispatchEvent(pointerEvent("pointerdown", {
-				pointerId: 21,
-				pointerType: "touch",
-			}));
+			const touch = { identifier: 21, clientX: 10, clientY: 10 };
+			gridCells[1].dispatchEvent(touchEvent("touchstart", [touch]));
 			await vi.advanceTimersByTimeAsync(250);
-			expect(grid?.style.touchAction).toBe("none");
-			activeWindow?.dispatchEvent(pointerEvent("pointercancel", {
-				pointerId: 21,
-				pointerType: "touch",
-			}));
+			activeWindow?.dispatchEvent(touchEvent("touchcancel", [], [touch]));
 
 			expect(gridCells[1].classList.contains("is-selecting")).toBe(false);
-			expect(grid?.style.touchAction).toBe("");
 			expect(modalCalls).toHaveLength(0);
 		} finally {
 			vi.useRealTimers();
 		}
 	});
 
-	it("clears an active touch selection on pointerleave without opening a modal", async () => {
+	it("clears an active touch selection on touchcancel without opening a modal", async () => {
 		vi.useFakeTimers();
 		try {
 			const fixture = createPluginStub();
@@ -429,20 +418,14 @@ describe("TimelineController", () => {
 			controllers.push(controller);
 			await Promise.resolve();
 			const cell = cells(container)[0];
-			const grid = container.querySelector<HTMLElement>(".dwl-grid");
+			const activeWindow = container.ownerDocument.defaultView;
+			const touch = { identifier: 27, clientX: 10, clientY: 10 };
 
-			cell.dispatchEvent(pointerEvent("pointerdown", {
-				pointerId: 27,
-				pointerType: "touch",
-			}));
+			cell.dispatchEvent(touchEvent("touchstart", [touch]));
 			await vi.advanceTimersByTimeAsync(250);
-			container.querySelector(".dwl-grid-wrap")?.dispatchEvent(pointerEvent("pointerleave", {
-				pointerId: 27,
-				pointerType: "touch",
-			}));
+			activeWindow?.dispatchEvent(touchEvent("touchcancel", [], [touch]));
 
 			expect(cell.classList.contains("is-selecting")).toBe(false);
-			expect(grid?.style.touchAction).toBe("");
 			expect(modalCalls).toHaveLength(0);
 		} finally {
 			vi.useRealTimers();

@@ -42,18 +42,20 @@ change the settings format or the `main.ts` refresh scheduling.
 
 ## Pointer and touch behavior
 
-- Ignore non-primary pointers. Release pointer capture on pointerdown when
-  capture is held. Use `pointerenter` and a `pointermove` fallback that resolves
-  the cell with the container document's `elementFromPoint()`.
-- Mouse/pen selection starts immediately. Touch selection starts after a
-  250 ms long press; movement beyond the small pre-press threshold cancels the
-  timer so normal scrolling can proceed.
-- A touch tap on an empty cell opens a 30-minute add range. Tapping an event
-  block uses the existing edit flow.
-- Set `touch-action: none` only after the touch long press arms selection, and
-  clear it on pointerup, pointerleave, pointercancel, refresh, and destroy.
-- Pointercancel clears pending timers and selection state. Pointerup outside
-  the grid is handled by listeners owned and removed by the controller.
+- Ignore non-primary pointers. Mouse/pen selection starts immediately and uses
+  `pointerenter` plus a `pointermove` fallback that resolves the cell with the
+  container document's `elementFromPoint()`.
+- Touch uses Touch Events so scrolling remains available before the long-press
+  threshold. A touch tap opens a 30-minute add range; holding for 250 ms arms
+  selection, and moving beyond the small pre-press threshold before then
+  cancels it so normal scrolling can proceed.
+- After a long press arms, a non-passive `touchmove` listener prevents the
+  browser from scrolling and updates the selected cell. Touch end opens the
+  selected range; touch cancellation clears it.
+- Tapping an event block uses the existing edit flow.
+- Pointer cancellation clears mouse/pen selection state. Pointerup outside
+  the grid and touch events outside their originating cell are handled by
+  listeners owned and removed by the controller.
 - Long-press feedback is the selection class and guarded `navigator.vibrate()`.
 - On coarse-pointer devices, navigation controls and event blocks have at least
   44 px high hit targets. Widths remain responsive and use `rem`, percentages,
@@ -67,8 +69,8 @@ change the settings format or the `main.ts` refresh scheduling.
    exists.
 3. Add the vanilla controller and wire the `ItemView` lifecycle.
 4. Port behavior tests to happy-dom, covering drag/release/cancel, async read
-   races, note writes, listener cleanup, long-press timing, touch taps, and
-   pointermove hit testing.
+   races, note writes, listener cleanup, long-press timing, touch taps and
+   touch drags, and pointermove hit testing.
 5. Remove the React view/tests and React runtime/type dependencies; remove JSX
    compiler configuration and update this document.
 
