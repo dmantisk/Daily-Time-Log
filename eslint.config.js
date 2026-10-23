@@ -1,29 +1,33 @@
-import tsparser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
+import { defineConfig } from "eslint/config";
 import prettierConfig from "eslint-config-prettier";
 import obsidianPlugin from "eslint-plugin-obsidianmd";
 
-export default [
+export default defineConfig([
   {
-    ignores: ["dist/**", "node_modules/**", "**/*.test.ts", "**/*.test.tsx"],
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "**/*.mjs",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "src/test/**",
+      "vitest.config.ts",
+    ],
   },
+  ...obsidianPlugin.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx"],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module",
-        project: "./tsconfig.json",
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
     plugins: {
       "@typescript-eslint": tsPlugin,
-      "obsidianmd": obsidianPlugin,
+    },
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ["eslint.config.*"],
+        },
+      },
     },
     rules: {
-      ...obsidianPlugin.ruleConfigs.recommended,
       "semi": ["error", "always"],
       "quotes": ["error", "double"],
       "@typescript-eslint/no-explicit-any": "warn",
@@ -32,5 +36,12 @@ export default [
       "@typescript-eslint/no-non-null-assertion": "warn",
     },
   },
+  {
+    files: ["src/parser.ts"],
+    rules: {
+      // The regex is guarded at construction and disables badges on unsupported engines.
+      "obsidianmd/regex-lookbehind": "off",
+    },
+  },
   prettierConfig,
-];
+]);

@@ -15,9 +15,12 @@
 
 import { describe, expect, it } from "vitest";
 import { processCategoryBadgesInReadingView } from "./categoryBadges";
+import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 import { normalizeHeadingText, parseDailyNote } from "./parser";
 import type { CustomCategory } from "./settings";
 import type { EventHeadingConfig } from "./parser";
+
+installObsidianDomHelpers();
 
 const CATEGORIES: CustomCategory[] = [
 	{ name: "Work", displayName: "Work", color: "#d0e1fd" },

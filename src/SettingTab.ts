@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, SettingPage, type SettingDefinitionItem } from "obsidian";
 import { formatHourLabel, t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
@@ -14,9 +14,6 @@ const MAX_CATEGORY_NAME_LENGTH = 10;
  * Every label goes through i18n.ts (t()) exactly like the sidebar/modal —
  * this tab used to be hardcoded Korean regardless of the language setting,
  * which was an oversight, not a deliberate exception.
- * Still uses the imperative `display()` API rather than the declarative
- * `getSettingDefinitions()` (Obsidian 1.13.0+) — see AGENTS.md §2 for why
- * that trade-off is intentional here.
  */
 export class DailyWorkLogSettingTab extends PluginSettingTab {
 	private readonly plugin: DailyWorkLogPlugin;
@@ -24,6 +21,24 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: DailyWorkLogPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [{
+			type: "page",
+			name: "Daily time log",
+			page: () => new DailyWorkLogSettingsPage(this.plugin),
+		}];
+	}
+}
+
+class DailyWorkLogSettingsPage extends SettingPage {
+	private readonly plugin: DailyWorkLogPlugin;
+
+	constructor(plugin: DailyWorkLogPlugin) {
+		super();
+		this.plugin = plugin;
+		this.title = "Daily time log";
 	}
 
 	display(): void {
@@ -175,7 +190,7 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				text
 					.setPlaceholder(t("settingCatDisplayNamePlaceholder", lang))
 					.setValue(cat.displayName);
-				text.inputEl.addEventListener("change", async () => {
+				const saveName = async () => {
 					const trimmed = text.getValue().trim();
 					const problem = validateCategoryName(categories, trimmed, idx);
 					if (problem) {
@@ -189,21 +204,12 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 					categories[idx].displayName = trimmed;
 					await this.plugin.saveSettings();
 					this.plugin.refreshViews();
+				};
+				text.inputEl.addEventListener("change", () => {
+					void saveName();
 				});
-				text.inputEl.addEventListener("blur", async () => {
-					const trimmed = text.getValue().trim();
-					const problem = validateCategoryName(categories, trimmed, idx);
-					if (problem) {
-						new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
-						text.setValue(categories[idx].displayName);
-						return;
-					}
-					if (trimmed === categories[idx].displayName) {
-						return;
-					}
-					categories[idx].displayName = trimmed;
-					await this.plugin.saveSettings();
-					this.plugin.refreshViews();
+				text.inputEl.addEventListener("blur", () => {
+					void saveName();
 				});
 				text.inputEl.maxLength = MAX_CATEGORY_NAME_LENGTH;
 			});

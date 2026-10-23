@@ -70,7 +70,11 @@ describe("DailyWorkLogSettingTab", () => {
 	function renderTab(): ReturnType<typeof createPluginStub> {
 		const plugin = createPluginStub();
 		const tab = new DailyWorkLogSettingTab({} as never, plugin);
-		tab.display();
+		const definition = tab.getSettingDefinitions()[0];
+		if (definition.type !== "page" || !definition.page) {
+			throw new Error("Settings tab did not provide its settings page");
+		}
+		definition.page().display();
 		return plugin;
 	}
 

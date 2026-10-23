@@ -75,7 +75,8 @@ export class DashboardView extends ItemView {
 
 		const container = this.contentEl;
 		container.addClass("dwl-dashboard-view");
-		const nextContent = document.createElement("div");
+		const nextContent = container.createDiv();
+		nextContent.remove();
 
 		const allNotes = this.collectDailyNoteFiles();
 		const activePaths = new Set(allNotes.map(({ file }) => file.path));

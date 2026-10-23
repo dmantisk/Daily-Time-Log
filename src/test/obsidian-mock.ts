@@ -296,6 +296,12 @@ export class PluginSettingTab {
 	display(): void {}
 }
 
+export class SettingPage {
+	containerEl: HTMLElement = document.createElement("div");
+	title = "";
+	display(): void {}
+}
+
 /**
  * A functional stand-in for Obsidian's `Setting`.
  *

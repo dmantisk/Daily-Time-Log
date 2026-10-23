@@ -16,6 +16,10 @@ export function installObsidianDomHelpers(): void {
 	const proto = globalThis.HTMLElement?.prototype as ObsidianElementProto | undefined;
 	if (!proto || proto.__dwlObsidianDomInstalled) return;
 
+	Object.assign(globalThis, {
+		createFragment: () => globalThis.document.createDocumentFragment(),
+	});
+
 	proto.empty = function (this: HTMLElement): void {
 		while (this.firstChild) this.removeChild(this.firstChild);
 	};

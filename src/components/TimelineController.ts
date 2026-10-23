@@ -523,7 +523,7 @@ export class TimelineController {
 		if (!this.state.hasEventSection) {
 			const banner = root.createDiv({ cls: "dwl-missing-heading-banner" });
 			banner.createEl("strong", { text: t("emptyStateTitleNoEventHeading", language) });
-			banner.createEl("span", { text: t("emptyStateDescNoEventHeading", language) });
+			banner.createSpan({ text: t("emptyStateDescNoEventHeading", language) });
 		}
 		this.renderGrid(root, language);
 	}
@@ -546,16 +546,16 @@ export class TimelineController {
 			const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
 			if (!cell) return;
 			const index = Number(cell.dataset.cellIndex);
-			if (!isNaN(index)) this.startPointer(index, event as PointerEvent);
+			if (!isNaN(index)) this.startPointer(index, event);
 		});
 		grid.addEventListener("touchstart", (event) => {
 			const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
 			if (!cell) return;
 			const index = Number(cell.dataset.cellIndex);
-			if (!isNaN(index)) this.handleTouchStart(index, event as TouchEvent);
+			if (!isNaN(index)) this.handleTouchStart(index, event);
 		}, { passive: true });
 		grid.addEventListener("pointerover", (event) => {
-			const pointerEvent = event as PointerEvent;
+			const pointerEvent = event;
 			if (pointerEvent.pointerType !== "touch") {
 				const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
 				if (cell) {
@@ -575,8 +575,8 @@ export class TimelineController {
 			const isPm = hour >= 12;
 			const displayHour = hour === 0 || hour === 24 ? 12 : hour > 12 ? hour - 12 : hour;
 			const ampm = t(hour === 24 || !isPm ? "hourMarkerAm" : "hourMarkerPm", language);
-			hourLabel.createEl("span", { cls: "dwl-grid-hour-num", text: String(displayHour) });
-			hourLabel.createEl("span", { cls: "dwl-grid-hour-ampm", text: ampm });
+			hourLabel.createSpan({ cls: "dwl-grid-hour-num", text: String(displayHour) });
+			hourLabel.createSpan({ cls: "dwl-grid-hour-ampm", text: ampm });
 
 			const cells = row.createDiv({ cls: "dwl-grid-cells" });
 			for (let column = 0; column < CELLS_PER_HOUR; column++) {
@@ -631,7 +631,7 @@ export class TimelineController {
 					this.openEventModal(item, item.start, item.end);
 				});
 				block.addEventListener("pointerdown", (event) => event.stopPropagation());
-				block.createEl("span", { cls: "dwl-grid-block-label", text: label });
+				block.createSpan({ cls: "dwl-grid-block-label", text: label });
 			});
 		});
 	}

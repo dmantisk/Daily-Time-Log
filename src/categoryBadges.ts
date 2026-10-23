@@ -26,7 +26,6 @@
 import { MarkdownPostProcessorContext } from "obsidian";
 import {
 	Decoration,
-	DecorationSet,
 	EditorView,
 	MatchDecorator,
 	ViewPlugin,
@@ -86,9 +85,13 @@ function findCategory(
  * category colors are explicit user data; unconfigured tokens inherit the
  * theme-aware fallback styles from CSS.
  */
-function makeBadgeSpan(token: string, categories: CustomCategory[]): HTMLSpanElement {
+function makeBadgeSpan(
+	token: string,
+	categories: CustomCategory[],
+	container: HTMLElement
+): HTMLSpanElement {
 	const cat = findCategory(token, categories);
-	const span = document.createElement("span");
+	const span = container.createSpan();
 	span.className = `dwl-cat-badge dwl-cat-badge--${token.trim().toLowerCase().replace(/[\s]+/g, "-")}`;
 	span.textContent = token;
 	if (cat) {
@@ -133,8 +136,8 @@ class CategoryBadgeWidget extends WidgetType {
 		return other.token === this.token;
 	}
 
-	toDOM(): HTMLElement {
-		return makeBadgeSpan(this.token, this.categories);
+	toDOM(view: EditorView): HTMLElement {
+		return makeBadgeSpan(this.token, this.categories, view.dom);
 	}
 
 	/** Keep the widget in sync with cursor movement (no extra reflow). */
@@ -171,7 +174,7 @@ export function buildCategoryBadgeEditorPlugin(
 				decorations: Decoration.none,
 				update() {},
 			}),
-			{ decorations: (v) => v.decorations as DecorationSet }
+			{ decorations: (v) => v.decorations }
 		);
 	}
 	const matcher = new MatchDecorator({
@@ -206,7 +209,7 @@ export function buildCategoryBadgeEditorPlugin(
 				},
 			};
 		},
-		{ decorations: (v) => v.decorations as DecorationSet }
+		{ decorations: (v) => v.decorations }
 	);
 }
 
@@ -424,7 +427,9 @@ export function processCategoryBadgesInReadingView(
 
 	targets.forEach((textNode) => {
 		const text = textNode.textContent ?? "";
-		const frag = document.createDocumentFragment();
+		const parent = textNode.parentElement;
+		if (!parent) return;
+		const frag = createFragment();
 		let lastIndex = 0;
 		let match: RegExpExecArray | null;
 		regex.lastIndex = 0;
@@ -439,7 +444,7 @@ export function processCategoryBadgesInReadingView(
 			// Only render a badge when the token matches a configured category.
 			// Unknown `[...]` tokens stay as plain text in the reading view.
 			if (findCategory(match[1], categories)) {
-				frag.appendChild(makeBadgeSpan(match[1], categories));
+				frag.appendChild(makeBadgeSpan(match[1], categories, parent));
 			} else {
 				frag.appendChild(document.createTextNode(match[0]));
 			}
