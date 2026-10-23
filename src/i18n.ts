@@ -39,6 +39,7 @@ export type UIStringKey =
 	| "emptyStateTitleNoEventHeading"
 	| "emptyStateDescNoEventHeading"
 	| "invalidTimeFormat"
+	| "endNotAfterStart"
 	| "multilineContinuationError"
 	| "dashboardTitle"
 	| "btnRefresh"
@@ -157,6 +158,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		emptyStateDescNoEventHeading:
 			"Events are only read from under the configured Event heading. Adding an Event here will create it in the note.",
 		invalidTimeFormat: "Invalid time format. (e.g. 09:00)",
+		endNotAfterStart: "End time must be after start time.",
 		multilineContinuationError:
 			"Line 2 onward can't start like a time range (e.g. 09:00 - 10:00), checkbox, or heading — please rephrase.",
 		dashboardTitle: "Work Insights",
@@ -207,7 +209,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statTopCategoryPct: "%s% of recorded time",
 		tipStatTotalNotes:
 			"The number of daily notes in the vault, dated on or before today. Notes dated in the future are not counted.",
-		tipStatStreak: "The number of consecutive days with a daily note, counting back from today. 0 if today has no note.",
+		tipStatStreak: "The number of consecutive days with a daily note, counting back from today or yesterday if today's note is missing.",
 		tipStatDateRange: "The date of the oldest and the newest daily note in the vault.",
 		tipStatEventTime: "The total time recorded across all Events in the selected time window.",
 		tipStatAvgPerDay:
@@ -262,6 +264,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		emptyStateDescNoEventHeading:
 			"일과는 설정된 Event 제목 아래에서만 읽힙니다. 여기서 일과를 추가하면 노트에 해당 제목이 생성됩니다.",
 		invalidTimeFormat: "시간 형식이 올바르지 않습니다. (예: 09:00)",
+		endNotAfterStart: "종료 시간은 시작 시간보다 늦어야 합니다.",
 		multilineContinuationError:
 			"2번째 줄부터는 시간 범위(예: 09:00 - 10:00), 체크박스 또는 제목 형식으로 시작할 수 없습니다. 문구를 조금 바꿔주세요.",
 		dashboardTitle: "일과 인사이트",
@@ -311,7 +314,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statTopCategory: "최다 활동 카테고리",
 		statTopCategoryPct: "전체 기록 시간의 %s%",
 		tipStatTotalNotes: "오늘 날짜까지의 일일 노트 수입니다. 미래 날짜의 노트는 집계되지 않습니다.",
-		tipStatStreak: "오늘부터 역순으로 노트가 연속으로 작성된 일수입니다. 오늘 노트가 없으면 0입니다.",
+		tipStatStreak: "오늘부터 역순으로 노트가 연속으로 작성된 일수입니다. 오늘 노트가 없으면 어제부터 계산합니다.",
 		tipStatDateRange: "볼트에 있는 가장 오래된 노트와 가장 최근 노트의 날짜입니다.",
 		tipStatEventTime: "선택한 기간 동안 기록된 전체 Event 시간입니다.",
 		tipStatAvgPerDay: "시간이 기록된 날짜당 평균 기록 시간입니다. 아무것도 기록하지 않은 날은 제외됩니다.",

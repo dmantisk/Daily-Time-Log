@@ -1,6 +1,7 @@
 import tsparser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import prettierConfig from "eslint-config-prettier";
+import obsidianPlugin from "eslint-plugin-obsidianmd";
 
 export default [
   {
@@ -19,8 +20,10 @@ export default [
     },
     plugins: {
       "@typescript-eslint": tsPlugin,
+      "obsidianmd": obsidianPlugin,
     },
     rules: {
+      ...obsidianPlugin.ruleConfigs.recommended,
       "semi": ["error", "always"],
       "quotes": ["error", "double"],
       "@typescript-eslint/no-explicit-any": "warn",

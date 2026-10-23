@@ -210,10 +210,10 @@ describe("computeDashboardStats", () => {
 		expect(computeDashboardStats(dates, [], today).currentStreak).toBe(2);
 	});
 
-	it("streak is 0 if today itself has no note", () => {
+	it("counts a streak from yesterday when today has no note", () => {
 		const today = new Date(2026, 6, 14);
 		const dates = [new Date(2026, 6, 12), new Date(2026, 6, 13)];
-		expect(computeDashboardStats(dates, [], today).currentStreak).toBe(0);
+		expect(computeDashboardStats(dates, [], today).currentStreak).toBe(2);
 	});
 
 	it("aggregates category breakdown and daily average", () => {

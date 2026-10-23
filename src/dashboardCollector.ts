@@ -23,6 +23,7 @@ export interface CategoryStatItem {
 
 export interface NoteActivitySummary {
 	date: Date;
+	path: string;
 	eventMinutes: number;
 	topCategory: string | null;
 }
@@ -115,7 +116,7 @@ export function isWithinRecentWindow(noteDate: Date, today: Date, windowDays: nu
  */
 export function computeDashboardStats(
 	allNoteDates: Date[],
-	recentParsed: Array<{ date: Date; parsed: ParsedDailyNote }>,
+	recentParsed: Array<{ date: Date; path: string; parsed: ParsedDailyNote }>,
 	today: Date,
 	categories: CustomCategory[] = DEFAULT_CATEGORIES,
 	uncategorizedLabel = "Uncategorized"
@@ -149,6 +150,10 @@ export function computeDashboardStats(
 	const noteDateStrings = new Set(countedNoteDates.map((date) => formatDateBasename(date)));
 	let currentStreak = 0;
 	const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+	// Count from yesterday when today's note does not exist.
+	if (!noteDateStrings.has(formatDateBasename(cursor))) {
+		cursor.setDate(cursor.getDate() - 1);
+	}
 	while (noteDateStrings.has(formatDateBasename(cursor))) {
 		currentStreak++;
 		cursor.setDate(cursor.getDate() - 1);
@@ -185,7 +190,7 @@ export function computeDashboardStats(
 		.filter(({ date }) => isOnOrBeforeToday(date, today))
 		.sort((a, b) => b.date.getTime() - a.date.getTime());
 
-	for (const { date, parsed } of sortedRecentParsed) {
+	for (const { date, path, parsed } of sortedRecentParsed) {
 		let noteEventMinutes = 0;
 		const noteCategoryMinutesMap = new Map<string, number>();
 
@@ -225,6 +230,7 @@ export function computeDashboardStats(
 
 		recentNotesSummary.push({
 			date,
+			path,
 			eventMinutes: noteEventMinutes,
 			topCategory: noteTopCategory,
 		});

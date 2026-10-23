@@ -18,6 +18,7 @@ interface CachedDailyNote {
 	mtime: number;
 	headingConfigKey: string;
 	parsed: ParsedDailyNote;
+	dateFormat: string;
 }
 
 /**
@@ -71,8 +72,17 @@ export class DashboardView extends ItemView {
 			if (!activePaths.has(path)) this.parsedNotes.delete(path);
 		}
 
-		// Header area with Title & Window Dropdown
-		this.renderHeader(nextContent, language);
+		// Preserve dashboard controls on refresh by rebuilding data sections
+		// without rebuilding the dropdown.
+		const header = container.querySelector(".dwl-dashboard-header");
+		const controls = header?.querySelector(".dwl-dashboard-controls");
+		if (header && controls) {
+			// Keep existing dropdown/button; only rebuild data sections.
+			const dataSections = container.querySelectorAll(".dwl-dashboard-bottom-layout, .dwl-dashboard-empty, .dwl-dashboard-kpi-grid");
+			dataSections.forEach((el) => el.remove());
+		} else {
+			this.renderHeader(nextContent, language);
+		}
 
 		if (allNotes.length === 0) {
 			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardEmptyVault", language) });
@@ -95,13 +105,14 @@ export class DashboardView extends ItemView {
 		// Read in bounded batches (max 10 concurrent) rather than all at
 		// once — "All Time" can mean many notes, and unbounded Promise.all
 		// creates a burst of reads and high transient memory.
-		const recentParsed: Array<{ date: Date; parsed: ParsedDailyNote }> = [];
+		const recentParsed: Array<{ date: Date; path: string; parsed: ParsedDailyNote }> = [];
 		const batchSize = 10;
 		for (let i = 0; i < recentNotes.length; i += batchSize) {
 			const batch = recentNotes.slice(i, i + batchSize);
 			const batchResults = await Promise.all(
 				batch.map(async (note) => ({
 					date: note.date,
+					path: note.file.path,
 					parsed: await this.getParsedNote(note.file),
 				}))
 			);
@@ -146,7 +157,8 @@ export class DashboardView extends ItemView {
 		}
 
 		const parsed = parseDailyNote(await this.app.vault.cachedRead(file), headingConfig);
-		this.parsedNotes.set(file.path, { mtime: file.stat.mtime, headingConfigKey, parsed });
+		// Cache strict Moment parse results by path and format when collecting daily-note files.
+		this.parsedNotes.set(file.path, { mtime: file.stat.mtime, headingConfigKey, parsed, dateFormat: this.plugin.getDailyNoteFormat() });
 		return parsed;
 	}
 
@@ -342,13 +354,14 @@ export class DashboardView extends ItemView {
 		} else {
 			for (let i = 0; i < Math.min(10, noteSummaries.length); i++) {
 				const summary = noteSummaries[i];
-				const noteFile = recentNotes[i];
+				// Associate summary rows with notes by path rather than index.
+				const noteFile = recentNotes.find((n) => n.file.path === summary.path);
 				if (!noteFile) continue;
 
 				const row = activityList.createDiv({ cls: "dwl-dashboard-activity-row" });
 
-				// Left: Date
-				row.createDiv({ cls: "dwl-activity-date", text: formatDateBasename(summary.date) });
+				// Left: Date — use user's Daily Notes date format.
+				row.createDiv({ cls: "dwl-activity-date", text: formatDateBasename(summary.date, this.plugin.getDailyNoteFormat()) });
 
 				// Middle: Category Badge
 				const mid = row.createDiv({ cls: "dwl-activity-mid" });

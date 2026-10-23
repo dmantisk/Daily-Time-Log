@@ -49,7 +49,7 @@ export type MarkerLanguage = "en" | "ko";
  * Lines written before the category feature existed have no `[...]` token at all and still
  * match, with group 3 `undefined` (see parseTimeline / timelineLineMatches).
  */
-export const TIME_RANGE_REGEX = /^[-*]\s*(\d{1,2}:\d{2})\s*[-~]\s*(\d{1,2}:\d{2})\s*(?:\[([^\]]*)\]\s*)?(.*)$/;
+export const TIME_RANGE_REGEX = /^[-*]\s*(\d{1,2}:\d{2})\s*[-~]\s*(\d{1,2}:\d{2})\s*(?:\[([^\[\]]*)\]\s*)?(.*)$/;
 const CHECKBOX_REGEX = /^[-*]\s*\[([ xX])\]\s*(.*)$/;
 /**
  * Strict "HH:mm" validation for a single user-entered time VALUE (hours
@@ -86,8 +86,12 @@ export const TIME_END_VALUE_REGEX = /^(?:(?:[01]?\d|2[0-3]):[0-5]\d|24:00)$/;
  * Uses negative lookbehind/lookahead for brackets, excludes `[ ]`, `[x]`,
  * `[X]`, and supports Unicode category names. Group 1 = the category text
  * inside the brackets.
+ *
+ * The variable-length lookbehind is guarded at each RegExp construction site;
+ * older engines skip badge rendering instead of preventing plugin startup.
  */
 export const CATEGORY_BADGE_REGEX_SOURCE =
+	// eslint-disable-next-line obsidianmd/regex-lookbehind -- guarded RegExp construction degrades safely on unsupported engines
 	"(?<=\\d{1,2}:\\d{2}\\s*[-~]\\s*\\d{1,2}:\\d{2}\\s*)\\[(?![ xX]\\])([^\\x00-\\x1F\\[\\]\\r\\n]+?)\\](?!\\])";
 
 const FRONTMATTER_DELIMITER = "---";

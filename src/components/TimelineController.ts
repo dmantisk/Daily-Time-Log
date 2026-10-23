@@ -197,9 +197,7 @@ export class TimelineController {
 
 	private async addEvent(file: TFile, values: EventEntryValues): Promise<void> {
 		try {
-			const content = await this.plugin.app.vault.read(file);
-			await this.plugin.writeFile(
-				file,
+			await this.plugin.processWrite(file, (content) =>
 				appendLineToBlock(content, buildTimelineLine(values), this.plugin.getEventHeadingConfig())
 			);
 			await this.reloadFile(file);
@@ -210,16 +208,16 @@ export class TimelineController {
 
 	private async updateEvent(file: TFile, item: TimelineItem, values: EventEntryValues): Promise<void> {
 		try {
-			const content = await this.plugin.app.vault.read(file);
-			const lines = splitContentLines(content);
-			if (!timelineRangeMatches(lines, item)) {
+			let matched = false;
+			await this.plugin.processWrite(file, (content) => {
+				matched = timelineRangeMatches(splitContentLines(content), item);
+				if (!matched) return content;
+				return replaceLineRangeAt(content, item.line, item.lineCount, buildTimelineLine(values));
+			});
+			if (!matched) {
 				await this.reloadFile(file);
 				return;
 			}
-			await this.plugin.writeFile(
-				file,
-				replaceLineRangeAt(content, item.line, item.lineCount, buildTimelineLine(values))
-			);
 			await this.reloadFile(file);
 		} catch (error) {
 			new Notice(`${t("noticeUpdateEventFailed", this.plugin.getUiLanguage())}: ${errorMessage(error)}`);
@@ -228,13 +226,16 @@ export class TimelineController {
 
 	private async deleteEvent(file: TFile, item: TimelineItem): Promise<void> {
 		try {
-			const content = await this.plugin.app.vault.read(file);
-			const lines = splitContentLines(content);
-			if (!timelineRangeMatches(lines, item)) {
+			let matched = false;
+			await this.plugin.processWrite(file, (content) => {
+				matched = timelineRangeMatches(splitContentLines(content), item);
+				if (!matched) return content;
+				return removeLineRangeAt(content, item.line, item.lineCount);
+			});
+			if (!matched) {
 				await this.reloadFile(file);
 				return;
 			}
-			await this.plugin.writeFile(file, removeLineRangeAt(content, item.line, item.lineCount));
 			await this.reloadFile(file);
 		} catch (error) {
 			new Notice(`${t("noticeDeleteEventFailed", this.plugin.getUiLanguage())}: ${errorMessage(error)}`);
@@ -274,8 +275,8 @@ export class TimelineController {
 
 	private startPointer(cellIndex: number, event: PointerEvent): void {
 		if (!event.isPrimary || event.pointerType === "touch") return;
-		const target = event.currentTarget as HTMLElement;
-		if (target.hasPointerCapture?.(event.pointerId)) {
+		const target = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
+		if (target?.hasPointerCapture?.(event.pointerId)) {
 			target.releasePointerCapture(event.pointerId);
 		}
 
@@ -564,6 +565,30 @@ export class TimelineController {
 		const wrap = root.createDiv({ cls: "dwl-grid-wrap" });
 
 		const grid = wrap.createDiv({ cls: "dwl-grid" });
+		// One delegated listener using data-cell-index instead of per-cell.
+		grid.addEventListener("pointerdown", (event) => {
+			const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
+			if (!cell) return;
+			const index = Number(cell.dataset.cellIndex);
+			if (!isNaN(index)) this.startPointer(index, event as PointerEvent);
+		});
+		grid.addEventListener("touchstart", (event) => {
+			const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
+			if (!cell) return;
+			const index = Number(cell.dataset.cellIndex);
+			if (!isNaN(index)) this.handleTouchStart(index, event as TouchEvent);
+		}, { passive: true });
+		grid.addEventListener("pointerover", (event) => {
+			const pointerEvent = event as PointerEvent;
+			if (pointerEvent.pointerType !== "touch") {
+				const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
+				if (cell) {
+					const index = Number(cell.dataset.cellIndex);
+					if (!isNaN(index)) this.moveDrag(index, pointerEvent.pointerId);
+				}
+			}
+		});
+		grid.addEventListener("pointerup", (event) => this.handlePointerUp(event));
 		wrap.addEventListener("pointerleave", (event) => this.handlePointerLeave(event));
 		wrap.addEventListener("pointercancel", (event) => this.cancelPointer(event));
 		for (let hour = startHour; hour < endHour; hour++) {
@@ -586,16 +611,6 @@ export class TimelineController {
 					attr: { "data-cell-index": String(cellIndex) },
 				});
 				this.gridCells[cellIndex] = cell;
-				cell.addEventListener("pointerdown", (event) => this.startPointer(cellIndex, event));
-				cell.addEventListener(
-					"touchstart",
-					(event) => this.handleTouchStart(cellIndex, event),
-					{ passive: true }
-				);
-				cell.addEventListener("pointerenter", (event) => {
-					if (event.pointerType !== "touch") this.moveDrag(cellIndex, event.pointerId);
-				});
-				cell.addEventListener("pointerup", (event) => this.handlePointerUp(event));
 			}
 
 			this.renderBlocks(cells, hourStartMin, hourEndMin, language);

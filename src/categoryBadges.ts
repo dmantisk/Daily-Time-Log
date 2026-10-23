@@ -160,8 +160,22 @@ export function buildCategoryBadgeEditorPlugin(
 	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
 	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
 ) {
+	let regexp: RegExp;
+	try {
+		regexp = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
+	} catch {
+		// Unsupported lookbehind should disable badges, not plugin startup.
+		return ViewPlugin.define(
+			(_view: EditorView) => ({
+				inScope: false,
+				decorations: Decoration.none,
+				update() {},
+			}),
+			{ decorations: (v) => v.decorations as DecorationSet }
+		);
+	}
 	const matcher = new MatchDecorator({
-		regexp: new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g"),
+		regexp,
 		decoration: (match, view, pos) => {
 			// Only render a badge when the token matches a configured category.
 			// Unknown `[...]` tokens (typos, prose, wikilinks) stay as plain text.
@@ -314,7 +328,13 @@ export function processCategoryBadgesInReadingView(
 ): void {
 	if (!isDailyNoteFile(ctx.sourcePath, dailyNoteFolder, dateFormat)) return;
 
-	const regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
+	let regex: RegExp;
+	try {
+		regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
+	} catch {
+		// Unsupported lookbehind should skip reading-view badges.
+		return;
+	}
 	const targets: Text[] = [];
 	const sectionInfo =
 		typeof ctx.getSectionInfo === "function" ? ctx.getSectionInfo(el) : null;

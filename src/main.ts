@@ -7,7 +7,7 @@ import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
-import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, type DailyWorkLogSettings } from "./settings";
+import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, resolveHour, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 
@@ -34,6 +34,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 	private refreshTimer: number | null = null;
 	private refreshTimelineAfterDebounce = false;
 	private badgeKey = "";
+	private badgeRefreshTimer: number | null = null;
 	/** Holds the currently registered CodeMirror extension for category badges.
 	 *  Stored as a mutable array so its contents can be replaced in-place and
 	 *  the change applied to open editors via updateOptions() without a reload. */
@@ -158,6 +159,16 @@ export default class DailyWorkLogPlugin extends Plugin {
 			this.settings.eventHeadingLevel = resolvedLevel;
 			shouldSave = true;
 		}
+		const resolvedStart = resolveHour(loadedData?.startHour, DEFAULT_SETTINGS.startHour);
+		if (resolvedStart !== this.settings.startHour) {
+			this.settings.startHour = resolvedStart;
+			shouldSave = true;
+		}
+		const resolvedEnd = resolveHour(loadedData?.endHour, DEFAULT_SETTINGS.endHour);
+		if (resolvedEnd !== this.settings.endHour) {
+			this.settings.endHour = resolvedEnd;
+			shouldSave = true;
+		}
 		if (shouldSave) await this.saveSettings();
 	}
 
@@ -199,6 +210,14 @@ export default class DailyWorkLogPlugin extends Plugin {
 	async writeFile(file: TFile, content: string): Promise<void> {
 		this.lastSelfWrite = { path: file.path, content };
 		await this.app.vault.modify(file, content);
+	}
+
+	async processWrite(file: TFile, fn: (data: string) => string): Promise<void> {
+		await this.app.vault.process(file, (data) => {
+			const content = fn(data);
+			this.lastSelfWrite = { path: file.path, content };
+			return content;
+		});
 	}
 
 	private async handleVaultModify(file: unknown): Promise<void> {
@@ -243,7 +262,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 			const refreshTimelineAfterDebounce = this.refreshTimelineAfterDebounce;
 			this.refreshTimelineAfterDebounce = false;
 			this.refreshDataViews(refreshTimelineAfterDebounce);
-		}, 500);
+		}, 300);
 	}
 
 	private refreshTimelineView(): void {
@@ -257,7 +276,12 @@ export default class DailyWorkLogPlugin extends Plugin {
 	private refreshDataViews(refreshTimeline = true): void {
 		if (refreshTimeline) this.refreshTimelineView();
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD)) {
-			if (leaf.view instanceof DashboardView) {
+			if (leaf.view instanceof DashboardView && leaf.view.containerEl.isConnected) {
+				void leaf.view.refresh();
+			}
+		}
+		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DAILY_WORK_LOG)) {
+			if (leaf.view instanceof DailyWorkLogView && leaf.view.containerEl.isConnected) {
 				void leaf.view.refresh();
 			}
 		}
@@ -281,7 +305,12 @@ export default class DailyWorkLogPlugin extends Plugin {
 				this.getDailyNoteFormat()
 			)
 		);
-		this.app.workspace.updateOptions();
+		// Debounce settings saves and CodeMirror extension rebuilds.
+		if (this.badgeRefreshTimer !== null) window.clearTimeout(this.badgeRefreshTimer);
+		this.badgeRefreshTimer = window.setTimeout(() => {
+			this.app.workspace.updateOptions();
+			this.badgeRefreshTimer = null;
+		}, 200);
 		this.badgeKey = `${this.getDailyNoteFolder()}|${this.getDailyNoteFormat()}`;
 	}
 

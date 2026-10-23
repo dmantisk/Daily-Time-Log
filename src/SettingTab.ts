@@ -174,24 +174,24 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			row.addText((text) => {
 				text
 					.setPlaceholder(t("settingCatDisplayNamePlaceholder", lang))
-					.setValue(cat.displayName)
-					.onChange(async (value) => {
-						const trimmed = value.trim();
-						// A rename is held to the same rules as an add: the
-						// name must not be blank (it cannot be written into a
-						// note as `[Name]`) and must not collide with another
-						// category (the dashboard keys its totals by display
-						// name, so a shared name doubles the minutes).
-						const problem = validateCategoryName(categories, trimmed, idx);
-						if (problem) {
-							new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
-							text.setValue(categories[idx].displayName);
-							return;
-						}
-						categories[idx].displayName = trimmed;
-						await this.plugin.saveSettings();
-						this.plugin.refreshViews();
-					});
+					.setValue(cat.displayName);
+				text.inputEl.addEventListener("blur", async () => {
+					const trimmed = text.getValue().trim();
+					const problem = validateCategoryName(categories, trimmed, idx);
+					if (problem) {
+						new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
+						text.setValue(categories[idx].displayName);
+						return;
+					}
+					categories[idx].displayName = trimmed;
+					await this.plugin.saveSettings();
+					this.plugin.refreshViews();
+				});
+				text.inputEl.addEventListener("keydown", async (e) => {
+					if (e.key === "Enter") {
+						text.inputEl.blur();
+					}
+				});
 				text.inputEl.maxLength = MAX_CATEGORY_NAME_LENGTH;
 			});
 

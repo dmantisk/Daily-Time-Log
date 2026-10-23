@@ -57,6 +57,7 @@ interface PluginStub {
 	getDailyNoteFolder: () => string;
 	getDailyNoteFormat: () => string;
 	writeFile: (file: TFile, content: string) => Promise<void>;
+	processWrite: (file: TFile, fn: (content: string) => string) => Promise<void>;
 }
 
 function createFile(path: string): TFile {
@@ -128,6 +129,9 @@ function createPluginStub(
 		getDailyNoteFormat: () => dateFormat,
 		writeFile: async (_file, nextContent) => {
 			content = nextContent;
+		},
+		processWrite: async (_file, fn) => {
+			content = fn(content);
 		},
 	};
 
@@ -239,15 +243,15 @@ describe("TimelineController", () => {
 		const gridCells = cells(container);
 
 		gridCells[0].dispatchEvent(pointerEvent("pointerdown"));
-		gridCells[1].dispatchEvent(pointerEvent("pointerenter"));
-		gridCells[2].dispatchEvent(pointerEvent("pointerenter"));
+		gridCells[1].dispatchEvent(pointerEvent("pointerover"));
+		gridCells[2].dispatchEvent(pointerEvent("pointerover"));
 		gridCells[2].dispatchEvent(pointerEvent("pointerup"));
 		expect(modalCalls).toHaveLength(1);
 		expect(modalCalls[0][4]).toBe("00:00");
 		expect(modalCalls[0][5]).toBe("00:30");
 
 		gridCells[5].dispatchEvent(pointerEvent("pointerdown"));
-		gridCells[7].dispatchEvent(pointerEvent("pointerenter"));
+		gridCells[7].dispatchEvent(pointerEvent("pointerover"));
 		document.body.dispatchEvent(pointerEvent("pointerup"));
 		expect(modalCalls).toHaveLength(2);
 		expect(modalCalls[1][4]).toBe("00:50");
@@ -259,7 +263,7 @@ describe("TimelineController", () => {
 		const gridCells = cells(container);
 
 		gridCells[8].dispatchEvent(pointerEvent("pointerdown"));
-		gridCells[6].dispatchEvent(pointerEvent("pointerenter"));
+		gridCells[6].dispatchEvent(pointerEvent("pointerover"));
 		container.querySelector(".dwl-grid-wrap")?.dispatchEvent(pointerEvent("pointerleave"));
 		expect(modalCalls).toHaveLength(1);
 		expect(modalCalls[0][4]).toBe("01:00");
@@ -279,7 +283,7 @@ describe("TimelineController", () => {
 
 		firstCell.dispatchEvent(pointerEvent("pointerdown", { pointerId: 4 }));
 		expect(releaseCapture).toHaveBeenCalledWith(4);
-		firstCell.dispatchEvent(pointerEvent("pointerenter", { pointerId: 4 }));
+		firstCell.dispatchEvent(pointerEvent("pointerover", { pointerId: 4 }));
 		container.querySelector(".dwl-grid-wrap")?.dispatchEvent(pointerEvent("pointercancel", { pointerId: 4 }));
 
 		expect(firstCell.classList.contains("is-selecting")).toBe(false);
@@ -438,7 +442,7 @@ describe("TimelineController", () => {
 		const initialCells = cells(container);
 
 		initialCells[0].dispatchEvent(pointerEvent("pointerdown"));
-		initialCells[2].dispatchEvent(pointerEvent("pointerenter"));
+		initialCells[2].dispatchEvent(pointerEvent("pointerover"));
 
 		expect(container.querySelector(".dwl-grid")).toBe(grid);
 		expect(cells(container)[0]).toBe(initialCells[0]);

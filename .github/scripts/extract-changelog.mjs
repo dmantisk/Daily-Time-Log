@@ -54,7 +54,7 @@ const headingVersion = heading.split(" ")[0];
 if (headingVersion !== expectedVersion) {
 	console.error(
 		`::error::README.md's latest changelog entry is "${heading}", but this release is version ` +
-			`"${expectedVersion}". Update the "## Changelog" section in README.md (and README.ko.md) before ` +
+			`"${expectedVersion}". Update the "## Changelog" section in README.md before ` +
 			"re-running this workflow."
 	);
 	process.exit(1);

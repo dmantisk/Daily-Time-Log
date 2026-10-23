@@ -1,6 +1,6 @@
 import { App, ButtonComponent, Modal, Notice, TextAreaComponent, TextComponent } from "obsidian";
 import { t } from "../i18n";
-import { isTopLevelOrMarker, stripHtml, TIME_END_VALUE_REGEX, TIME_VALUE_REGEX, type MarkerLanguage, type TimelineItem } from "../parser";
+import { isTopLevelOrMarker, stripHtml, TIME_END_VALUE_REGEX, TIME_VALUE_REGEX, timeToMinutes, type MarkerLanguage, type TimelineItem } from "../parser";
 import type { CustomCategory } from "../settings";
 
 export interface EventEntryValues {
@@ -100,6 +100,12 @@ export class TimelineModal extends Modal {
 		// Obsidian's input components turn the spellchecker off, which is
 		// right for a time field but wrong for free prose.
 		this.descriptionComponent.inputEl.setAttribute("spellcheck", "true");
+		this.descriptionComponent.inputEl.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+				this.handleSave();
+				e.preventDefault();
+			}
+		});
 
 		// --- Actions ---
 		// The native `.modal-button-container` is the row Obsidian itself
@@ -152,8 +158,11 @@ export class TimelineModal extends Modal {
 		if (existing) existing.remove();
 
 		const chips = parent.createDiv({ cls: "dwl-category-chips" });
-		for (const cat of this.categories) {
-			const selected = this.selectedCategory === cat.displayName;
+		// Show categories no longer in settings so they can be seen or cleared.
+		const allCategories = new Set([...this.categories.map((c) => c.displayName), ...(this.selectedCategory ? [this.selectedCategory] : [])]);
+		for (const name of allCategories) {
+			const cat = this.categories.find((c) => c.displayName === name) ?? { displayName: name, color: "#95a5a6" };
+			const selected = this.selectedCategory === name;
 			const chip = chips.createEl("button", {
 				cls: selected ? "dwl-category-chip mod-cta" : "dwl-category-chip",
 				type: "button",
@@ -163,7 +172,7 @@ export class TimelineModal extends Modal {
 			chip.addEventListener("click", () => {
 				// Clicking the selected chip clears the category, so the
 				// entry can be taken back to "uncategorized".
-				this.selectedCategory = selected ? undefined : cat.displayName;
+				this.selectedCategory = selected ? undefined : name;
 				this.renderCategoryChips(parent);
 			});
 		}
@@ -194,6 +203,14 @@ export class TimelineModal extends Modal {
 
 		if (!TIME_VALUE_REGEX.test(start) || !TIME_END_VALUE_REGEX.test(end)) {
 			new Notice(t("invalidTimeFormat", this.language));
+			return;
+		}
+
+		// Reject end times that are not after start times.
+		const startMin = timeToMinutes(start);
+		const endMin = timeToMinutes(end);
+		if (endMin <= startMin) {
+			new Notice(t("endNotAfterStart", this.language));
 			return;
 		}
 

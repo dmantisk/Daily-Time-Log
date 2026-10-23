@@ -174,3 +174,14 @@ export function resolveEventHeadingLevel(value: unknown): number {
 	if (level < 1 || level > 6) return DEFAULT_SETTINGS.eventHeadingLevel;
 	return level;
 }
+
+/**
+ * Resolves start/end hour from persisted settings.
+ * Falls back to default unless value is an integer 0-24.
+ */
+export function resolveHour(value: unknown, defaultValue: number): number {
+	if (!Number.isInteger(value)) return defaultValue;
+	const hour = value as number;
+	if (hour < 0 || hour > 24) return defaultValue;
+	return hour;
+}

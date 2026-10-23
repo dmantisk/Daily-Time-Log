@@ -8,14 +8,14 @@ Keep this file short: it is the always-on project context. Load detailed referen
 - Daily-note identity comes from Obsidian's core Daily Notes `folder` and `format`; preserve the root `YYYY-MM-DD` fallback.
 - `src/parser.ts` and `src/dailyNote.ts` are pure, independently testable logic. Keep Obsidian APIs in the view/plugin layer.
 - Only the configured heading opens the Event section. Keep parser and category-badge rendering in agreement, preserve source line indices and line endings, and never absorb unrelated note content into a writable Event.
-- Read notes through the Vault API and write through `plugin.writeFile()` so Obsidian sync and the self-write guard remain intact.
+- Read notes through the Vault API and write through `plugin.processWrite()` (atomic `vault.process()` with the returned string captured inside the callback) so Obsidian sync and the self-write guard remain intact.
 - Prefer Obsidian's native UI components. React is used for the sidebar timeline; the dashboard and modals use Obsidian components/DOM.
 
 ## Architecture
 
 - `src/main.ts`: plugin lifecycle, settings, refresh and vault-event coordination.
 - `src/parser.ts`, `src/dailyNote.ts`, `src/dashboardCollector.ts`: pure parsing/date/statistics logic.
-- `src/view.tsx`, `src/components/TimelineView.tsx`: sidebar timeline.
+- `src/components/TimelineController.ts`: plain-DOM sidebar timeline — ItemView lifecycle, grid rendering, and drag/pointer handling (no React).
 - `src/DashboardView.ts`: vault-wide dashboard.
 - `src/categoryBadges.ts`: live-editor and reading-view category badges.
 - `src/SettingTab.ts`, `src/settings.ts`, `src/i18n.ts`: settings, category rules and English/Korean strings.
