@@ -181,6 +181,24 @@ describe("DashboardView metric tooltips", () => {
 		expect(dropdownAfter).toBe(dropdownBefore);
 	});
 
+	it("rebuilds the dashboard header when the UI language changes", async () => {
+		const plugin = createPluginStub() as { getUiLanguage: () => MarkerLanguage };
+		let language: MarkerLanguage = "en";
+		plugin.getUiLanguage = () => language;
+		const view = new DashboardView({} as never, plugin as never);
+		(view as unknown as { app: unknown }).app = createAppStub("# Event\n");
+		const container = document.createElement("div");
+		(view as unknown as { contentEl: HTMLElement }).contentEl = container;
+
+		await view.refresh();
+		const englishHeader = container.querySelector(".dwl-dashboard-header");
+		language = "ko";
+		await view.refresh();
+
+		expect(container.querySelector(".dwl-dashboard-header")).not.toBe(englishHeader);
+		expect(container.querySelector(".dwl-dashboard-title")?.textContent).toBe("일과 인사이트");
+	});
+
 	it("reuses parsed note content until the file's modification time changes", async () => {
 		const noteContent = "# Event\n- 09:00 - 10:00 [Work] a\n";
 		const cachedRead = vi.fn(async () => noteContent);

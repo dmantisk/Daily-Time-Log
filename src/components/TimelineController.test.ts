@@ -521,6 +521,31 @@ describe("TimelineController", () => {
 		expect(container.querySelector(".dwl-grid-block")?.getAttribute("title")).toContain("Next day");
 	});
 
+	it("prevents context menus during a pending touch press and touch drag", async () => {
+		const { container } = await renderController(createPluginStub("# Event\n"));
+		const grid = container.querySelector<HTMLElement>(".dwl-grid");
+		const cell = cells(container)[0];
+		expect(grid).not.toBeNull();
+
+		const touchStart = new Event("touchstart", { bubbles: true });
+		Object.defineProperty(touchStart, "touches", {
+			value: [{ identifier: 1, clientX: 10, clientY: 10 }],
+		});
+		Object.defineProperty(touchStart, "changedTouches", {
+			value: [{ identifier: 1, clientX: 10, clientY: 10 }],
+		});
+		cell.dispatchEvent(touchStart);
+
+		const pendingContextMenu = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+		container.dispatchEvent(pendingContextMenu);
+		expect(pendingContextMenu.defaultPrevented).toBe(true);
+
+		await new Promise((resolve) => setTimeout(resolve, 260));
+		const dragContextMenu = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+		container.dispatchEvent(dragContextMenu);
+		expect(dragContextMenu.defaultPrevented).toBe(true);
+	});
+
 	it("ignores stale async note reads and removes the global listener on destroy", async () => {
 		const fixture = createPluginStub();
 		const firstFile = fixture.file;

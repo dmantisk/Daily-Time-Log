@@ -99,12 +99,10 @@ export type UIStringKey =
 	| "noticeSaveEventFailed"
 	| "noticeUpdateEventFailed"
 	| "noticeDeleteEventFailed"
-	| "noticeDailyNoteNotFound"
+	| "noticeEventChangedReloaded"
 	| "languageAuto"
 	| "languageEnglish"
 	| "languageKorean"
-	| "prev"
-	| "next"
 	| "hourMidnight"
 	| "hourMidnightAm"
 	| "hourMidnightPm"
@@ -120,13 +118,11 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		noticeSaveEventFailed: "Failed to save event",
 		noticeUpdateEventFailed: "Failed to update event",
 		noticeDeleteEventFailed: "Failed to delete event",
-		noticeDailyNoteNotFound: "Daily note not found: %s",
+		noticeEventChangedReloaded: "Event changed in the note — reloaded",
 		languageAuto: "Auto",
 		languageEnglish: "English",
 		languageKorean: "한국어",
 		hourMidnight: "Midnight (24:00)",
-		prev: "Previous",
-		next: "Next",
 		hourMidnightAm: "12 AM (00:00)",
 		hourMidnightPm: "12 PM (12:00)",
 		hourAm: "%s AM",
@@ -226,13 +222,11 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		noticeSaveEventFailed: "일과 저장 실패",
 		noticeUpdateEventFailed: "일과 수정 실패",
 		noticeDeleteEventFailed: "일과 삭제 실패",
-		noticeDailyNoteNotFound: "일일 노트를 찾을 수 없습니다: %s",
+		noticeEventChangedReloaded: "노트의 일과가 변경되어 다시 불러왔습니다",
 		languageAuto: "자동",
 		languageEnglish: "English",
 		languageKorean: "한국어",
 		hourMidnight: "자정 (24:00)",
-		prev: "이전",
-		next: "다음",
 		hourMidnightAm: "오전 12시 (00:00)",
 		hourMidnightPm: "오후 12시 (12:00)",
 		hourAm: "오전 %s시",
@@ -327,7 +321,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 
 /** Weekday header labels, per language (Sun-first, index by Date#getDay()). */
 export const WEEKDAYS: Record<MarkerLanguage, string[]> = {
-	en: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+	en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
 	ko: ["일", "월", "화", "수", "목", "금", "토"],
 };
 

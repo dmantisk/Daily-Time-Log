@@ -89,4 +89,8 @@ describe("WEEKDAYS", () => {
 		expect(WEEKDAYS.en).toHaveLength(7);
 		expect(WEEKDAYS.ko).toHaveLength(7);
 	});
+
+	it("uses three-letter English abbreviations", () => {
+		expect(WEEKDAYS.en).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+	});
 });

@@ -1,6 +1,5 @@
 import { Notice, setIcon, TFile } from "obsidian";
 import {
-	formatDailyNotePath,
 	formatDateBasename,
 	isSameDate,
 	parseDateFromDailyNotePath,
@@ -113,6 +112,7 @@ export class TimelineController {
 		activeWindow.addEventListener("touchmove", this.onWindowTouchMove, { passive: false });
 		activeWindow.addEventListener("touchend", this.onWindowTouchEnd);
 		activeWindow.addEventListener("touchcancel", this.onWindowTouchCancel);
+		container.addEventListener("contextmenu", this.preventContextMenu);
 		this.refresh();
 	}
 
@@ -136,6 +136,7 @@ export class TimelineController {
 		this.activeWindow.removeEventListener("touchmove", this.onWindowTouchMove);
 		this.activeWindow.removeEventListener("touchend", this.onWindowTouchEnd);
 		this.activeWindow.removeEventListener("touchcancel", this.onWindowTouchCancel);
+		this.container.removeEventListener("contextmenu", this.preventContextMenu);
 		this.container.empty();
 		this.gridCells.length = 0;
 	}
@@ -215,7 +216,7 @@ export class TimelineController {
 				return replaceLineRangeAt(content, item.line, item.lineCount, buildTimelineLine(values));
 			});
 			if (!matched) {
-				new Notice(t("noticeUpdateEventFailed", this.plugin.getUiLanguage()));
+				new Notice(t("noticeEventChangedReloaded", this.plugin.getUiLanguage()));
 				await this.reloadFile(file);
 				return;
 			}
@@ -234,7 +235,7 @@ export class TimelineController {
 				return removeLineRangeAt(content, item.line, item.lineCount);
 			});
 			if (!matched) {
-				new Notice(t("noticeUpdateEventFailed", this.plugin.getUiLanguage()));
+				new Notice(t("noticeEventChangedReloaded", this.plugin.getUiLanguage()));
 				await this.reloadFile(file);
 				return;
 			}
@@ -291,7 +292,6 @@ export class TimelineController {
 			pointerId: event.pointerId,
 			pointerType: event.pointerType,
 		};
-		this.container.addEventListener("contextmenu", this.preventContextMenu, { once: true });
 		this.updateSelectionClasses(null, this.state.drag);
 	}
 
@@ -460,7 +460,7 @@ export class TimelineController {
 	}
 
 	private preventContextMenu = (event: MouseEvent): void => {
-		if (this.state.drag) event.preventDefault();
+		if (this.state.drag || this.state.pendingTouch) event.preventDefault();
 	};
 
 	private clearDrag(): void {
@@ -533,39 +533,6 @@ export class TimelineController {
 		header.createEl("h2", {
 			cls: "dwl-view-date-title",
 			text: formatDateHeader(date, language, this.plugin.getDailyNoteFormat()),
-		});
-		const buttons = header.createDiv({ cls: "dwl-nav-buttons" });
-		this.renderNavigationButton(buttons, date, -1, language);
-		this.renderNavigationButton(buttons, date, 1, language);
-	}
-
-	private renderNavigationButton(
-		container: HTMLElement,
-		date: Date,
-		offset: -1 | 1,
-		language: MarkerLanguage
-	): void {
-		const previous = offset < 0;
-		const button = container.createEl("button", {
-			cls: "dwl-nav-btn",
-			attr: { "aria-label": t(previous ? "prev" : "next", language) },
-		});
-		setIcon(button, previous ? "chevron-left" : "chevron-right");
-		button.addEventListener("click", () => {
-			const target = new Date(date);
-			target.setDate(target.getDate() + offset);
-			const path = formatDailyNotePath(
-				target,
-				this.plugin.getDailyNoteFormat(),
-				this.plugin.getDailyNoteFolder()
-			);
-			const file = this.plugin.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				// Opening the file triggers the normal file-open refresh.
-				void this.plugin.app.workspace.openLinkText(file.path, "", false, { active: true });
-			} else {
-				new Notice(t("noticeDailyNoteNotFound", language).replace("%s", path));
-			}
 		});
 	}
 
@@ -669,7 +636,4 @@ export class TimelineController {
 		});
 	}
 }
-
-
-
 

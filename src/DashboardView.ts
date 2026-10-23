@@ -34,6 +34,7 @@ export class DashboardView extends ItemView {
 	// Cache strict Moment parse results by file path and date format.
 	private readonly parseCache = new Map<string, Date | null>();
 	private parseCacheConfigKey = "";
+	private headerLanguage: MarkerLanguage | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: DailyWorkLogPlugin) {
 		super(leaf);
@@ -84,10 +85,12 @@ export class DashboardView extends ItemView {
 
 		// Keep the current controls and data visible until replacement content is ready.
 		const existingHeader = container.querySelector(".dwl-dashboard-header");
-		if (!existingHeader) this.renderHeader(nextContent, language);
+		const reuseHeader = existingHeader !== null && this.headerLanguage === language;
+		if (!reuseHeader) this.renderHeader(nextContent, language);
 		const commitContent = () => {
-			if (existingHeader) nextContent.prepend(existingHeader);
+			if (reuseHeader && existingHeader) nextContent.prepend(existingHeader);
 			container.replaceChildren(...Array.from(nextContent.childNodes));
+			this.headerLanguage = language;
 		};
 
 		if (allNotes.length === 0) {
@@ -181,7 +184,7 @@ export class DashboardView extends ItemView {
 		const consider = (file: TAbstractFile) => {
 			if (!(file instanceof TFile) || file.extension !== "md") return;
 			scannedPaths.add(file.path);
-			const cacheKey = JSON.stringify([file.path, dateFormat, folderSetting]);
+			const cacheKey = file.path;
 			if (!this.parseCache.has(cacheKey)) {
 				this.parseCache.set(cacheKey, parseDateFromDailyNotePath(file.path, dateFormat, folderSetting));
 			}
@@ -200,8 +203,7 @@ export class DashboardView extends ItemView {
 			this.app.vault.getMarkdownFiles().forEach(consider);
 		}
 		for (const key of this.parseCache.keys()) {
-			const cachedPath = JSON.parse(key)[0] as string;
-			if (!scannedPaths.has(cachedPath)) this.parseCache.delete(key);
+			if (!scannedPaths.has(key)) this.parseCache.delete(key);
 		}
 		return result;
 	}

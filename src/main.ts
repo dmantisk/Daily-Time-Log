@@ -75,7 +75,11 @@ export default class DailyWorkLogPlugin extends Plugin {
 			this.app.workspace.on("active-leaf-change", (leaf) => {
 				if (leaf && leaf.view && leaf.view.containerEl.isConnected) {
 					this.refreshBadgesIfNeeded();
-					this.refreshDataViews(false); // dashboard only, not timeline
+					if (leaf.view instanceof DailyWorkLogView) {
+						void leaf.view.refresh();
+					} else {
+						this.refreshDataViews(false);
+					}
 				}
 			})
 		);
@@ -97,7 +101,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 			if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
 			this.refreshTimelineAfterDebounce = false;
 			if (this.badgeRefreshTimer !== null) window.clearTimeout(this.badgeRefreshTimer);
-			});
+		});
 
 		// Category badge rendering — live editor (CodeMirror ViewPlugin) and
 		// reading view (markdown post-processor). The editor extension is built
