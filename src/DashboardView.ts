@@ -32,6 +32,8 @@ export class DashboardView extends ItemView {
 	private refreshToken = 0;
 	private selectedWindowDays = 30; // 7, 30, 90, 0 (all)
 	private readonly parsedNotes = new Map<string, CachedDailyNote>();
+	// Cache strict Moment parse results by file path and date format.
+	private readonly parseCache = new Map<string, Date | null>();
 
 	constructor(leaf: WorkspaceLeaf, plugin: DailyWorkLogPlugin) {
 		super(leaf);
@@ -173,11 +175,11 @@ export class DashboardView extends ItemView {
 
 		const consider = (file: TAbstractFile) => {
 			if (!(file instanceof TFile) || file.extension !== "md") return;
-			const date = parseDateFromDailyNotePath(
-				file.path,
-				dateFormat,
-				folderSetting
-			);
+			const cacheKey = `${file.path}:${dateFormat}`;
+			if (!this.parseCache.has(cacheKey)) {
+				this.parseCache.set(cacheKey, parseDateFromDailyNotePath(file.path, dateFormat, folderSetting));
+			}
+			const date = this.parseCache.get(cacheKey);
 			if (date) result.push({ file, date });
 		};
 

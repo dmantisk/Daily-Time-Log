@@ -73,7 +73,7 @@ You don't need the sidebar at all — the sidebar is just a UI on top of plain m
 - 14:00 - 14:30 Quick call with no category
 ```
 
-- `- HH:mm - HH:mm [Category] description` for an Event. The `[Category]` part is optional; the category name must match one of the names configured in **Settings → Category Management** to pick up its color (an unrecognized or missing category just shows as uncategorized).
+- `- HH:mm - HH:mm [Category] description` for an Event. The `[Category]` part is optional; the category name must match one of the names configured in **Settings → Category Management** to pick up its color (an unrecognized or missing category just shows as uncategorized). A leading `[tag]` in the description (e.g. `- 09:00 - 10:00 [[Note]] ...`) is parsed as a category token, not as part of the description.
 - Save the file (or just keep typing — Obsidian autosaves) and the sidebar/Work Insights pick up Event changes automatically. Checkbox lines remain note content and are not parsed as tasks.
 
 #### Multi-line notes

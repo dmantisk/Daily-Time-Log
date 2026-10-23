@@ -553,7 +553,8 @@ export class TimelineController {
 			);
 			const file = this.plugin.app.vault.getAbstractFileByPath(path);
 			if (file instanceof TFile) {
-				void this.plugin.app.workspace.getLeaf(false).openFile(file);
+				// Open the note first, then refresh the sidebar once.
+				void this.plugin.app.workspace.openLinkText(file.path, "", false, { active: true }).then(() => { this.plugin.refreshViews(); });
 			} else {
 				new Notice(t("noticeDailyNoteNotFound", language).replace("%s", path));
 			}
@@ -660,3 +661,8 @@ export class TimelineController {
 		});
 	}
 }
+
+
+
+
+

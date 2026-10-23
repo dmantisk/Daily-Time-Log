@@ -72,8 +72,11 @@ export default class DailyWorkLogPlugin extends Plugin {
 		});
 
 		this.registerEvent(
-			this.app.workspace.on("active-leaf-change", () => {
-				this.refreshBadgesIfNeeded();
+			this.app.workspace.on("active-leaf-change", (leaf) => {
+				if (leaf && leaf.view && leaf.view.containerEl.isConnected) {
+					this.refreshBadgesIfNeeded();
+					this.refreshDataViews();
+				}
 			})
 		);
 		this.registerEvent(
@@ -215,7 +218,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 	async processWrite(file: TFile, fn: (data: string) => string): Promise<void> {
 		await this.app.vault.process(file, (data) => {
 			const content = fn(data);
-			this.lastSelfWrite = { path: file.path, content };
+			if (content !== data) {
+				this.lastSelfWrite = { path: file.path, content };
+			}
 			return content;
 		});
 	}
@@ -267,6 +272,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	private refreshTimelineView(): void {
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DAILY_WORK_LOG)) {
+			if (!leaf.view.containerEl.isConnected) continue;
 			if (leaf.view instanceof DailyWorkLogView) {
 				void leaf.view.refresh();
 			}
@@ -276,11 +282,13 @@ export default class DailyWorkLogPlugin extends Plugin {
 	private refreshDataViews(refreshTimeline = true): void {
 		if (refreshTimeline) this.refreshTimelineView();
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD)) {
+			if (!leaf.view.containerEl.isConnected) continue;
 			if (leaf.view instanceof DashboardView && leaf.view.containerEl.isConnected) {
 				void leaf.view.refresh();
 			}
 		}
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DAILY_WORK_LOG)) {
+			if (!leaf.view.containerEl.isConnected) continue;
 			if (leaf.view instanceof DailyWorkLogView && leaf.view.containerEl.isConnected) {
 				void leaf.view.refresh();
 			}

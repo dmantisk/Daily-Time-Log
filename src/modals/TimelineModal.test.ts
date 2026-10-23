@@ -228,6 +228,55 @@ describe("TimelineModal", () => {
 		expect(secondSaved[0].category).toBeUndefined();
 	});
 
+	it("allows overnight ranges (end before start)", () => {
+		const { modal, saved } = openModal(null);
+		const [start, end] = timeInputsOf(modal);
+		start.value = "23:00";
+		end.value = "01:00";
+
+		buttonLabelled(modal, "Save").click();
+
+		expect(saved).toHaveLength(1);
+		expect(saved[0].start).toBe("23:00");
+		expect(saved[0].end).toBe("01:00");
+	});
+
+	it("rejects equal start and end times", () => {
+		const { modal, saved } = openModal(null);
+		const [start, end] = timeInputsOf(modal);
+		start.value = "09:00";
+		end.value = "09:00";
+
+		buttonLabelled(modal, "Save").click();
+
+		expect(saved).toHaveLength(0);
+		expect(Notice.shown).toHaveLength(1);
+	});
+
+	it("submits with plain Enter from time inputs", () => {
+		const { modal, saved } = openModal(null);
+		const [start, end] = timeInputsOf(modal);
+		start.value = "09:00";
+		end.value = "10:00";
+
+		end.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+		expect(saved).toHaveLength(1);
+		expect(saved[0].start).toBe("09:00");
+	});
+
+	it("resolves stale category chips case-insensitively", () => {
+		const { modal, saved } = openModal(item({ category: "work" }));
+		const chips = (): HTMLButtonElement[] => [
+			...bodyOf(modal).querySelectorAll<HTMLButtonElement>(".dwl-category-chip"),
+		];
+
+		// A differently-cased old tag should resolve to the configured category.
+		expect(chips().map((c) => c.textContent)).toContain("Work");
+		buttonLabelled(modal, "Save").click();
+		expect(saved[0].category).toBe("work");
+	});
+
 	it("asks for the delete and closes when the delete button is pressed", () => {
 		const deleted = vi.fn();
 		const { modal } = openModal(item(), deleted);

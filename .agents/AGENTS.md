@@ -9,7 +9,7 @@ Keep this file short: it is the always-on project context. Load detailed referen
 - `src/parser.ts` and `src/dailyNote.ts` are pure, independently testable logic. Keep Obsidian APIs in the view/plugin layer.
 - Only the configured heading opens the Event section. Keep parser and category-badge rendering in agreement, preserve source line indices and line endings, and never absorb unrelated note content into a writable Event.
 - Read notes through the Vault API and write through `plugin.processWrite()` (atomic `vault.process()` with the returned string captured inside the callback) so Obsidian sync and the self-write guard remain intact.
-- Prefer Obsidian's native UI components. React is used for the sidebar timeline; the dashboard and modals use Obsidian components/DOM.
+- Prefer Obsidian's native UI components. The sidebar timeline (`src/components/TimelineController.ts`) uses plain DOM (no React); the dashboard and modals use Obsidian components/DOM.
 
 ## Architecture
 

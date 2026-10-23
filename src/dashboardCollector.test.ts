@@ -4,6 +4,19 @@ import type { ParsedDailyNote } from "./parser";
 
 const EMPTY_NOTE: ParsedDailyNote = { timeline: [] };
 
+describe("NoteActivitySummary.path association", () => {
+	it("includes the file path in the summary row", () => {
+		const stats = computeDashboardStats(
+			[new Date(2026, 6, 30)],
+			[{ date: new Date(2026, 6, 30), path: "2026-07-30.md", parsed: EMPTY_NOTE }],
+			new Date(2026, 6, 30),
+			[{ name: "Work", displayName: "Work", color: "#d0e1fd" }],
+			"Uncategorized"
+		);
+		expect(stats.recentNotesSummary[0].path).toBe("2026-07-30.md");
+	});
+});
+
 describe("getRecentWindowStart", () => {
 	it("returns the day exactly 29 days before today (30-day window, inclusive)", () => {
 		const today = new Date(2026, 6, 30); // 2026-07-30

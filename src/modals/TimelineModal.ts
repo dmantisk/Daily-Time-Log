@@ -1,5 +1,6 @@
 import { App, ButtonComponent, Modal, Notice, TextAreaComponent, TextComponent } from "obsidian";
 import { t } from "../i18n";
+import { findCategoryByDisplayName } from "../settings";
 import { isTopLevelOrMarker, stripHtml, TIME_END_VALUE_REGEX, TIME_VALUE_REGEX, timeToMinutes, type MarkerLanguage, type TimelineItem } from "../parser";
 import type { CustomCategory } from "../settings";
 
@@ -70,12 +71,24 @@ export class TimelineModal extends Modal {
 			.setPlaceholder("09:00")
 			.setValue(this.initial ? this.initial.start : this.defaultStart);
 		this.startComponent.inputEl.addClass("dwl-modal-time-input");
+		this.startComponent.inputEl.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+				this.handleSave();
+				e.preventDefault();
+			}
+		});
 
 		this.endComponent = new TextComponent(timeRow);
 		this.endComponent
 			.setPlaceholder("10:00")
 			.setValue(this.initial ? this.initial.end : this.defaultEnd);
 		this.endComponent.inputEl.addClass("dwl-modal-time-input");
+		this.endComponent.inputEl.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+				this.handleSave();
+				e.preventDefault();
+			}
+		});
 
 		// --- Category ---
 		const categoryField = body.createDiv({ cls: "dwl-modal-field" });
@@ -161,8 +174,9 @@ export class TimelineModal extends Modal {
 		// Show categories no longer in settings so they can be seen or cleared.
 		const allCategories = new Set([...this.categories.map((c) => c.displayName), ...(this.selectedCategory ? [this.selectedCategory] : [])]);
 		for (const name of allCategories) {
-			const cat = this.categories.find((c) => c.displayName === name) ?? { displayName: name, color: "#95a5a6" };
-			const selected = this.selectedCategory === name;
+			const cat = findCategoryByDisplayName(this.categories, name) ?? { displayName: name, color: "#95a5a6" };
+			const selectedCat = findCategoryByDisplayName(this.categories, this.selectedCategory);
+			const selected = selectedCat ? selectedCat.displayName.trim().toLowerCase() === name.trim().toLowerCase() : false;
 			const chip = chips.createEl("button", {
 				cls: selected ? "dwl-category-chip mod-cta" : "dwl-category-chip",
 				type: "button",
@@ -206,10 +220,10 @@ export class TimelineModal extends Modal {
 			return;
 		}
 
-		// Reject end times that are not after start times.
+		// Reject equal start/end times; allow overnight ranges (end < start).
 		const startMin = timeToMinutes(start);
 		const endMin = timeToMinutes(end);
-		if (endMin <= startMin) {
+		if (endMin === startMin) {
 			new Notice(t("endNotAfterStart", this.language));
 			return;
 		}

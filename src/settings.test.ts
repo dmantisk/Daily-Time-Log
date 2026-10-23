@@ -7,6 +7,7 @@ import {
 	findCategoryByDisplayName,
 	resolveEventHeadingLevel,
 	resolveEventHeadingText,
+	resolveHour,
 	validateCategoryName,
 	type CustomCategory,
 	type DailyWorkLogSettings,
@@ -140,6 +141,22 @@ describe("category copies", () => {
 		} finally {
 			DEFAULT_SETTINGS.categories[0].displayName = original;
 		}
+	});
+});
+
+describe("resolveHour", () => {
+	it("keeps a valid integer hour 0-24", () => {
+		expect(resolveHour(0, 0)).toBe(0);
+		expect(resolveHour(12, 0)).toBe(12);
+		expect(resolveHour(24, 24)).toBe(24);
+	});
+
+	it("falls back to default for out-of-range or non-integer values", () => {
+		expect(resolveHour(-1, 0)).toBe(0);
+		expect(resolveHour(25, 24)).toBe(24);
+		expect(resolveHour(2.5, 0)).toBe(0);
+		expect(resolveHour("9", 0)).toBe(0);
+		expect(resolveHour(undefined, 0)).toBe(0);
 	});
 });
 

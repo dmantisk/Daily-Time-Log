@@ -20,6 +20,7 @@ import {
 	timelineLineMatches,
 	timelineRangeMatches,
 	TIME_END_VALUE_REGEX,
+	TIME_RANGE_REGEX,
 	TIME_VALUE_REGEX,
 	timeToMinutes,
 	minutesToTime,
@@ -667,5 +668,24 @@ describe("stripHtml", () => {
 	it("leaves an out-of-range or malformed numeric entity untouched", () => {
 		expect(stripHtml("&#x110000;")).toBe("&#x110000;");
 		expect(stripHtml("&#99999999999;")).toBe("&#99999999999;");
+	});
+});
+
+describe("TIME_RANGE_REGEX", () => {
+	it("does not treat a leading wikilink bracket as a category", () => {
+		// A description beginning with a wikilink like [[Note]] must not
+		// have its brackets parsed as a category token.
+		const line = "- 09:00 - 10:00 [[Note]] some description";
+		const match = TIME_RANGE_REGEX.exec(line);
+		expect(match).not.toBeNull();
+		expect(match![3]).toBeUndefined(); // no category group
+		expect(match![4]).toContain("[[Note]] some description");
+	});
+
+	it("still parses a real category token correctly", () => {
+		const line = "- 09:00 - 10:00 [Work] Team meeting";
+		const match = TIME_RANGE_REGEX.exec(line);
+		expect(match![3]).toBe("Work");
+		expect(match![4]).toBe("Team meeting");
 	});
 });

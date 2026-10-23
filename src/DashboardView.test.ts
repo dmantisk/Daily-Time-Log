@@ -162,6 +162,17 @@ describe("DashboardView metric tooltips", () => {
 		expect(container.querySelector(".dwl-dashboard-refresh-btn")).toBeNull();
 	});
 
+	it("preserves the dashboard header and dropdown on refresh", async () => {
+		const container = await renderDashboard();
+		const headerBefore = container.querySelector(".dwl-dashboard-header");
+		expect(headerBefore).not.toBeNull();
+
+		// A second refresh should keep the same header element.
+		await (container.querySelector(".clickable-icon") as HTMLButtonElement)?.click();
+		const headerAfter = container.querySelector(".dwl-dashboard-header");
+		expect(headerAfter).toBe(headerBefore);
+	});
+
 	it("reuses parsed note content until the file's modification time changes", async () => {
 		const noteContent = "# Event\n- 09:00 - 10:00 [Work] a\n";
 		const cachedRead = vi.fn(async () => noteContent);
