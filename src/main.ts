@@ -72,8 +72,12 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", () => {
-				this.refreshTimelineView();
 				this.refreshBadgesIfNeeded();
+			})
+		);
+		this.registerEvent(
+			this.app.workspace.on("file-open", () => {
+				this.refreshTimelineView();
 			})
 		);
 

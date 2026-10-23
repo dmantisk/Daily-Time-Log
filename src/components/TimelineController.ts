@@ -107,7 +107,6 @@ export class TimelineController {
 		this.clearPendingTouchPress();
 		this.clearDrag();
 		this.state.drag = null;
-		this.render();
 		void this.syncFromActiveFile();
 	}
 
@@ -128,7 +127,10 @@ export class TimelineController {
 	private async syncFromActiveFile(): Promise<void> {
 		const token = ++this.loadToken;
 		const file = this.plugin.app.workspace.getActiveFile();
-		if (!file) return;
+		if (!file) {
+			this.render();
+			return;
+		}
 
 		const resolved =
 			parseDateFromDailyNotePath(
@@ -146,7 +148,8 @@ export class TimelineController {
 			return;
 		}
 
-		this.render();
+		this.state.timeline = [];
+		this.state.hasEventSection = true;
 		await this.loadFile(resolved, token);
 	}
 
@@ -165,6 +168,7 @@ export class TimelineController {
 			this.render();
 		} catch (error) {
 			if (this.destroyed || token !== this.loadToken) return;
+			this.render();
 			new Notice(`${t("noticeLoadTimelineFailed", this.plugin.getUiLanguage())}: ${errorMessage(error)}`);
 		}
 	}

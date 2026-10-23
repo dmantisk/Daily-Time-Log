@@ -517,6 +517,23 @@ describe("TimelineController", () => {
 		expect(fixture.getContent()).not.toContain("Must not win");
 	});
 
+	it("renders a newly selected daily note once after its content loads", async () => {
+		const fixture = createPluginStub();
+		const { container, controller } = await renderController(fixture);
+		const nextFile = createFile("2026-10-17.md");
+		fixture.api.app.vault.cachedRead = async () =>
+			"# Event\n- 11:00 - 12:00 [Work] Next day\n";
+		fixture.setActiveFile(nextFile);
+
+		const render = vi.spyOn(controller as unknown as { render: () => void }, "render");
+		controller.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(render).toHaveBeenCalledTimes(1);
+		expect(container.querySelector(".dwl-view-date-title")?.textContent).toContain("2026-10-17");
+		expect(container.querySelector(".dwl-grid-block")?.getAttribute("title")).toContain("Next day");
+	});
+
 	it("ignores stale async note reads and removes the global listener on destroy", async () => {
 		const fixture = createPluginStub();
 		const firstFile = fixture.file;
