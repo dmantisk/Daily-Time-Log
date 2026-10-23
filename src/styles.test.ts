@@ -43,6 +43,14 @@ function ruleBody(selector: string): string {
 }
 
 describe("styles.css — grid block label", () => {
+	it("keeps the timeline grid's layout declarations inside its rule", () => {
+		const body = cssWithoutComments.match(/(?:^|\})\s*\.dwl-grid\s*\{([^}]*)\}/m)?.[1] ?? "";
+
+		expect(body).toMatch(/display\s*:\s*flex\b/);
+		expect(body).toMatch(/flex-direction\s*:\s*column\b/);
+		expect(body).toMatch(/-webkit-touch-callout\s*:\s*none\b/);
+	});
+
 	it("cuts a SHORT bar's label cleanly, without a trailing ellipsis", () => {
 		// A bar at most one 10-minute cell wide is too narrow to show the
 		// whole category name. The name is cut at a fixed width, and the cut

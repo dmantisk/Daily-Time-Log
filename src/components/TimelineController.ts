@@ -215,6 +215,7 @@ export class TimelineController {
 				return replaceLineRangeAt(content, item.line, item.lineCount, buildTimelineLine(values));
 			});
 			if (!matched) {
+				new Notice(t("noticeUpdateEventFailed", this.plugin.getUiLanguage()));
 				await this.reloadFile(file);
 				return;
 			}
@@ -233,6 +234,7 @@ export class TimelineController {
 				return removeLineRangeAt(content, item.line, item.lineCount);
 			});
 			if (!matched) {
+				new Notice(t("noticeUpdateEventFailed", this.plugin.getUiLanguage()));
 				await this.reloadFile(file);
 				return;
 			}
@@ -289,6 +291,7 @@ export class TimelineController {
 			pointerId: event.pointerId,
 			pointerType: event.pointerType,
 		};
+		this.container.addEventListener("contextmenu", this.preventContextMenu, { once: true });
 		this.updateSelectionClasses(null, this.state.drag);
 	}
 
@@ -373,6 +376,7 @@ export class TimelineController {
 			const { endHour } = this.plugin.settings;
 			const range = touchTapRangeToTimes(pending.cellIndex, endHour);
 			this.openEventModal(null, range.start, range.end);
+			if (event.cancelable) event.preventDefault();
 			return;
 		}
 
@@ -454,6 +458,10 @@ export class TimelineController {
 		this.activeWindow.clearTimeout(pending.timerId);
 		this.state.pendingTouch = null;
 	}
+
+	private preventContextMenu = (event: MouseEvent): void => {
+		if (this.state.drag) event.preventDefault();
+	};
 
 	private clearDrag(): void {
 		const drag = this.state.drag;
@@ -553,8 +561,8 @@ export class TimelineController {
 			);
 			const file = this.plugin.app.vault.getAbstractFileByPath(path);
 			if (file instanceof TFile) {
-				// Open the note first, then refresh the sidebar once.
-				void this.plugin.app.workspace.openLinkText(file.path, "", false, { active: true }).then(() => { this.plugin.refreshViews(); });
+				// Opening the file triggers the normal file-open refresh.
+				void this.plugin.app.workspace.openLinkText(file.path, "", false, { active: true });
 			} else {
 				new Notice(t("noticeDailyNoteNotFound", language).replace("%s", path));
 			}
@@ -661,7 +669,6 @@ export class TimelineController {
 		});
 	}
 }
-
 
 
 

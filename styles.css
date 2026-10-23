@@ -106,6 +106,8 @@
 }
 
 .dwl-grid {
+	-webkit-touch-callout: none;
+	user-select: none;
 	display: flex;
 	flex-direction: column;
 	border-top: 1px solid var(--background-modifier-border);

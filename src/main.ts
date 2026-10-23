@@ -75,7 +75,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 			this.app.workspace.on("active-leaf-change", (leaf) => {
 				if (leaf && leaf.view && leaf.view.containerEl.isConnected) {
 					this.refreshBadgesIfNeeded();
-					this.refreshDataViews();
+					this.refreshDataViews(false); // dashboard only, not timeline
 				}
 			})
 		);
@@ -96,7 +96,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.register(() => {
 			if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
 			this.refreshTimelineAfterDebounce = false;
-		});
+			if (this.badgeRefreshTimer !== null) window.clearTimeout(this.badgeRefreshTimer);
+			});
 
 		// Category badge rendering — live editor (CodeMirror ViewPlugin) and
 		// reading view (markdown post-processor). The editor extension is built
@@ -205,16 +206,6 @@ export default class DailyWorkLogPlugin extends Plugin {
 		};
 	}
 
-	/**
-	 * Writes must go through this method (not `vault.modify` directly) so the
-	 * resulting `modify` event can be recognized as self-triggered so the
-	 * sidebar isn't redundantly re-rendered after every edit.
-	 */
-	async writeFile(file: TFile, content: string): Promise<void> {
-		this.lastSelfWrite = { path: file.path, content };
-		await this.app.vault.modify(file, content);
-	}
-
 	async processWrite(file: TFile, fn: (data: string) => string): Promise<void> {
 		await this.app.vault.process(file, (data) => {
 			const content = fn(data);
@@ -284,12 +275,6 @@ export default class DailyWorkLogPlugin extends Plugin {
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD)) {
 			if (!leaf.view.containerEl.isConnected) continue;
 			if (leaf.view instanceof DashboardView && leaf.view.containerEl.isConnected) {
-				void leaf.view.refresh();
-			}
-		}
-		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_DAILY_WORK_LOG)) {
-			if (!leaf.view.containerEl.isConnected) continue;
-			if (leaf.view instanceof DailyWorkLogView && leaf.view.containerEl.isConnected) {
 				void leaf.view.refresh();
 			}
 		}

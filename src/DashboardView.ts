@@ -18,7 +18,6 @@ interface CachedDailyNote {
 	mtime: number;
 	headingConfigKey: string;
 	parsed: ParsedDailyNote;
-	dateFormat: string;
 }
 
 /**
@@ -34,6 +33,7 @@ export class DashboardView extends ItemView {
 	private readonly parsedNotes = new Map<string, CachedDailyNote>();
 	// Cache strict Moment parse results by file path and date format.
 	private readonly parseCache = new Map<string, Date | null>();
+	private parseCacheConfigKey = "";
 
 	constructor(leaf: WorkspaceLeaf, plugin: DailyWorkLogPlugin) {
 		super(leaf);
@@ -63,6 +63,14 @@ export class DashboardView extends ItemView {
 	async refresh(): Promise<void> {
 		const token = ++this.refreshToken;
 		const language = this.plugin.getUiLanguage();
+		const parseCacheConfigKey = JSON.stringify([
+			this.plugin.getDailyNoteFolder(),
+			this.plugin.getDailyNoteFormat(),
+		]);
+		if (parseCacheConfigKey !== this.parseCacheConfigKey) {
+			this.parseCache.clear();
+			this.parseCacheConfigKey = parseCacheConfigKey;
+		}
 
 		const container = this.contentEl;
 		container.addClass("dwl-dashboard-view");
@@ -74,21 +82,17 @@ export class DashboardView extends ItemView {
 			if (!activePaths.has(path)) this.parsedNotes.delete(path);
 		}
 
-		// Preserve dashboard controls on refresh by rebuilding data sections
-		// without rebuilding the dropdown.
-		const header = container.querySelector(".dwl-dashboard-header");
-		const controls = header?.querySelector(".dwl-dashboard-controls");
-		if (header && controls) {
-			// Keep existing dropdown/button; only rebuild data sections.
-			const dataSections = container.querySelectorAll(".dwl-dashboard-bottom-layout, .dwl-dashboard-empty, .dwl-dashboard-kpi-grid");
-			dataSections.forEach((el) => el.remove());
-		} else {
-			this.renderHeader(nextContent, language);
-		}
+		// Keep the current controls and data visible until replacement content is ready.
+		const existingHeader = container.querySelector(".dwl-dashboard-header");
+		if (!existingHeader) this.renderHeader(nextContent, language);
+		const commitContent = () => {
+			if (existingHeader) nextContent.prepend(existingHeader);
+			container.replaceChildren(...Array.from(nextContent.childNodes));
+		};
 
 		if (allNotes.length === 0) {
 			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardEmptyVault", language) });
-			container.replaceChildren(...Array.from(nextContent.childNodes));
+			commitContent();
 			return;
 		}
 
@@ -125,7 +129,7 @@ export class DashboardView extends ItemView {
 
 		if (!hasPastOrPresentNotes) {
 			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardFutureOnlyNotice", language) });
-			container.replaceChildren(...Array.from(nextContent.childNodes));
+			commitContent();
 			return;
 		}
 
@@ -147,7 +151,7 @@ export class DashboardView extends ItemView {
 		// Bottom 2-Column Layout (Recent Activity + Summary)
 		this.renderBottomLayout(nextContent, stats, recentNotes, language);
 		if (token !== this.refreshToken) return;
-		container.replaceChildren(...Array.from(nextContent.childNodes));
+		commitContent();
 	}
 
 	private async getParsedNote(file: TFile): Promise<ParsedDailyNote> {
@@ -160,7 +164,7 @@ export class DashboardView extends ItemView {
 
 		const parsed = parseDailyNote(await this.app.vault.cachedRead(file), headingConfig);
 		// Cache strict Moment parse results by path and format when collecting daily-note files.
-		this.parsedNotes.set(file.path, { mtime: file.stat.mtime, headingConfigKey, parsed, dateFormat: this.plugin.getDailyNoteFormat() });
+		this.parsedNotes.set(file.path, { mtime: file.stat.mtime, headingConfigKey, parsed });
 		return parsed;
 	}
 
@@ -172,10 +176,12 @@ export class DashboardView extends ItemView {
 		const folderSetting = this.plugin.getDailyNoteFolder();
 		const dateFormat = this.plugin.getDailyNoteFormat();
 		const normalizedFolder = folderSetting.trim().replace(/^\/+|\/+$/g, "");
+		const scannedPaths = new Set<string>();
 
 		const consider = (file: TAbstractFile) => {
 			if (!(file instanceof TFile) || file.extension !== "md") return;
-			const cacheKey = `${file.path}:${dateFormat}`;
+			scannedPaths.add(file.path);
+			const cacheKey = JSON.stringify([file.path, dateFormat, folderSetting]);
 			if (!this.parseCache.has(cacheKey)) {
 				this.parseCache.set(cacheKey, parseDateFromDailyNotePath(file.path, dateFormat, folderSetting));
 			}
@@ -192,6 +198,10 @@ export class DashboardView extends ItemView {
 			Vault.recurseChildren(scopedFolder, consider);
 		} else {
 			this.app.vault.getMarkdownFiles().forEach(consider);
+		}
+		for (const key of this.parseCache.keys()) {
+			const cachedPath = JSON.parse(key)[0] as string;
+			if (!scannedPaths.has(cachedPath)) this.parseCache.delete(key);
 		}
 		return result;
 	}

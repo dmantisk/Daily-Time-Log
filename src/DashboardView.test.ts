@@ -163,14 +163,22 @@ describe("DashboardView metric tooltips", () => {
 	});
 
 	it("preserves the dashboard header and dropdown on refresh", async () => {
-		const container = await renderDashboard();
+		const noteContent = "# Event\n- 09:00 - 10:00 [Work] a\n";
+		const view = new DashboardView({} as never, createPluginStub());
+		const container = document.createElement("div");
+		(view as unknown as { app: unknown }).app = createAppStub(noteContent);
+		(view as unknown as { contentEl: HTMLElement }).contentEl = container;
+
+		await view.refresh();
 		const headerBefore = container.querySelector(".dwl-dashboard-header");
+		const dropdownBefore = container.querySelector("select");
 		expect(headerBefore).not.toBeNull();
 
-		// A second refresh should keep the same header element.
-		await (container.querySelector(".clickable-icon") as HTMLButtonElement)?.click();
+		await view.refresh();
 		const headerAfter = container.querySelector(".dwl-dashboard-header");
+		const dropdownAfter = container.querySelector("select");
 		expect(headerAfter).toBe(headerBefore);
+		expect(dropdownAfter).toBe(dropdownBefore);
 	});
 
 	it("reuses parsed note content until the file's modification time changes", async () => {
