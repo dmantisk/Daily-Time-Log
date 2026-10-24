@@ -26,6 +26,14 @@ export function parseDateFromBasename(
 	return parsed.isValid() ? parsed.toDate() : null;
 }
 
+export function isDatePathPrefix(pathPrefix: string, dateFormat = DEFAULT_DAILY_NOTE_FORMAT): boolean {
+	const pathParts = pathPrefix.split("/");
+	const formatParts = dateFormat.split("/");
+	if (pathParts.length === 0 || pathParts.length >= formatParts.length) return false;
+	const prefixFormat = formatParts.slice(0, pathParts.length).join("/");
+	return momentFactory(pathPrefix, prefixFormat, true).isValid();
+}
+
 export function formatDailyNotePath(
 	date: Date,
 	dateFormat = DEFAULT_DAILY_NOTE_FORMAT,

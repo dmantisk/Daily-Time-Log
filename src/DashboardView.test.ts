@@ -19,7 +19,7 @@ import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 installObsidianDomHelpers();
 
 import { DashboardView } from "./DashboardView";
-import { TFile } from "obsidian";
+import { TFile, TFolder } from "obsidian";
 import type { MarkerLanguage } from "./parser";
 
 /** A plugin stub good enough for the dashboard to render. */
@@ -53,10 +53,25 @@ function createAppStub(noteContent: string, cachedRead = async () => noteContent
 		workspace: { openLinkText: () => {} },
 		vault: {
 			getMarkdownFiles: () => [file],
+			getRoot: () => {
+				const root = new TFolder();
+				root.children = [file];
+				return root;
+			},
 			getFolderByPath: () => null,
 			cachedRead,
 		},
 	} as never;
+}
+
+function createNoteFile(path: string): TFile {
+	const file = new TFile();
+	file.path = path;
+	file.name = path.split("/").pop() ?? path;
+	file.basename = file.name.slice(0, -3);
+	file.extension = "md";
+	file.stat = { ctime: Date.now(), mtime: Date.now(), size: 0 };
+	return file;
 }
 
 /**
@@ -210,5 +225,39 @@ describe("DashboardView metric tooltips", () => {
 		await view.refresh();
 
 		expect(cachedRead).toHaveBeenCalledTimes(1);
+	});
+
+	it("finds nested date-format notes without traversing unrelated folders", () => {
+		const dateFolder = new TFolder();
+		dateFolder.name = "2026";
+		const monthFolder = new TFolder();
+		monthFolder.name = "10";
+		const dailyNote = createNoteFile("2026/10/22.md");
+		monthFolder.children = [dailyNote];
+		dateFolder.children = [monthFolder];
+
+		const unrelatedFolder = new TFolder();
+		unrelatedFolder.name = "Projects";
+		unrelatedFolder.children = [createNoteFile("Projects/2026-10-22.md")];
+		const root = new TFolder();
+		root.children = [dateFolder, unrelatedFolder];
+
+		const plugin = createPluginStub() as {
+			getDailyNoteFormat: () => string;
+		};
+		plugin.getDailyNoteFormat = () => "YYYY/MM/DD";
+		const view = new DashboardView({} as never, plugin as never);
+		(view as unknown as { app: unknown }).app = {
+			vault: {
+				getRoot: () => root,
+				getFolderByPath: () => null,
+			},
+		};
+
+		const files = (view as unknown as {
+			collectDailyNoteFiles: () => Array<{ file: TFile }>;
+		}).collectDailyNoteFiles();
+
+		expect(files.map(({ file }) => file.path)).toEqual(["2026/10/22.md"]);
 	});
 });

@@ -9,6 +9,12 @@ describe("CATEGORY_BADGE_REGEX_SOURCE", () => {
 		const matches = Array.from(text.matchAll(regex()));
 		expect(matches.length).toBe(1);
 		expect(matches[0][1]).toBe("Work");
+		expect(matches[0][0]).toBe("09:00 - 10:30 [Work]");
+	});
+
+	it("does not use unsupported regular-expression lookbehind", () => {
+		expect(CATEGORY_BADGE_REGEX_SOURCE).not.toContain("(?<=");
+		expect(CATEGORY_BADGE_REGEX_SOURCE).not.toContain("(?<!");
 	});
 
 	it("matches category tokens with spaces and hyphens", () => {

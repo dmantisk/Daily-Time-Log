@@ -98,7 +98,7 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 ## Settings
 
 - **Day Start Hour / Day End Hour**: the hour range shown on the grid.
-- **Daily Note Folder**: the plugin reads the folder and date format from Obsidian's core Daily Notes plugin settings (not a separate plugin setting). The dashboard and category-badge scanning are scoped to that folder; when no folder is configured, the scan falls back to the whole vault.
+- **Daily Note Folder**: the plugin reads the folder and date format from Obsidian's core Daily Notes plugin settings (not a separate plugin setting). The dashboard scans inside that folder when set. When no folder is configured, it checks Markdown files at the vault root and follows only folders whose names match the configured date-format path (for example, year/month folders for `YYYY/MM/DD`); unrelated folders are not traversed.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes. Only this exact heading (at this exact level) is recognized — change it and notes using the old heading stop being parsed as an Event block.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults. Up to 10 categories in total; names must be unique.
@@ -118,6 +118,7 @@ npm run build   # type-check (tsc) + production build
 - Aligned the ESLint configuration with the official `eslint-plugin-obsidianmd` flat-config setup.
 - Restored `eslint-plugin-obsidianmd@0.4.2` and fixed the lint config that a `npm audit fix --force` had broken.
 - Declared `@codemirror/view` as a direct dependency at the version Obsidian bundles.
+- Replaced the category-badge lookbehind with an iOS-compatible expression and narrowed dashboard discovery to the configured folder or date-format-shaped paths.
 
 ### 0.8.3 (2026-10-23)
 

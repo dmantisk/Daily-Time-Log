@@ -1,7 +1,7 @@
-import { ButtonComponent, DropdownComponent, ItemView, setTooltip, TFile, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
+import { ButtonComponent, DropdownComponent, ItemView, setTooltip, TFile, TFolder, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import type DailyWorkLogPlugin from "./main";
 import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./parser";
-import { formatDateBasename, parseDateFromDailyNotePath } from "./dailyNote";
+import { formatDateBasename, isDatePathPrefix, parseDateFromDailyNotePath } from "./dailyNote";
 import { computeDashboardStats, isOnOrBeforeToday, isWithinRecentWindow, type DashboardStats } from "./dashboardCollector";
 import { getTextColorForBackground } from "./components/colorUtils";
 import { findCategoryByDisplayName } from "./settings";
@@ -193,15 +193,30 @@ export class DashboardView extends ItemView {
 			if (date) result.push({ file, date });
 		};
 
-		// Scoped to the configured folder when one is set, so large vaults
-		// aren't walked in full just to find daily notes in a subfolder. Falls
-		// back to a vault-wide scan when unset (fresh install default) or when
-		// the configured folder doesn't currently exist.
+		// A configured folder is the scan boundary. With no folder configured,
+		// inspect root notes and only date-shaped directory prefixes instead of
+		// walking every file in the vault.
 		const scopedFolder = normalizedFolder ? this.app.vault.getFolderByPath(normalizedFolder) : null;
 		if (scopedFolder) {
 			Vault.recurseChildren(scopedFolder, consider);
-		} else {
-			this.app.vault.getMarkdownFiles().forEach(consider);
+		} else if (!normalizedFolder) {
+			const dateFormatParts = dateFormat.split("/");
+			const scanDateFolders = (folder: TFolder, prefix: string) => {
+				for (const child of folder.children) {
+					if (child instanceof TFile) {
+						consider(child);
+					} else if (
+						child instanceof TFolder &&
+						prefix.split("/").length < dateFormatParts.length - 1
+					) {
+						const childPrefix = prefix ? `${prefix}/${child.name}` : child.name;
+						if (isDatePathPrefix(childPrefix, dateFormat)) {
+							scanDateFolders(child, childPrefix);
+						}
+					}
+				}
+			};
+			scanDateFolders(this.app.vault.getRoot(), "");
 		}
 		for (const key of this.parseCache.keys()) {
 			if (!scannedPaths.has(key)) this.parseCache.delete(key);

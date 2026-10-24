@@ -36,12 +36,5 @@ export default defineConfig([
       "@typescript-eslint/no-non-null-assertion": "warn",
     },
   },
-  {
-    files: ["src/parser.ts"],
-    rules: {
-      // The regex is guarded at construction and disables badges on unsupported engines.
-      "obsidianmd/regex-lookbehind": "off",
-    },
-  },
   prettierConfig,
 ]);

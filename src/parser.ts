@@ -83,15 +83,12 @@ export const TIME_END_VALUE_REGEX = /^(?:(?:[01]?\d|2[0-3]):[0-5]\d|24:00)$/;
  * prevents brackets typed anywhere else in a note (diary prose, headings,
  * checkboxes, wikilinks) from being rendered as category badges.
  *
- * Uses negative lookbehind/lookahead for brackets, excludes `[ ]`, `[x]`,
- * `[X]`, and supports Unicode category names. Group 1 = the category text
+ * Matches the time range as part of the pattern instead of using lookbehind,
+ * so it works on older iOS JavaScript engines. Group 1 = the category text
  * inside the brackets.
- *
- * The variable-length lookbehind is guarded at each RegExp construction site;
- * older engines skip badge rendering instead of preventing plugin startup.
  */
 export const CATEGORY_BADGE_REGEX_SOURCE =
-	"(?<=\\d{1,2}:\\d{2}\\s*[-~]\\s*\\d{1,2}:\\d{2}\\s*)\\[(?![ xX]\\])([^\\x00-\\x1F\\[\\]\\r\\n]+?)\\](?!\\])";
+	"\\d{1,2}:\\d{2}\\s*[-~]\\s*\\d{1,2}:\\d{2}\\s*\\[(?![ xX]\\])([^\\x00-\\x1F\\[\\]\\r\\n]+?)\\](?!\\])";
 
 const FRONTMATTER_DELIMITER = "---";
 

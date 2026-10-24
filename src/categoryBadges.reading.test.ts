@@ -312,6 +312,14 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		process(el);
 
 		expect(badgeCount(el)).toBe(0);
+		expect(el.querySelector("p")?.textContent).toBe("- 9:00 - 10:00 [Unknown] thing");
+	});
+
+	it("preserves the time range and description when rendering a badge", () => {
+		const el = renderEl("<h1>Event</h1><p>- 9:00 - 10:00 [Work] thing</p>");
+		process(el);
+
+		expect(el.querySelector("p")?.textContent).toBe("- 9:00 - 10:00 Work thing");
 	});
 });
 

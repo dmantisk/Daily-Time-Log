@@ -3,6 +3,7 @@ import {
 	formatDailyNotePath,
 	formatDateBasename,
 	formatDateFilename,
+	isDatePathPrefix,
 	isDailyNoteFileName,
 	isInDailyNoteFolder,
 	parseDateFromDailyNotePath,
@@ -35,6 +36,19 @@ describe("parseDateFromBasename", () => {
 	it("accepts Feb 29 on a leap year but rejects it on a non-leap year", () => {
 		expect(parseDateFromBasename("2024-02-29")).toEqual(new Date(2024, 1, 29));
 		expect(parseDateFromBasename("2026-02-29")).toBeNull();
+	});
+});
+
+describe("isDatePathPrefix", () => {
+	it("recognizes folder names matching a prefix of a nested date format", () => {
+		expect(isDatePathPrefix("2026", "YYYY/MM/DD")).toBe(true);
+		expect(isDatePathPrefix("2026/10", "YYYY/MM/DD")).toBe(true);
+	});
+
+	it("rejects unrelated folders and complete date paths", () => {
+		expect(isDatePathPrefix("Projects", "YYYY/MM/DD")).toBe(false);
+		expect(isDatePathPrefix("2026/10/22", "YYYY/MM/DD")).toBe(false);
+		expect(isDatePathPrefix("2026", "YYYY-MM-DD")).toBe(false);
 	});
 });
 

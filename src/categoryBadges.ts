@@ -163,32 +163,20 @@ export function buildCategoryBadgeEditorPlugin(
 	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
 	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
 ) {
-	let regexp: RegExp;
-	try {
-		regexp = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
-	} catch {
-		// Unsupported lookbehind should disable badges, not plugin startup.
-		return ViewPlugin.define(
-			(_view: EditorView) => ({
-				inScope: false,
-				decorations: Decoration.none,
-				update() {},
-			}),
-			{ decorations: (v) => v.decorations }
-		);
-	}
+	const regexp = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
 	const matcher = new MatchDecorator({
 		regexp,
-		decoration: (match, view, pos) => {
+		decorate: (add, from, to, match, view) => {
 			// Only render a badge when the token matches a configured category.
 			// Unknown `[...]` tokens (typos, prose, wikilinks) stay as plain text.
-			if (!findCategory(match[1], categories)) return null;
+			if (!findCategory(match[1], categories)) return;
 			// Strict scoping: the token must sit inside the Event block, so a
 			// `[Category]` typed outside the configured heading stays plain text.
-			if (!isInsideEventBlock(view, pos, eventHeading)) return null;
-			return Decoration.replace({
+			if (!isInsideEventBlock(view, from, eventHeading)) return;
+			const tokenFrom = from + match[0].lastIndexOf("[");
+			add(tokenFrom, to, Decoration.replace({
 				widget: new CategoryBadgeWidget(match[1], categories),
-			});
+			}));
 		},
 	});
 
@@ -331,13 +319,7 @@ export function processCategoryBadgesInReadingView(
 ): void {
 	if (!isDailyNoteFile(ctx.sourcePath, dailyNoteFolder, dateFormat)) return;
 
-	let regex: RegExp;
-	try {
-		regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
-	} catch {
-		// Unsupported lookbehind should skip reading-view badges.
-		return;
-	}
+	const regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
 	const targets: Text[] = [];
 	const sectionInfo =
 		typeof ctx.getSectionInfo === "function" ? ctx.getSectionInfo(el) : null;
@@ -435,10 +417,11 @@ export function processCategoryBadgesInReadingView(
 		regex.lastIndex = 0;
 
 		while ((match = regex.exec(text))) {
+			const tokenFrom = match.index + match[0].lastIndexOf("[");
 			// Plain text before this match
-			if (match.index > lastIndex) {
+			if (tokenFrom > lastIndex) {
 				frag.appendChild(
-					document.createTextNode(text.slice(lastIndex, match.index))
+					document.createTextNode(text.slice(lastIndex, tokenFrom))
 				);
 			}
 			// Only render a badge when the token matches a configured category.
@@ -446,7 +429,7 @@ export function processCategoryBadgesInReadingView(
 			if (findCategory(match[1], categories)) {
 				frag.appendChild(makeBadgeSpan(match[1], categories, parent));
 			} else {
-				frag.appendChild(document.createTextNode(match[0]));
+				frag.appendChild(document.createTextNode(text.slice(tokenFrom, regex.lastIndex)));
 			}
 			lastIndex = regex.lastIndex;
 		}
