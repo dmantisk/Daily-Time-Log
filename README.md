@@ -7,6 +7,12 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 > [!NOTE]
 > Vibe coded!
 > Almost all commits since the fork are written by AI
+> 
+> Notable changes in the fork;
+> - Customisation via the core daily notes plugin (templates & name date format)
+> - Removed ToDo handling
+> - Minimised custom elements to use native Obsidian elements instead (i.e. the react based time line view is replaced)
+> - Applies styling to the category tag in the editor (matches the timeline view)
 
 ## Features
 
