@@ -112,6 +112,11 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.9.1 (2026-10-24)
+
+- Replaced the category-badge regular-expression lookbehind with an iOS-compatible pattern.
+- Narrowed dashboard note discovery: it scans the configured Daily Notes folder, or—when none is configured—root notes and date-format-matching folders.
+
 ### 0.9.0 (2026-10-24)
 
 - Migrated the settings tab to Obsidian's declarative `getSettingDefinitions()` API with inline groups — no extra navigation step, and settings are now searchable.
