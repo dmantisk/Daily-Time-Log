@@ -294,12 +294,7 @@ export class PluginSettingTab {
 	containerEl: HTMLElement = document.createElement("div");
 	constructor(public app?: unknown, public plugin?: unknown) {}
 	display(): void {}
-}
-
-export class SettingPage {
-	containerEl: HTMLElement = document.createElement("div");
-	title = "";
-	display(): void {}
+	update(): void {}
 }
 
 /**

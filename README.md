@@ -112,6 +112,13 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 0.9.0 (2026-10-24)
+
+- Migrated the settings tab to Obsidian's declarative `getSettingDefinitions()` API with inline groups — no extra navigation step, and settings are now searchable.
+- Aligned the ESLint configuration with the official `eslint-plugin-obsidianmd` flat-config setup.
+- Restored `eslint-plugin-obsidianmd@0.4.2` and fixed the lint config that a `npm audit fix --force` had broken.
+- Declared `@codemirror/view` as a direct dependency at the version Obsidian bundles.
+
 ### 0.8.3 (2026-10-23)
 
 - Removed the previous/next timeline navigation buttons.

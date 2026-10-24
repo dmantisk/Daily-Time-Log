@@ -70,13 +70,31 @@ describe("DailyWorkLogSettingTab", () => {
 	function renderTab(): ReturnType<typeof createPluginStub> {
 		const plugin = createPluginStub();
 		const tab = new DailyWorkLogSettingTab({} as never, plugin);
-		const definition = tab.getSettingDefinitions()[0];
-		if (definition.type !== "page" || !definition.page) {
-			throw new Error("Settings tab did not provide its settings page");
+		const container = document.createElement("div");
+		for (const definition of tab.getSettingDefinitions()) {
+			const items = definition.type === "group" ? definition.items ?? [] : [definition];
+			for (const item of items) {
+				if ("render" in item && item.render) {
+					item.render(new Setting(container), {} as never);
+				}
+			}
 		}
-		definition.page().display();
 		return plugin;
 	}
+
+	it("keeps searchable setting definitions inline without a page entry", () => {
+		const plugin = createPluginStub();
+		const tab = new DailyWorkLogSettingTab({} as never, plugin);
+		const definitions = tab.getSettingDefinitions();
+
+		expect(definitions.some((definition) => definition.type === "page")).toBe(false);
+		expect(definitions.some((definition) => definition.name === "Day Start Hour")).toBe(true);
+		const categoryGroup = definitions.find((definition) => definition.type === "group");
+		expect(categoryGroup?.type).toBe("group");
+		if (categoryGroup?.type === "group") {
+			expect(categoryGroup.items?.some((item) => item.name === "Category Management")).toBe(true);
+		}
+	});
 
 	it("refreshes the views when the Event heading text changes", async () => {
 		const plugin = renderTab();

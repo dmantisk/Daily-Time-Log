@@ -1,4 +1,10 @@
-import { App, Notice, PluginSettingTab, Setting, SettingPage, type SettingDefinitionItem } from "obsidian";
+import {
+	App,
+	Notice,
+	PluginSettingTab,
+	type SettingDefinitionItem,
+	type SettingGroupItem,
+} from "obsidian";
 import { formatHourLabel, t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
@@ -11,9 +17,7 @@ const MAX_CATEGORY_NAME_LENGTH = 10;
  * DayTime Tracker-parity settings surface (AGENTS.md §2, design.md §14):
  * general (hour range / folder / language / Event heading) and category
  * management.
- * Every label goes through i18n.ts (t()) exactly like the sidebar/modal —
- * this tab used to be hardcoded Korean regardless of the language setting,
- * which was an oversight, not a deliberate exception.
+ * Every label goes through i18n.ts (t()) exactly like the sidebar/modal.
  */
 export class DailyWorkLogSettingTab extends PluginSettingTab {
 	private readonly plugin: DailyWorkLogPlugin;
@@ -24,243 +28,248 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		return [{
-			type: "page",
-			name: "Daily time log",
-			page: () => new DailyWorkLogSettingsPage(this.plugin),
-		}];
-	}
-}
-
-class DailyWorkLogSettingsPage extends SettingPage {
-	private readonly plugin: DailyWorkLogPlugin;
-
-	constructor(plugin: DailyWorkLogPlugin) {
-		super();
-		this.plugin = plugin;
-		this.title = "Daily time log";
-	}
-
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
 		const lang = this.plugin.getUiLanguage();
-
-		new Setting(containerEl)
-			.setName(t("settingStartHourName", lang))
-			.setDesc(t("settingStartHourDesc", lang))
-			.addDropdown((dropdown) => {
-				for (let h = 0; h <= 23; h++) {
-					dropdown.addOption(String(h), formatHourLabel(h, lang));
-				}
-				dropdown.setValue(String(this.plugin.settings.startHour)).onChange(async (value) => {
-					const hour = parseInt(value, 10);
-					if (hour >= this.plugin.settings.endHour) {
-						new Notice(t("alertStartBeforeEnd", lang));
-						dropdown.setValue(String(this.plugin.settings.startHour));
-						return;
-					}
-					this.plugin.settings.startHour = hour;
-					await this.plugin.saveSettings();
-					this.plugin.refreshViews();
-				});
-			});
-
-		new Setting(containerEl)
-			.setName(t("settingEndHourName", lang))
-			.setDesc(t("settingEndHourDesc", lang))
-			.addDropdown((dropdown) => {
-				for (let h = 1; h <= 24; h++) {
-					dropdown.addOption(String(h), formatHourLabel(h, lang));
-				}
-				dropdown.setValue(String(this.plugin.settings.endHour)).onChange(async (value) => {
-					const hour = parseInt(value, 10);
-					if (hour <= this.plugin.settings.startHour) {
-						new Notice(t("alertEndAfterStart", lang));
-						dropdown.setValue(String(this.plugin.settings.endHour));
-						return;
-					}
-					this.plugin.settings.endHour = hour;
-					await this.plugin.saveSettings();
-					this.plugin.refreshViews();
-				});
-			});
-
-		new Setting(containerEl)
-			.setName(t("settingEventHeadingTextName", lang))
-			.setDesc(t("settingEventHeadingTextDesc", lang))
-			.addText((text) =>
-				text
-					.setValue(this.plugin.settings.eventHeadingText)
-					.onChange(async (value) => {
-						const trimmed = value.trim();
-						if (/[\r\n]/.test(value)) {
-							new Notice(t("alertInvalidEventHeading", lang));
-							text.setValue(this.plugin.settings.eventHeadingText);
-							return;
+		const settings: SettingDefinitionItem[] = [
+			{
+				name: t("settingStartHourName", lang),
+				desc: t("settingStartHourDesc", lang),
+				render: (setting) => {
+					setting.setName(t("settingStartHourName", lang)).setDesc(t("settingStartHourDesc", lang));
+					setting.addDropdown((dropdown) => {
+						for (let hour = 0; hour <= 23; hour++) {
+							dropdown.addOption(String(hour), formatHourLabel(hour, lang));
 						}
-						if (!trimmed) return;
-						this.plugin.settings.eventHeadingText = trimmed;
-						await this.plugin.saveSettings();
-						this.plugin.refreshViews();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName(t("settingEventHeadingLevelName", lang))
-			.setDesc(t("settingEventHeadingLevelDesc", lang))
-			.addDropdown((dropdown) => {
-				for (let level = 1; level <= 6; level++) {
-					dropdown.addOption(String(level), `${level}`);
-				}
-				dropdown.setValue(String(this.plugin.settings.eventHeadingLevel)).onChange(async (value) => {
-					this.plugin.settings.eventHeadingLevel = Number(value);
-					await this.plugin.saveSettings();
-					this.plugin.refreshViews();
-				});
-			});
-
-		new Setting(containerEl)
-			.setName(t("settingLanguageName", lang))
-			.setDesc(t("settingLanguageDesc", lang))
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption("auto", t("languageAuto", lang))
-					.addOption("en", t("languageEnglish", lang))
-					.addOption("ko", t("languageKorean", lang))
-					.setValue(this.plugin.settings.language)
-					.onChange(async (value) => {
-						this.plugin.settings.language = value as LanguagePreference;
-						await this.plugin.saveSettings();
-						this.plugin.refreshViews();
-						this.display();
-					})
-			);
-
-		this.renderCategorySection(containerEl, lang);
-	}
-
-	private renderCategorySection(containerEl: HTMLElement, lang: MarkerLanguage): void {
-		// The section description rides on the heading row itself —
-		// Obsidian's own `Setting` renders `.setting-item-description`
-		// under the heading name, so no hand-rolled `<p>` is needed.
-		new Setting(containerEl).setName(t("settingCategoriesSection", lang)).setDesc(t("settingCategoriesDesc", lang)).setHeading();
-
-		new Setting(containerEl)
-			.setName(t("settingResetCategoriesName", lang))
-			.setDesc(t("settingResetCategoriesDesc", lang))
-			.addButton((btn) => {
-				btn
-					.setButtonText(t("btnReset", lang))
-					// The app's "destructive primary action" — the same
-					// combination Obsidian uses for its own delete
-					// confirmation. `setWarning()` did exactly this, but
-					// it is deprecated in favour of the explicit pair.
-					.setDestructive()
-					.setCta()
-					.onClick(async () => {
-						this.plugin.settings.categories = createDefaultCategories();
-						await this.plugin.saveSettings();
-						this.plugin.refreshViews();
-						new Notice(t("noticeResetCategories", lang));
-						this.display();
-					});
-			});
-
-		const categories = this.plugin.settings.categories;
-		categories.forEach((cat, idx) => {
-			// A per-category row carries no name and no description — the
-			// text input IS the category's name, so a name element beside
-			// it would duplicate it.
-			//
-			// Obsidian lays a setting out as
-			//   .setting-item > .setting-item-info + .setting-item-control
-			// and gives `.setting-item-info` `flex: 1 1 auto`, so an
-			// empty info element would still take up half the row. The
-			// `dwl-category-setting-item` class hides it and lets the
-			// control take the full width; see styles.css.
-			//
-			// `setName("")` is what leaves the name element empty — the
-			// CSS then hides the whole info block. `setClass()` is the
-			// public API for tagging the row (0.9.7), so the class does
-			// not depend on reaching into `settingEl` directly.
-			const row = new Setting(containerEl).setName("").setClass("dwl-category-setting-item");
-
-			row.addText((text) => {
-				text
-					.setPlaceholder(t("settingCatDisplayNamePlaceholder", lang))
-					.setValue(cat.displayName);
-				const saveName = async () => {
-					const trimmed = text.getValue().trim();
-					const problem = validateCategoryName(categories, trimmed, idx);
-					if (problem) {
-						new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
-						text.setValue(categories[idx].displayName);
-						return;
-					}
-					if (trimmed === categories[idx].displayName) {
-						return; // unchanged — no save/refresh
-					}
-					categories[idx].displayName = trimmed;
-					await this.plugin.saveSettings();
-					this.plugin.refreshViews();
-				};
-				text.inputEl.addEventListener("change", () => {
-					void saveName();
-				});
-				text.inputEl.addEventListener("blur", () => {
-					void saveName();
-				});
-				text.inputEl.maxLength = MAX_CATEGORY_NAME_LENGTH;
-			});
-
-			row.addColorPicker((picker) => {
-				picker.setValue(cat.color).onChange(async (value) => {
-					categories[idx].color = value;
-					await this.plugin.saveSettings();
-					this.plugin.refreshViews();
-				});
-			});
-
-			if (!cat.isDefault) {
-				row.addButton((btn) => {
-					btn
-						.setButtonText("✕")
-						// Exactly what `setWarning()` did — a destructive
-						// primary button. Written out so the deprecated
-						// method is not used.
-						.setDestructive()
-						.setCta()
-						.onClick(async () => {
-							categories.splice(idx, 1);
+						dropdown.setValue(String(this.plugin.settings.startHour)).onChange(async (value) => {
+							const hour = parseInt(value, 10);
+							if (hour >= this.plugin.settings.endHour) {
+								new Notice(t("alertStartBeforeEnd", lang));
+								dropdown.setValue(String(this.plugin.settings.startHour));
+								return;
+							}
+							this.plugin.settings.startHour = hour;
 							await this.plugin.saveSettings();
 							this.plugin.refreshViews();
-							this.display();
 						});
-				});
-			}
+					});
+				},
+			},
+			{
+				name: t("settingEndHourName", lang),
+				desc: t("settingEndHourDesc", lang),
+				render: (setting) => {
+					setting.setName(t("settingEndHourName", lang)).setDesc(t("settingEndHourDesc", lang));
+					setting.addDropdown((dropdown) => {
+						for (let hour = 1; hour <= 24; hour++) {
+							dropdown.addOption(String(hour), formatHourLabel(hour, lang));
+						}
+						dropdown.setValue(String(this.plugin.settings.endHour)).onChange(async (value) => {
+							const hour = parseInt(value, 10);
+							if (hour <= this.plugin.settings.startHour) {
+								new Notice(t("alertEndAfterStart", lang));
+								dropdown.setValue(String(this.plugin.settings.endHour));
+								return;
+							}
+							this.plugin.settings.endHour = hour;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+						});
+					});
+				},
+			},
+			{
+				name: t("settingEventHeadingTextName", lang),
+				desc: t("settingEventHeadingTextDesc", lang),
+				render: (setting) => {
+					setting
+						.setName(t("settingEventHeadingTextName", lang))
+						.setDesc(t("settingEventHeadingTextDesc", lang))
+						.addText((text) =>
+							text
+								.setValue(this.plugin.settings.eventHeadingText)
+								.onChange(async (value) => {
+									const trimmed = value.trim();
+									if (/[\r\n]/.test(value)) {
+										new Notice(t("alertInvalidEventHeading", lang));
+										text.setValue(this.plugin.settings.eventHeadingText);
+										return;
+									}
+									if (!trimmed) return;
+									this.plugin.settings.eventHeadingText = trimmed;
+									await this.plugin.saveSettings();
+									this.plugin.refreshViews();
+								})
+						);
+				},
+			},
+			{
+				name: t("settingEventHeadingLevelName", lang),
+				desc: t("settingEventHeadingLevelDesc", lang),
+				render: (setting) => {
+					setting.setName(t("settingEventHeadingLevelName", lang)).setDesc(t("settingEventHeadingLevelDesc", lang));
+					setting.addDropdown((dropdown) => {
+						for (let level = 1; level <= 6; level++) {
+							dropdown.addOption(String(level), `${level}`);
+						}
+						dropdown.setValue(String(this.plugin.settings.eventHeadingLevel)).onChange(async (value) => {
+							this.plugin.settings.eventHeadingLevel = Number(value);
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+						});
+					});
+				},
+			},
+			{
+				name: t("settingLanguageName", lang),
+				desc: t("settingLanguageDesc", lang),
+				render: (setting) => {
+					setting.setName(t("settingLanguageName", lang)).setDesc(t("settingLanguageDesc", lang));
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption("auto", t("languageAuto", lang))
+							.addOption("en", t("languageEnglish", lang))
+							.addOption("ko", t("languageKorean", lang))
+							.setValue(this.plugin.settings.language)
+							.onChange(async (value) => {
+								this.plugin.settings.language = value as LanguagePreference;
+								await this.plugin.saveSettings();
+								this.plugin.refreshViews();
+								this.update();
+							})
+					);
+				},
+			},
+			{
+				type: "group",
+				items: this.getCategoryDefinitions(lang),
+			},
+		];
+		return settings;
+	}
+
+	private getCategoryDefinitions(lang: MarkerLanguage): SettingGroupItem[] {
+		const categories = this.plugin.settings.categories;
+		const definitions: SettingGroupItem[] = [
+			{
+				name: t("settingCategoriesSection", lang),
+				desc: t("settingCategoriesDesc", lang),
+				searchable: false,
+				render: (setting) => {
+					setting
+						.setName(t("settingCategoriesSection", lang))
+						.setDesc(t("settingCategoriesDesc", lang))
+						.setHeading();
+				},
+			},
+		];
+
+		categories.forEach((category, index) => {
+			definitions.push({
+				name: category.displayName || t("settingCatDisplayNamePlaceholder", lang),
+				desc: t("settingCatDisplayNamePlaceholder", lang),
+				render: (setting) => {
+					setting.setName("").setClass("dwl-category-setting-item");
+					setting.addText((text) => {
+						text
+							.setPlaceholder(t("settingCatDisplayNamePlaceholder", lang))
+							.setValue(category.displayName);
+						const saveName = async () => {
+							const trimmed = text.getValue().trim();
+							const problem = validateCategoryName(categories, trimmed, index);
+							if (problem) {
+								new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
+								text.setValue(categories[index].displayName);
+								return;
+							}
+							if (trimmed === categories[index].displayName) return;
+							categories[index].displayName = trimmed;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+							this.update();
+						};
+						text.inputEl.addEventListener("change", () => void saveName());
+						text.inputEl.addEventListener("blur", () => void saveName());
+						text.inputEl.maxLength = MAX_CATEGORY_NAME_LENGTH;
+					});
+					setting.addColorPicker((picker) =>
+						picker.setValue(category.color).onChange(async (value) => {
+							category.color = value;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+						})
+					);
+
+					if (!category.isDefault) {
+						setting.addButton((button) => {
+							button
+								.setButtonText("✕")
+								.setDestructive()
+								.setCta()
+								.onClick(async () => {
+									categories.splice(index, 1);
+									await this.plugin.saveSettings();
+									this.plugin.refreshViews();
+									this.update();
+								});
+						});
+					}
+				},
+			});
+		});
+
+		definitions.push({
+			name: t("settingResetCategoriesName", lang),
+			desc: t("settingResetCategoriesDesc", lang),
+			render: (setting) => {
+				setting
+					.setName(t("settingResetCategoriesName", lang))
+					.setDesc(t("settingResetCategoriesDesc", lang))
+					.addButton((button) => {
+						button
+							.setButtonText(t("btnReset", lang))
+							.setDestructive()
+							.setCta()
+							.onClick(async () => {
+								this.plugin.settings.categories = createDefaultCategories();
+								await this.plugin.saveSettings();
+								this.plugin.refreshViews();
+								new Notice(t("noticeResetCategories", lang));
+								this.update();
+							});
+					});
+			},
 		});
 
 		if (categories.length < MAX_CATEGORIES) {
-			let newName = "";
-			let newColor = "#95a5a6";
+			definitions.push(this.getAddCategoryDefinition(lang, categories));
+		}
 
-			new Setting(containerEl)
-				.setName(t("settingAddCategoryName", lang))
-				.setDesc(t("settingAddCategoryDesc", lang))
-				.addText((text) => {
+		return definitions;
+	}
+
+	private getAddCategoryDefinition(
+		lang: MarkerLanguage,
+		categories: DailyWorkLogPlugin["settings"]["categories"]
+	): SettingGroupItem {
+		return {
+			name: t("settingAddCategoryName", lang),
+			desc: t("settingAddCategoryDesc", lang),
+			render: (setting) => {
+				setting
+					.setName(t("settingAddCategoryName", lang))
+					.setDesc(t("settingAddCategoryDesc", lang));
+				let newName = "";
+				let newColor = "#95a5a6";
+				setting.addText((text) => {
 					text.setPlaceholder(t("settingAddCategoryPlaceholder", lang)).onChange((value) => {
 						newName = value;
 					});
 					text.inputEl.maxLength = MAX_CATEGORY_NAME_LENGTH;
-				})
-				.addColorPicker((picker) => {
-					picker.setValue(newColor).onChange((value) => {
-						newColor = value;
-					});
-				})
-				.addButton((btn) => {
-					btn
+				});
+				setting.addColorPicker((picker) => picker.setValue(newColor).onChange((value) => {
+					newColor = value;
+				}));
+				setting.addButton((button) => {
+					button
 						.setButtonText(t("btnAdd", lang))
 						.setCta()
 						.onClick(async () => {
@@ -274,13 +283,13 @@ class DailyWorkLogSettingsPage extends SettingPage {
 								new Notice(t("alertCatLimitMax", lang));
 								return;
 							}
-
 							categories.push({ name: trimmed, displayName: trimmed, color: newColor });
 							await this.plugin.saveSettings();
 							this.plugin.refreshViews();
-							this.display();
+							this.update();
 						});
 				});
-		}
+			},
+		};
 	}
 }
