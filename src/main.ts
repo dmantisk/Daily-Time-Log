@@ -148,7 +148,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 			| null;
 		const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
 		const settingsData = Object.fromEntries(
-			Object.entries(loadedData ?? {}).filter(([key]) => key in DEFAULT_SETTINGS)
+			Object.entries(loadedData ?? {}).filter(([key]) =>
+				Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key)
+			)
 		);
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, settingsData);
 
