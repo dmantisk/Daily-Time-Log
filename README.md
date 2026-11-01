@@ -124,6 +124,12 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 1.0.0 (2026-11-01)
+
+- Added configurable tabular numerals for event times in the editor and reading view.
+- Improved dashboard discovery for nested date formats and reported missing configured folders.
+- Shared editor scope handling and reduced reading-view rendering to one DOM traversal.
+
 ### 0.9.1 (2026-10-24)
 
 - Replaced the category-badge regular-expression lookbehind with an iOS-compatible pattern.
