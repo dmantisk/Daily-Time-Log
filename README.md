@@ -14,6 +14,8 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 > - Minimised custom elements to use native Obsidian elements instead (i.e. the react based time line view is replaced)
 > - Applies styling to the category tag in the editor (matches the timeline view)
 
+<img width="1411" height="780" alt="Daily-time-log" src="https://github.com/user-attachments/assets/9ce17d67-a10c-46f0-9296-0fc6ff82c27f" />
+
 ## Features
 
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
@@ -40,6 +42,9 @@ Daily Time Log follows the date format and "New file location" configured in Obs
 - Set the Event heading text and level in plugin settings. **Only the configured heading is recognized** — if you change it, notes using the previous heading are no longer treated as an Event block and contribute no Events.
 - Events are read **only from under the configured heading**. The section ends at the next heading at the *same level or above* — so with `# Event` (level 1), any `#` heading ends it, while with `## Event` (level 2), a `###` subheading and its content stay inside the Event section.
 - A note without the configured heading has no Event section: the sidebar shows a "No Event section" banner and Work Insights counts it as zero Event time. Adding an Event from the sidebar creates the heading in the note automatically.
+
+<img width="883" height="496" alt="Daily-time-log_settings-1" src="https://github.com/user-attachments/assets/e6f77e31-3f2c-4ff7-8ae0-1f497925fb72" />
+<img width="872" height="707" alt="Daily-time-log_settings-2" src="https://github.com/user-attachments/assets/3a75c00e-e49e-4af4-adb4-56dd22b74bb4" />
 
 ## Installation
 
