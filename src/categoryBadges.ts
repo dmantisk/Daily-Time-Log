@@ -66,6 +66,36 @@ function isDailyNoteFile(
 	return parseDateFromDailyNotePath(filePath, dateFormat, dailyNoteFolder) !== null;
 }
 
+function createDailyNoteEditorPlugin(
+	matcher: MatchDecorator,
+	dailyNoteFolder: string | undefined,
+	dateFormat: string,
+	options: { enabled?: boolean; refreshOnSelectionChange?: boolean } = {}
+) {
+	return ViewPlugin.define(
+		(view: EditorView) => {
+			const filePath = view.state.field(editorInfoField, false)?.file?.path;
+			const inScope =
+				options.enabled !== false &&
+				filePath !== undefined &&
+				isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
+
+			return {
+				inScope,
+				decorations: inScope ? matcher.createDeco(view) : Decoration.none,
+				update(update: ViewUpdate) {
+					if (!this.inScope) return;
+					this.decorations =
+						options.refreshOnSelectionChange && update.selectionSet
+							? matcher.createDeco(update.view)
+							: matcher.updateDeco(update, this.decorations);
+				},
+			};
+		},
+		{ decorations: (plugin) => plugin.decorations }
+	);
+}
+
 /**
  * Finds the configured category whose displayName matches the token text
  * (case-insensitive, trimmed). Returns `undefined` when there's no match —
@@ -182,27 +212,9 @@ export function buildCategoryBadgeEditorPlugin(
 		},
 	});
 
-	return ViewPlugin.define(
-		(view: EditorView) => {
-			// Resolve the file path at plugin construction time and cache the
-			// scope decision — it doesn't change while the editor is open.
-			const info = view.state.field(editorInfoField, false);
-			const filePath = info?.file?.path ?? null;
-			const inScope = filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
-
-			return {
-				inScope,
-				decorations: inScope ? matcher.createDeco(view) : Decoration.none,
-				update(update: ViewUpdate) {
-					if (!this.inScope) return;
-					this.decorations = update.selectionSet
-						? matcher.createDeco(update.view)
-						: matcher.updateDeco(update, this.decorations);
-				},
-			};
-		},
-		{ decorations: (v) => v.decorations }
-	);
+	return createDailyNoteEditorPlugin(matcher, dailyNoteFolder, dateFormat, {
+		refreshOnSelectionChange: true,
+	});
 }
 
 /**
@@ -235,24 +247,7 @@ export function buildTimeRangeEditorPlugin(
 		},
 	});
 
-	return ViewPlugin.define(
-		(view: EditorView) => {
-			const info = view.state.field(editorInfoField, false);
-			const filePath = info?.file?.path ?? null;
-			const inScope =
-				enabled && filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
-
-			return {
-				inScope,
-				decorations: inScope ? matcher.createDeco(view) : Decoration.none,
-				update(update: ViewUpdate) {
-					if (!this.inScope) return;
-					this.decorations = matcher.updateDeco(update, this.decorations);
-				},
-			};
-		},
-		{ decorations: (v) => v.decorations }
-	);
+	return createDailyNoteEditorPlugin(matcher, dailyNoteFolder, dateFormat, { enabled });
 }
 
 /**
