@@ -41,6 +41,7 @@ import {
 	findEventBlockInContent,
 	isWithinEventHeading,
 	normalizeRenderedHeadingText,
+
 	type EventHeadingConfig,
 	type HeadingInfo,
 } from "./parser";
@@ -87,11 +88,10 @@ function findCategory(
  */
 function makeBadgeSpan(
 	token: string,
-	categories: CustomCategory[],
-	container: HTMLElement
+	categories: CustomCategory[]
 ): HTMLSpanElement {
 	const cat = findCategory(token, categories);
-	const span = container.createSpan();
+	const span = createSpan();
 	span.className = `dwl-cat-badge dwl-cat-badge--${token.trim().toLowerCase().replace(/[\s]+/g, "-")}`;
 	span.textContent = token;
 	if (cat) {
@@ -136,8 +136,8 @@ class CategoryBadgeWidget extends WidgetType {
 		return other.token === this.token;
 	}
 
-	toDOM(view: EditorView): HTMLElement {
-		return makeBadgeSpan(this.token, this.categories, view.dom);
+	toDOM(_view: EditorView): HTMLElement {
+		return makeBadgeSpan(this.token, this.categories);
 	}
 
 	/** Keep the widget in sync with cursor movement (no extra reflow). */
@@ -174,6 +174,8 @@ export function buildCategoryBadgeEditorPlugin(
 			// `[Category]` typed outside the configured heading stays plain text.
 			if (!isInsideEventBlock(view, from, eventHeading)) return;
 			const tokenFrom = from + match[0].lastIndexOf("[");
+			const selection = view.state.selection.main;
+			if (selection.empty && selection.from >= tokenFrom && selection.from <= to) return;
 			add(tokenFrom, to, Decoration.replace({
 				widget: new CategoryBadgeWidget(match[1], categories),
 			}));
@@ -184,6 +186,56 @@ export function buildCategoryBadgeEditorPlugin(
 		(view: EditorView) => {
 			// Resolve the file path at plugin construction time and cache the
 			// scope decision — it doesn't change while the editor is open.
+			const info = view.state.field(editorInfoField, false);
+			const filePath = info?.file?.path ?? null;
+			const inScope = filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
+
+			return {
+				inScope,
+				decorations: inScope ? matcher.createDeco(view) : Decoration.none,
+				update(update: ViewUpdate) {
+					if (!this.inScope) return;
+					this.decorations = update.selectionSet
+						? matcher.createDeco(update.view)
+						: matcher.updateDeco(update, this.decorations);
+				},
+			};
+		},
+		{ decorations: (v) => v.decorations }
+	);
+}
+
+/**
+ * Creates (and returns) a CodeMirror ViewPlugin that decorates event time ranges
+ * (e.g. `09:00 - 10:30`) in the live editor with monospace styling, limited to
+ * daily notes in the configured folder AND to event lines inside the configured
+ * Event block.
+ */
+export function buildTimeRangeEditorPlugin(
+	dailyNoteFolder?: string,
+	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
+	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
+) {
+	const regexp = /\b\d{1,2}:\d{2}\s*[-~]\s*\d{1,2}:\d{2}\b/g;
+	const matcher = new MatchDecorator({
+		regexp,
+		decorate: (add, from, to, match, view) => {
+			if (!isInsideEventBlock(view, from, eventHeading)) return;
+			const line = view.state.doc.lineAt(from);
+			const matchOnLine = /^[-*]\s*(\d{1,2}:\d{2}\s*[-~]\s*\d{1,2}:\d{2})/.exec(line.text);
+			if (!matchOnLine) return;
+			const prefix = /^[-*]\s*/.exec(line.text);
+			if (!prefix) return;
+			const expectedFrom = line.from + prefix[0].length;
+			const expectedTo = expectedFrom + matchOnLine[1].length;
+			if (from === expectedFrom && to === expectedTo) {
+				add(from, to, Decoration.mark({ class: "dwl-time-range" }));
+			}
+		},
+	});
+
+	return ViewPlugin.define(
+		(view: EditorView) => {
 			const info = view.state.field(editorInfoField, false);
 			const filePath = info?.file?.path ?? null;
 			const inScope = filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
@@ -427,7 +479,7 @@ export function processCategoryBadgesInReadingView(
 			// Only render a badge when the token matches a configured category.
 			// Unknown `[...]` tokens stay as plain text in the reading view.
 			if (findCategory(match[1], categories)) {
-				frag.appendChild(makeBadgeSpan(match[1], categories, parent));
+				frag.appendChild(makeBadgeSpan(match[1], categories));
 			} else {
 				frag.appendChild(document.createTextNode(text.slice(tokenFrom, regex.lastIndex)));
 			}

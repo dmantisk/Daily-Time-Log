@@ -18,6 +18,8 @@ export function installObsidianDomHelpers(): void {
 
 	Object.assign(globalThis, {
 		createFragment: () => globalThis.document.createDocumentFragment(),
+		createDiv: () => globalThis.document.createElement("div"),
+		createSpan: () => globalThis.document.createElement("span"),
 	});
 
 	proto.empty = function (this: HTMLElement): void {

@@ -75,7 +75,10 @@ describe("DailyWorkLogSettingTab", () => {
 			const items = definition.type === "group" ? definition.items ?? [] : [definition];
 			for (const item of items) {
 				if ("render" in item && item.render) {
-					item.render(new Setting(container), {} as never);
+					const setting = new Setting(container);
+					setting.setName(item.name);
+					if (item.desc) setting.setDesc(item.desc);
+					item.render(setting, {} as never);
 				}
 			}
 		}
@@ -94,6 +97,45 @@ describe("DailyWorkLogSettingTab", () => {
 		if (categoryGroup?.type === "group") {
 			expect(categoryGroup.items?.some((item) => item.name === "Category Management")).toBe(true);
 		}
+	});
+
+	it("updates declarative setting labels after changing the language", async () => {
+		const plugin = createPluginStub();
+		const settings = (plugin as unknown as {
+			settings: { language: string };
+		}).settings;
+		const getUiLanguage = () => settings.language === "ko" ? "ko" : "en";
+		(plugin as unknown as { getUiLanguage: () => string }).getUiLanguage = getUiLanguage;
+		const tab = new DailyWorkLogSettingTab({} as never, plugin);
+		const update = vi.spyOn(tab, "update");
+		const languageDefinition = tab.getSettingDefinitions().find(
+			(definition) => definition.name === "Language"
+		);
+		if (!languageDefinition || !("render" in languageDefinition) || !languageDefinition.render) {
+			throw new Error("Language setting definition is missing its renderer");
+		}
+
+		let onChange: ((value: string) => Promise<void>) | undefined;
+		const dropdown = {
+			addOption: () => dropdown,
+			setValue: () => dropdown,
+			onChange: (callback: (value: string) => Promise<void>) => {
+				onChange = callback;
+				return dropdown;
+			},
+		};
+		const setting = {
+			addDropdown: (callback: (component: typeof dropdown) => void) => {
+				callback(dropdown);
+				return setting;
+			},
+		};
+		languageDefinition.render(setting as never, {} as never);
+		if (!onChange) throw new Error("Language dropdown callback was not registered");
+		await onChange("ko");
+
+		expect(update).toHaveBeenCalledOnce();
+		expect(tab.getSettingDefinitions().find((definition) => definition.name === "언어")).toBeDefined();
 	});
 
 	it("refreshes the views when the Event heading text changes", async () => {

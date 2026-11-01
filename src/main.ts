@@ -1,6 +1,7 @@
 import { getLanguage, Plugin, setTooltip, TFile } from "obsidian";
 import {
 	buildCategoryBadgeEditorPlugin,
+	buildTimeRangeEditorPlugin,
 	processCategoryBadgesInReadingView,
 } from "./categoryBadges";
 import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
@@ -116,6 +117,13 @@ export default class DailyWorkLogPlugin extends Plugin {
 			)
 		);
 		this.badgeKey = `${this.getDailyNoteFolder()}|${this.getDailyNoteFormat()}`;
+		this.categoryBadgeExtensions.push(
+			buildTimeRangeEditorPlugin(
+				this.getDailyNoteFolder(),
+				this.getEventHeadingConfig(),
+				this.getDailyNoteFormat()
+			)
+		);
 		this.registerEditorExtension(this.categoryBadgeExtensions);
 
 		this.registerMarkdownPostProcessor(
@@ -297,6 +305,13 @@ export default class DailyWorkLogPlugin extends Plugin {
 		this.categoryBadgeExtensions.push(
 			buildCategoryBadgeEditorPlugin(
 				this.settings.categories,
+				this.getDailyNoteFolder(),
+				this.getEventHeadingConfig(),
+				this.getDailyNoteFormat()
+			)
+		);
+		this.categoryBadgeExtensions.push(
+			buildTimeRangeEditorPlugin(
 				this.getDailyNoteFolder(),
 				this.getEventHeadingConfig(),
 				this.getDailyNoteFormat()

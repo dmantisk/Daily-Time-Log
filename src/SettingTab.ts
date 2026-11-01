@@ -34,7 +34,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				name: t("settingStartHourName", lang),
 				desc: t("settingStartHourDesc", lang),
 				render: (setting) => {
-					setting.setName(t("settingStartHourName", lang)).setDesc(t("settingStartHourDesc", lang));
 					setting.addDropdown((dropdown) => {
 						for (let hour = 0; hour <= 23; hour++) {
 							dropdown.addOption(String(hour), formatHourLabel(hour, lang));
@@ -57,7 +56,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				name: t("settingEndHourName", lang),
 				desc: t("settingEndHourDesc", lang),
 				render: (setting) => {
-					setting.setName(t("settingEndHourName", lang)).setDesc(t("settingEndHourDesc", lang));
 					setting.addDropdown((dropdown) => {
 						for (let hour = 1; hour <= 24; hour++) {
 							dropdown.addOption(String(hour), formatHourLabel(hour, lang));
@@ -81,8 +79,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				desc: t("settingEventHeadingTextDesc", lang),
 				render: (setting) => {
 					setting
-						.setName(t("settingEventHeadingTextName", lang))
-						.setDesc(t("settingEventHeadingTextDesc", lang))
 						.addText((text) =>
 							text
 								.setValue(this.plugin.settings.eventHeadingText)
@@ -105,7 +101,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				name: t("settingEventHeadingLevelName", lang),
 				desc: t("settingEventHeadingLevelDesc", lang),
 				render: (setting) => {
-					setting.setName(t("settingEventHeadingLevelName", lang)).setDesc(t("settingEventHeadingLevelDesc", lang));
 					setting.addDropdown((dropdown) => {
 						for (let level = 1; level <= 6; level++) {
 							dropdown.addOption(String(level), `${level}`);
@@ -122,7 +117,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				name: t("settingLanguageName", lang),
 				desc: t("settingLanguageDesc", lang),
 				render: (setting) => {
-					setting.setName(t("settingLanguageName", lang)).setDesc(t("settingLanguageDesc", lang));
 					setting.addDropdown((dropdown) =>
 						dropdown
 							.addOption("auto", t("languageAuto", lang))
@@ -154,10 +148,7 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				desc: t("settingCategoriesDesc", lang),
 				searchable: false,
 				render: (setting) => {
-					setting
-						.setName(t("settingCategoriesSection", lang))
-						.setDesc(t("settingCategoriesDesc", lang))
-						.setHeading();
+					setting.setHeading();
 				},
 			},
 		];
@@ -221,8 +212,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			desc: t("settingResetCategoriesDesc", lang),
 			render: (setting) => {
 				setting
-					.setName(t("settingResetCategoriesName", lang))
-					.setDesc(t("settingResetCategoriesDesc", lang))
 					.addButton((button) => {
 						button
 							.setButtonText(t("btnReset", lang))
@@ -254,9 +243,6 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			name: t("settingAddCategoryName", lang),
 			desc: t("settingAddCategoryDesc", lang),
 			render: (setting) => {
-				setting
-					.setName(t("settingAddCategoryName", lang))
-					.setDesc(t("settingAddCategoryDesc", lang));
 				let newName = "";
 				let newColor = "#95a5a6";
 				setting.addText((text) => {

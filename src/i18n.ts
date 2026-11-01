@@ -50,6 +50,7 @@ export type UIStringKey =
 	| "statEventTimeWindow"
 	| "unitDays"
 	| "dashboardEmptyVault"
+	| "dashboardFolderNotFound"
 	| "dashboardFutureOnlyNotice"
 	| "settingStartHourName"
 	| "settingStartHourDesc"
@@ -167,6 +168,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statEventTimeWindow: "Event Time (%s)",
 		unitDays: " days",
 		dashboardEmptyVault: "No daily notes yet.",
+		dashboardFolderNotFound: "Daily Notes folder not found: %s",
 		dashboardFutureOnlyNotice:
 			"Only future-dated notes were found. They record no time yet, so nothing is counted until their date arrives.",
 		settingStartHourName: "Day Start Hour",
@@ -271,6 +273,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statEventTimeWindow: "기록 시간 (%s)",
 		unitDays: "일",
 		dashboardEmptyVault: "아직 작성된 일일 노트가 없습니다.",
+		dashboardFolderNotFound: "일일 노트 폴더를 찾을 수 없습니다: %s",
 		dashboardFutureOnlyNotice:
 			"미래 날짜의 노트만 있습니다. 아직 기록된 시간이 없으므로 해당 날짜가 될 때까지 집계되지 않습니다.",
 		settingStartHourName: "하루 시작 시간",

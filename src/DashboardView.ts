@@ -75,8 +75,7 @@ export class DashboardView extends ItemView {
 
 		const container = this.contentEl;
 		container.addClass("dwl-dashboard-view");
-		const nextContent = container.createDiv();
-		nextContent.remove();
+		const nextContent = createDiv();
 
 		const allNotes = this.collectDailyNoteFiles();
 		const activePaths = new Set(allNotes.map(({ file }) => file.path));
@@ -95,7 +94,11 @@ export class DashboardView extends ItemView {
 		};
 
 		if (allNotes.length === 0) {
-			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: t("dashboardEmptyVault", language) });
+			const folderSetting = this.plugin.getDailyNoteFolder().trim().replace(/^\/+|\/+$/g, "");
+			const emptyMessage = folderSetting && !this.app.vault.getFolderByPath(folderSetting)
+				? t("dashboardFolderNotFound", language).replace("%s", folderSetting)
+				: t("dashboardEmptyVault", language);
+			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: emptyMessage });
 			commitContent();
 			return;
 		}
@@ -202,13 +205,11 @@ export class DashboardView extends ItemView {
 		} else if (!normalizedFolder) {
 			const dateFormatParts = dateFormat.split("/");
 			const scanDateFolders = (folder: TFolder, prefix: string) => {
+				const depth = prefix ? prefix.split("/").length : 0;
 				for (const child of folder.children) {
 					if (child instanceof TFile) {
 						consider(child);
-					} else if (
-						child instanceof TFolder &&
-						prefix.split("/").length < dateFormatParts.length - 1
-					) {
+					} else if (child instanceof TFolder && depth < dateFormatParts.length - 1) {
 						const childPrefix = prefix ? `${prefix}/${child.name}` : child.name;
 						if (isDatePathPrefix(childPrefix, dateFormat)) {
 							scanDateFolders(child, childPrefix);

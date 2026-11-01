@@ -260,4 +260,55 @@ describe("DashboardView metric tooltips", () => {
 
 		expect(files.map(({ file }) => file.path)).toEqual(["2026/10/22.md"]);
 	});
+
+	it("finds a flat daily note at the vault root when no folder is configured", () => {
+		const view = new DashboardView({} as never, createPluginStub());
+		(view as unknown as { app: unknown }).app = createAppStub("");
+
+		const files = (view as unknown as {
+			collectDailyNoteFiles: () => Array<{ file: TFile }>;
+		}).collectDailyNoteFiles();
+
+		expect(files).toHaveLength(1);
+		expect(files[0].file.path).toMatch(/^\d{4}-\d{2}-\d{2}\.md$/);
+	});
+
+	it("finds date notes in a two-part YYYY-MM/DD format", () => {
+		const monthFolder = new TFolder();
+		monthFolder.name = "2026-11";
+		monthFolder.children = [createNoteFile("2026-11/01.md")];
+		const root = new TFolder();
+		root.children = [monthFolder];
+
+		const plugin = createPluginStub() as { getDailyNoteFormat: () => string };
+		plugin.getDailyNoteFormat = () => "YYYY-MM/DD";
+		const view = new DashboardView({} as never, plugin as never);
+		(view as unknown as { app: unknown }).app = {
+			vault: {
+				getRoot: () => root,
+				getFolderByPath: () => null,
+			},
+		};
+
+		const files = (view as unknown as {
+			collectDailyNoteFiles: () => Array<{ file: TFile }>;
+		}).collectDailyNoteFiles();
+
+		expect(files.map(({ file }) => file.path)).toEqual(["2026-11/01.md"]);
+	});
+
+	it("explains when the configured Daily Notes folder is missing", async () => {
+		const plugin = createPluginStub() as { getDailyNoteFolder: () => string };
+		plugin.getDailyNoteFolder = () => "Renamed";
+		const view = new DashboardView({} as never, plugin as never);
+		(view as unknown as { app: unknown }).app = createAppStub("");
+		const contentEl = document.createElement("div");
+		(view as unknown as { contentEl: HTMLElement }).contentEl = contentEl;
+
+		await view.refresh();
+
+		expect(contentEl.querySelector(".dwl-dashboard-empty")?.textContent).toBe(
+			"Daily Notes folder not found: Renamed"
+		);
+	});
 });

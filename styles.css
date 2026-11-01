@@ -735,3 +735,12 @@
 	background-color: var(--background-modifier-border);
 	color: var(--text-normal);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Time range — monospace timestamps for events in daily notes
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.dwl-time-range {
+	font-family: var(--font-monospace);
+	font-variant-numeric: tabular-nums;
+}

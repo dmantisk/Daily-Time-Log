@@ -18,7 +18,7 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 
 - **Grid timeline**: a 10-minute-cell grid in the sidebar — drag across cells to log a new time block, click an existing block to edit it.
 - **Categories**: color-coded categories (5 built-in — Work/Study/Rest/Reading/Exercise — and up to 10 in total), stored as a `[Category]` tag right in the note body.
-- **Daily note location and format**: follows the core Daily Notes plugin's "New file location" and date format, including formats that create nested paths such as `YYYY/MM/DD`.
+- **Daily note location and format**: follows the core Daily Notes plugin's "New file location" and date format, including formats that create nested paths such as `YYYY/MM/DD` and `YYYY-MM/DD`.
 - **Configurable Event heading**: choose its text and Markdown heading level; only the configured heading is recognized.
 - **Minimal metadata**: Events are read from a plain Markdown heading — no frontmatter needed.
 - **Automatic UI language detection**: picked up from Obsidian's own language on first run, overridable in settings.
@@ -129,7 +129,7 @@ npm run build   # type-check (tsc) + production build
 - Aligned the ESLint configuration with the official `eslint-plugin-obsidianmd` flat-config setup.
 - Restored `eslint-plugin-obsidianmd@0.4.2` and fixed the lint config that a `npm audit fix --force` had broken.
 - Declared `@codemirror/view` as a direct dependency at the version Obsidian bundles.
-- Replaced the category-badge lookbehind with an iOS-compatible expression and narrowed dashboard discovery to the configured folder or date-format-shaped paths.
+- Narrowed dashboard discovery to the configured folder or date-format-shaped paths.
 
 ### 0.8.3 (2026-10-23)
 

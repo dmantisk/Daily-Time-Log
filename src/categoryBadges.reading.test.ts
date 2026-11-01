@@ -321,6 +321,20 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 
 		expect(el.querySelector("p")?.textContent).toBe("- 9:00 - 10:00 Work thing");
 	});
+
+	it("badges categories on lines with multiple time ranges and leaves unknown tags plain", () => {
+		const el = renderEl(
+			"<h1>Event</h1>" +
+				"<p>- 09:00-10:00 [Work] text</p>" +
+				"<p>- 10:00-11:00 13:00-14:00 [Rest] two ranges</p>" +
+				"<p>- 14:00-15:00 [Unknown] plain</p>"
+		);
+		process(el);
+
+		expect(badgeCount(el)).toBe(2);
+		expect(badgeTexts(el)).toEqual(["Work", "Rest"]);
+		expect(el.textContent).toContain("[Unknown]");
+	});
 });
 
 describe("parser / DOM agreement", () => {
