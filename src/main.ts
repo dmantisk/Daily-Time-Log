@@ -144,21 +144,12 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		const loadedData = (await this.loadData()) as
-			| (Partial<DailyWorkLogSettings> & {
-					dailyNoteFolder?: unknown;
-					monospacedTimeRanges?: unknown;
-			  })
+			| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown })
 			| null;
 		const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
-		const settingsData = { ...(loadedData ?? {}) };
-		delete settingsData.dailyNoteFolder;
-		if (
-			typeof settingsData.tabularTimeRanges !== "boolean" &&
-			typeof loadedData?.monospacedTimeRanges === "boolean"
-		) {
-			settingsData.tabularTimeRanges = loadedData.monospacedTimeRanges;
-		}
-		delete settingsData.monospacedTimeRanges;
+		const settingsData = Object.fromEntries(
+			Object.entries(loadedData ?? {}).filter(([key]) => key in DEFAULT_SETTINGS)
+		);
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, settingsData);
 
 		// The settings screen mutates category objects in place, so the
@@ -198,10 +189,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 			shouldSave = true;
 		}
 		if (typeof loadedData?.tabularTimeRanges !== "boolean") {
-			this.settings.tabularTimeRanges =
-				typeof loadedData?.monospacedTimeRanges === "boolean"
-					? loadedData.monospacedTimeRanges
-					: DEFAULT_SETTINGS.tabularTimeRanges;
+			this.settings.tabularTimeRanges = DEFAULT_SETTINGS.tabularTimeRanges;
 			shouldSave = true;
 		}
 		if (shouldSave) await this.saveSettings();

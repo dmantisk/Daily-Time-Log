@@ -178,7 +178,8 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingEndHourName: "Day End Hour",
 		settingEndHourDesc: "Set the end hour to display on the timeline. (Supports up to midnight 24:00)",
 		settingTabularTimeRangesName: "Tabular time numerals",
-		settingTabularTimeRangesDesc: "Align digits consistently in event times without changing the font.",
+		settingTabularTimeRangesDesc:
+			"Align digits consistently in event times without changing the font. Requires a font that supports tabular numerals.",
 		settingLanguageName: "Language",
 		settingEventHeadingTextName: "Event heading text",
 		settingEventHeadingTextDesc: "Heading label that marks the start of the Event section in daily notes.",
@@ -285,7 +286,8 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingEndHourName: "하루 종료 시간",
 		settingEndHourDesc: "타임라인에 표시할 종료 시간(시)을 설정합니다. (자정 24:00까지 지원)",
 		settingTabularTimeRangesName: "시간 숫자를 고정폭으로 표시",
-		settingTabularTimeRangesDesc: "글꼴을 바꾸지 않고 이벤트 시간의 숫자 폭을 일정하게 맞춥니다.",
+		settingTabularTimeRangesDesc:
+			"글꼴을 바꾸지 않고 이벤트 시간의 숫자 폭을 일정하게 맞춥니다. 고정폭 숫자를 지원하는 글꼴이 필요합니다.",
 		settingLanguageName: "언어",
 		settingEventHeadingTextName: "이벤트 제목 문구",
 		settingEventHeadingTextDesc: "일일 노트에서 Event 섹션의 시작을 표시하는 제목 문구입니다.",
