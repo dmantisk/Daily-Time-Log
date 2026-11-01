@@ -121,7 +121,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 			buildTimeRangeEditorPlugin(
 				this.getDailyNoteFolder(),
 				this.getEventHeadingConfig(),
-				this.getDailyNoteFormat()
+				this.getDailyNoteFormat(),
+				this.settings.tabularTimeRanges
 			)
 		);
 		this.registerEditorExtension(this.categoryBadgeExtensions);
@@ -134,7 +135,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 					this.settings.categories,
 					this.getDailyNoteFolder(),
 					this.getEventHeadingConfig(),
-					this.getDailyNoteFormat()
+					this.getDailyNoteFormat(),
+					this.settings.tabularTimeRanges
 				);
 			}
 		);
@@ -142,11 +144,21 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		const loadedData = (await this.loadData()) as
-			| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown })
+			| (Partial<DailyWorkLogSettings> & {
+					dailyNoteFolder?: unknown;
+					monospacedTimeRanges?: unknown;
+			  })
 			| null;
 		const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
 		const settingsData = { ...(loadedData ?? {}) };
 		delete settingsData.dailyNoteFolder;
+		if (
+			typeof settingsData.tabularTimeRanges !== "boolean" &&
+			typeof loadedData?.monospacedTimeRanges === "boolean"
+		) {
+			settingsData.tabularTimeRanges = loadedData.monospacedTimeRanges;
+		}
+		delete settingsData.monospacedTimeRanges;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, settingsData);
 
 		// The settings screen mutates category objects in place, so the
@@ -183,6 +195,13 @@ export default class DailyWorkLogPlugin extends Plugin {
 		const resolvedEnd = resolveHour(loadedData?.endHour, DEFAULT_SETTINGS.endHour);
 		if (resolvedEnd !== this.settings.endHour) {
 			this.settings.endHour = resolvedEnd;
+			shouldSave = true;
+		}
+		if (typeof loadedData?.tabularTimeRanges !== "boolean") {
+			this.settings.tabularTimeRanges =
+				typeof loadedData?.monospacedTimeRanges === "boolean"
+					? loadedData.monospacedTimeRanges
+					: DEFAULT_SETTINGS.tabularTimeRanges;
 			shouldSave = true;
 		}
 		if (shouldSave) await this.saveSettings();
@@ -314,7 +333,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 			buildTimeRangeEditorPlugin(
 				this.getDailyNoteFolder(),
 				this.getEventHeadingConfig(),
-				this.getDailyNoteFormat()
+				this.getDailyNoteFormat(),
+				this.settings.tabularTimeRanges
 			)
 		);
 		// Debounce settings saves and CodeMirror extension rebuilds.

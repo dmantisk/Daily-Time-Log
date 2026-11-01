@@ -737,10 +737,9 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Time range — monospace timestamps for events in daily notes
+   Time range — tabular numerals for event timestamps in daily notes
    ───────────────────────────────────────────────────────────────────────────── */
 
 .dwl-time-range {
-	font-family: var(--font-monospace);
 	font-variant-numeric: tabular-nums;
 }

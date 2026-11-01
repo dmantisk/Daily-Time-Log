@@ -327,9 +327,10 @@ export class Setting {
 	components: {
 		texts: TextComponent[];
 		dropdowns: DropdownComponent[];
+		toggles: ToggleComponent[];
 		colorPickers: ColorComponent[];
 		buttons: ButtonComponent[];
-	} = { texts: [], dropdowns: [], colorPickers: [], buttons: [] };
+	} = { texts: [], dropdowns: [], toggles: [], colorPickers: [], buttons: [] };
 
 	constructor(public containerEl?: HTMLElement) {
 		Setting.created.push(this);
@@ -393,8 +394,10 @@ export class Setting {
 		return this;
 	}
 
-	addToggle(cb: (toggle: unknown) => void): this {
-		cb({ setValue: () => undefined, onChange: () => undefined });
+	addToggle(cb: (toggle: ToggleComponent) => void): this {
+		const component = new ToggleComponent(this.controlEl);
+		this.components.toggles.push(component);
+		cb(component);
 		return this;
 	}
 }
@@ -594,6 +597,33 @@ export class ProgressBarComponent {
 
 	getValue(): number {
 		return this.value;
+	}
+}
+
+/** A toggle component. */
+export class ToggleComponent {
+	private value = false;
+	private changeHandler: ((value: boolean) => void) | null = null;
+
+	constructor(public containerEl?: HTMLElement) {}
+
+	setValue(value: boolean): this {
+		this.value = value;
+		return this;
+	}
+
+	getValue(): boolean {
+		return this.value;
+	}
+
+	onChange(cb: (value: boolean) => void): this {
+		this.changeHandler = cb;
+		return this;
+	}
+
+	async setValueFromUser(value: boolean): Promise<void> {
+		this.value = value;
+		await this.changeHandler?.(value);
 	}
 }
 

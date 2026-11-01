@@ -129,6 +129,8 @@ export interface DailyWorkLogSettings {
 	/** Grid timeline's displayed hour range, inclusive start / exclusive end (0-24). */
 	startHour: number;
 	endHour: number;
+	/** Whether event time ranges use tabular numerals in the editor and reading view. */
+	tabularTimeRanges: boolean;
 	/** Up to 10 entries; see CustomCategory for how these map into note bodies. */
 	categories: CustomCategory[];
 }
@@ -141,6 +143,7 @@ export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	eventHeadingLevel: DEFAULT_EVENT_HEADING.level,
 	startHour: 0,
 	endHour: 24,
+	tabularTimeRanges: true,
 	categories: createDefaultCategories(),
 };
 

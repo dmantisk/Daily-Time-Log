@@ -27,6 +27,7 @@ function createPluginStub() {
 		eventHeadingLevel: 1,
 		startHour: 0,
 		endHour: 24,
+		tabularTimeRanges: true,
 		categories: [
 			{ name: "Work", displayName: "Work", color: "#d0e1fd", isDefault: true },
 			{ name: "Study", displayName: "Study", color: "#ebd3f8", isDefault: true },
@@ -148,6 +149,19 @@ describe("DailyWorkLogSettingTab", () => {
 		expect(plugin.settings.eventHeadingText).toBe("Activity");
 		expect(plugin.refreshViews).toHaveBeenCalled();
 	}, 5000);
+
+	it("persists and refreshes when the monospaced time option changes", async () => {
+		const plugin = renderTab();
+		const timeSetting = Setting.created.find((setting) => setting.components.toggles.length > 0);
+		expect(timeSetting).toBeDefined();
+		expect(timeSetting?.components.toggles[0].getValue()).toBe(true);
+
+		await timeSetting?.components.toggles[0].setValueFromUser(false);
+
+		expect(plugin.settings.tabularTimeRanges).toBe(false);
+		expect(plugin.saveSettings).toHaveBeenCalledOnce();
+		expect(plugin.refreshViews).toHaveBeenCalledOnce();
+	});
 
 	it("gives each category row the structure its CSS depends on", () => {
 		renderTab();

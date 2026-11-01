@@ -75,6 +75,21 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				},
 			},
 			{
+				name: t("settingTabularTimeRangesName", lang),
+				desc: t("settingTabularTimeRangesDesc", lang),
+				render: (setting) => {
+					setting.addToggle((toggle) =>
+						toggle
+							.setValue(this.plugin.settings.tabularTimeRanges)
+							.onChange(async (value) => {
+								this.plugin.settings.tabularTimeRanges = value;
+								await this.plugin.saveSettings();
+								this.plugin.refreshViews();
+							})
+					);
+				},
+			},
+			{
 				name: t("settingEventHeadingTextName", lang),
 				desc: t("settingEventHeadingTextDesc", lang),
 				render: (setting) => {

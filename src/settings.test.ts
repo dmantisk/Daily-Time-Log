@@ -23,6 +23,7 @@ describe("settings defaults", () => {
 		expect(DEFAULT_SETTINGS.categories).toHaveLength(5);
 		expect(DEFAULT_SETTINGS.startHour).toBe(0);
 		expect(DEFAULT_SETTINGS.endHour).toBe(24);
+		expect(DEFAULT_SETTINGS.tabularTimeRanges).toBe(true);
 	});
 
 	it("fills missing fields while preserving saved overrides", () => {

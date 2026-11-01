@@ -202,4 +202,29 @@ describe("time range editor plugin", () => {
 			viewB.destroy();
 		}
 	});
+
+	it("leaves time ranges unstyled when tabular numerals are disabled", () => {
+		const state = EditorState.create({
+			doc: "## Time Sheet\n- 09:00 - 10:30 [Work] Task",
+			extensions: [
+				editorInfoField.init(() => ({
+					file: { path: "Log/2026/10/22.md" },
+				})),
+				buildTimeRangeEditorPlugin(
+					"Log",
+					{ text: "Time Sheet", level: 2 },
+					"YYYY/MM/DD",
+					false
+				),
+			],
+		});
+		const view = new EditorView({ state, parent: document.createElement("div") });
+
+		try {
+			expect(view.dom.querySelectorAll(".dwl-time-range")).toHaveLength(0);
+			expect(view.dom.textContent).toContain("09:00 - 10:30");
+		} finally {
+			view.destroy();
+		}
+	});
 });

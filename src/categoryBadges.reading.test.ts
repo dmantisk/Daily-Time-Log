@@ -13,7 +13,7 @@
  * text becomes text nodes inside `<p>` elements.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { processCategoryBadgesInReadingView } from "./categoryBadges";
 import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 import { normalizeHeadingText, parseDailyNote } from "./parser";
@@ -51,7 +51,8 @@ function process(
 	eventHeading: EventHeadingConfig = DEFAULT_CONFIG,
 	sourcePath = "2026-10-16.md",
 	dailyNoteFolder = "",
-	dateFormat = "YYYY-MM-DD"
+	dateFormat = "YYYY-MM-DD",
+	tabularTimeRanges = true
 ): void {
 	processCategoryBadgesInReadingView(
 		el,
@@ -59,7 +60,8 @@ function process(
 		CATEGORIES,
 		dailyNoteFolder,
 		eventHeading,
-		dateFormat
+		dateFormat,
+		tabularTimeRanges
 	);
 }
 
@@ -334,6 +336,41 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		expect(badgeCount(el)).toBe(2);
 		expect(badgeTexts(el)).toEqual(["Work", "Rest"]);
 		expect(el.textContent).toContain("[Unknown]");
+	});
+
+	it("monospaces only event timestamps in reading view", () => {
+		const el = renderEl(
+			"<h1>Event</h1><ul>" +
+				"<li>09:00-10:00 [Work] text</li>" +
+				"<li>10:00-11:00 13:00-14:00 [Rest] two ranges</li>" +
+				"</ul><p>Meeting from 14:00-15:00</p><h1>Notes</h1>" +
+				"<ul><li>15:00-16:00 [Work] outside Event</li></ul>"
+		);
+		process(el);
+
+		const ranges = Array.from(el.querySelectorAll(".dwl-time-range"));
+		expect(ranges.map((range) => range.textContent)).toEqual(["09:00-10:00", "10:00-11:00"]);
+	});
+
+	it("uses one DOM traversal for category badges and tabular timestamps", () => {
+		const el = renderEl(
+			"<h1>Event</h1><ul><li>09:00-10:00 [Work] event</li></ul>"
+		);
+		const createTreeWalker = vi.spyOn(document, "createTreeWalker");
+
+		try {
+			process(el);
+			expect(createTreeWalker).toHaveBeenCalledOnce();
+		} finally {
+			createTreeWalker.mockRestore();
+		}
+	});
+
+	it("does not apply tabular numerals to event timestamps in reading view when disabled", () => {
+		const el = renderEl("<h1>Event</h1><ul><li>09:00-10:00 [Work] text</li></ul>");
+		process(el, DEFAULT_CONFIG, "2026-10-16.md", "", "YYYY-MM-DD", false);
+
+		expect(el.querySelector(".dwl-time-range")).toBeNull();
 	});
 });
 

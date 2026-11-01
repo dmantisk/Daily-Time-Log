@@ -111,6 +111,7 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 - **Day Start Hour / Day End Hour**: the hour range shown on the grid.
 - **Daily Note Folder**: the plugin reads the folder and date format from Obsidian's core Daily Notes plugin settings (not a separate plugin setting). The dashboard scans inside that folder when set. When no folder is configured, it checks Markdown files at the vault root and follows only folders whose names match the configured date-format path (for example, year/month folders for `YYYY/MM/DD`); unrelated folders are not traversed.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes. Only this exact heading (at this exact level) is recognized — change it and notes using the old heading stop being parsed as an Event block.
+- **Tabular time numerals**: toggle consistent-width digits for event times without changing the surrounding font.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults. Up to 10 categories in total; names must be unique.
 

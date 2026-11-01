@@ -207,14 +207,15 @@ export function buildCategoryBadgeEditorPlugin(
 
 /**
  * Creates (and returns) a CodeMirror ViewPlugin that decorates event time ranges
- * (e.g. `09:00 - 10:30`) in the live editor with monospace styling, limited to
+ * (e.g. `09:00 - 10:30`) in the live editor with tabular numerals, limited to
  * daily notes in the configured folder AND to event lines inside the configured
  * Event block.
  */
 export function buildTimeRangeEditorPlugin(
 	dailyNoteFolder?: string,
 	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
-	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
+	dateFormat = DEFAULT_DAILY_NOTE_FORMAT,
+	enabled = true
 ) {
 	const regexp = /\b\d{1,2}:\d{2}\s*[-~]\s*\d{1,2}:\d{2}\b/g;
 	const matcher = new MatchDecorator({
@@ -238,7 +239,8 @@ export function buildTimeRangeEditorPlugin(
 		(view: EditorView) => {
 			const info = view.state.field(editorInfoField, false);
 			const filePath = info?.file?.path ?? null;
-			const inScope = filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
+			const inScope =
+				enabled && filePath !== null && isDailyNoteFile(filePath, dailyNoteFolder, dateFormat);
 
 			return {
 				inScope,
@@ -367,12 +369,15 @@ export function processCategoryBadgesInReadingView(
 	categories: CustomCategory[],
 	dailyNoteFolder?: string,
 	eventHeading: EventHeadingConfig = DEFAULT_EVENT_HEADING,
-	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
+	dateFormat = DEFAULT_DAILY_NOTE_FORMAT,
+	tabularTimeRanges = true
 ): void {
 	if (!isDailyNoteFile(ctx.sourcePath, dailyNoteFolder, dateFormat)) return;
 
 	const regex = new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
 	const targets: Text[] = [];
+	const timeRangePrefix = /^([-*]\s*)?(\d{1,2}:\d{2}\s*[-~]\s*\d{1,2}:\d{2})\b/;
+	const timeRangeTargets: Array<{ node: Text; prefix: string; range: string }> = [];
 	const sectionInfo =
 		typeof ctx.getSectionInfo === "function" ? ctx.getSectionInfo(el) : null;
 	const sectionStates = sectionInfo
@@ -421,9 +426,23 @@ export function processCategoryBadgesInReadingView(
 			// Strict scoping: only text inside the configured Event section is
 			// eligible for badge rendering.
 			if (!isWithinEventHeading(headings, eventHeading)) return;
+			const text = node.textContent ?? "";
 			regex.lastIndex = 0;
-			if (regex.test(node.textContent ?? "")) {
+			if (regex.test(text)) {
 				targets.push(node);
+			}
+			if (tabularTimeRanges) {
+				const parent = node.parentElement;
+				if (parent?.closest("li") && !parent.closest(".dwl-time-range")) {
+					const match = timeRangePrefix.exec(text);
+					if (match) {
+						timeRangeTargets.push({
+							node,
+							prefix: match[1] ?? "",
+							range: match[2],
+						});
+					}
+				}
 			}
 		}
 	);
@@ -459,38 +478,59 @@ export function processCategoryBadgesInReadingView(
 		}
 	}
 
-	targets.forEach((textNode) => {
+	const timeRangesByNode = new Map(
+		timeRangeTargets.map(({ node, prefix, range }) => [
+			node,
+			{ start: prefix.length, end: prefix.length + range.length },
+		])
+	);
+	const badgeTargets = new Set(targets);
+	const renderTargets = new Set([...targets, ...timeRangesByNode.keys()]);
+
+	renderTargets.forEach((textNode) => {
 		const text = textNode.textContent ?? "";
 		const parent = textNode.parentElement;
 		if (!parent) return;
 		const frag = createFragment();
+		const timeRange = timeRangesByNode.get(textNode);
+		const appendText = (from: number, to: number) => {
+			if (from >= to) return;
+			if (!timeRange || timeRange.end <= from || timeRange.start >= to) {
+				frag.appendChild(document.createTextNode(text.slice(from, to)));
+				return;
+			}
+			const rangeStart = Math.max(from, timeRange.start);
+			const rangeEnd = Math.min(to, timeRange.end);
+			if (from < rangeStart) {
+				frag.appendChild(document.createTextNode(text.slice(from, rangeStart)));
+			}
+			frag.appendChild(createSpan({
+				cls: "dwl-time-range",
+				text: text.slice(rangeStart, rangeEnd),
+			}));
+			if (rangeEnd < to) {
+				frag.appendChild(document.createTextNode(text.slice(rangeEnd, to)));
+			}
+		};
 		let lastIndex = 0;
 		let match: RegExpExecArray | null;
 		regex.lastIndex = 0;
 
-		while ((match = regex.exec(text))) {
-			const tokenFrom = match.index + match[0].lastIndexOf("[");
-			// Plain text before this match
-			if (tokenFrom > lastIndex) {
-				frag.appendChild(
-					document.createTextNode(text.slice(lastIndex, tokenFrom))
-				);
+		if (badgeTargets.has(textNode)) {
+			while ((match = regex.exec(text))) {
+				const tokenFrom = match.index + match[0].lastIndexOf("[");
+				appendText(lastIndex, tokenFrom);
+				// Only render a badge when the token matches a configured category.
+				// Unknown `[...]` tokens stay as plain text in the reading view.
+				if (findCategory(match[1], categories)) {
+					frag.appendChild(makeBadgeSpan(match[1], categories));
+				} else {
+					appendText(tokenFrom, regex.lastIndex);
+				}
+				lastIndex = regex.lastIndex;
 			}
-			// Only render a badge when the token matches a configured category.
-			// Unknown `[...]` tokens stay as plain text in the reading view.
-			if (findCategory(match[1], categories)) {
-				frag.appendChild(makeBadgeSpan(match[1], categories));
-			} else {
-				frag.appendChild(document.createTextNode(text.slice(tokenFrom, regex.lastIndex)));
-			}
-			lastIndex = regex.lastIndex;
 		}
-
-		// Remaining plain text after the last match
-		if (lastIndex < text.length) {
-			frag.appendChild(document.createTextNode(text.slice(lastIndex)));
-		}
-
+		appendText(lastIndex, text.length);
 		textNode.parentNode?.replaceChild(frag, textNode);
 	});
 }
