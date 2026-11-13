@@ -4,9 +4,7 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 
 A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by SeongChan Hong, used under the MIT License.
 
-> [!NOTE]
-> 
-> ==Vibe coded!==
+> ## Vibe coded!
 > Almost all commits since the fork are written by AI
 > 
 > Notable changes in the fork;
@@ -14,7 +12,7 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 > - Removed ToDo handling
 > - Minimised custom elements to use native Obsidian elements instead (i.e. the react based time line view is replaced)
 > - Additional styling to the editor and timeline view
-    - Category tag in the editor matches the timeline view
+>   - Category tag in the editor matches the timeline view
 >   - Tabular figures for the time periods
 
 
