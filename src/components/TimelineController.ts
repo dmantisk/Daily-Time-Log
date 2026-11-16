@@ -25,7 +25,6 @@ import { getTextColorForBackground } from "./colorUtils";
 import { findCategoryByDisplayName } from "../settings";
 import {
 	buildTimelineLine,
-	cellIndexForHour,
 	CELLS_PER_HOUR,
 	dragRangeToTimes,
 	LONG_PRESS_DURATION_MS,
@@ -34,6 +33,7 @@ import {
 	touchTapRangeToTimes,
 	type PendingTouchPress,
 } from "../timelineLogic";
+import { getTimelineCellCount } from "../settings";
 
 interface DragRange {
 	start: number;
@@ -373,8 +373,8 @@ export class TimelineController {
 		const pending = this.state.pendingTouch;
 		if (pending && changedTouches.some((touch) => touch.identifier === pending.pointerId)) {
 			this.clearPendingTouchPress();
-			const { endHour } = this.plugin.settings;
-			const range = touchTapRangeToTimes(pending.cellIndex, endHour);
+				const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
+				const range = touchTapRangeToTimes(pending.cellIndex, dayStartMinutes, dayEndMinutes);
 			this.openEventModal(null, range.start, range.end);
 			if (event.cancelable) event.preventDefault();
 			return;
@@ -442,7 +442,8 @@ export class TimelineController {
 		if (!drag) return;
 		this.state.drag = null;
 		this.updateSelectionClasses(drag, null);
-		const range = dragRangeToTimes(drag.start, drag.end);
+			const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
+			const range = dragRangeToTimes(drag.start, drag.end, dayStartMinutes, dayEndMinutes);
 		this.openEventModal(null, range.start, range.end);
 	}
 
@@ -537,7 +538,7 @@ export class TimelineController {
 	}
 
 	private renderGrid(root: HTMLElement, language: MarkerLanguage): void {
-		const { startHour, endHour } = this.plugin.settings;
+			const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
 		const wrap = root.createDiv({ cls: "dwl-grid-wrap" });
 
 		const grid = wrap.createDiv({ cls: "dwl-grid" });
@@ -567,29 +568,43 @@ export class TimelineController {
 		grid.addEventListener("pointerup", (event) => this.handlePointerUp(event));
 		wrap.addEventListener("pointerleave", (event) => this.handlePointerLeave(event));
 		wrap.addEventListener("pointercancel", (event) => this.cancelPointer(event));
-		for (let hour = startHour; hour < endHour; hour++) {
+
+			const cellCount = getTimelineCellCount(dayStartMinutes, dayEndMinutes);
+			let cellIndex = 0;
+
+			// Iterate through each hour that the timeline covers
+			let currentMinutes = dayStartMinutes;
+			while (cellIndex < cellCount) {
+				const hour = Math.floor(currentMinutes / 60) % 24;
 			const hourStartMin = hour * 60;
 			const hourEndMin = (hour + 1) * 60;
+
+				// Calculate how many cells in this hour belong to our timeline
+				const cellsInThisHour = Math.min(CELLS_PER_HOUR, cellCount - cellIndex);
+
 			const row = grid.createDiv({ cls: "dwl-grid-row" });
 			const hourLabel = row.createDiv({ cls: "dwl-grid-hour-label" });
 			const isPm = hour >= 12;
-			const displayHour = hour === 0 || hour === 24 ? 12 : hour > 12 ? hour - 12 : hour;
-			const ampm = t(hour === 24 || !isPm ? "hourMarkerAm" : "hourMarkerPm", language);
+				const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+				const ampm = t(!isPm ? "hourMarkerAm" : "hourMarkerPm", language);
 			hourLabel.createSpan({ cls: "dwl-grid-hour-num", text: String(displayHour) });
 			hourLabel.createSpan({ cls: "dwl-grid-hour-ampm", text: ampm });
 
 			const cells = row.createDiv({ cls: "dwl-grid-cells" });
-			for (let column = 0; column < CELLS_PER_HOUR; column++) {
-				const cellIndex = cellIndexForHour(hour, column);
+				for (let column = 0; column < cellsInThisHour; column++) {
 				const selected = this.isSelected(cellIndex);
 				const cell = cells.createDiv({
 					cls: `dwl-grid-cell${selected ? " is-selecting" : ""}`,
 					attr: { "data-cell-index": String(cellIndex) },
 				});
 				this.gridCells[cellIndex] = cell;
+					cellIndex++;
 			}
 
 			this.renderBlocks(cells, hourStartMin, hourEndMin, language);
+
+				// Move to next hour
+				currentMinutes = (currentMinutes + 60) % 1440;
 		}
 	}
 

@@ -25,8 +25,8 @@ function createPluginStub() {
 		language: "auto" as const,
 		eventHeadingText: "Event",
 		eventHeadingLevel: 1,
-		startHour: 0,
-		endHour: 24,
+		dayStartMinutes: 0,
+		dayEndMinutes: 0,
 		tabularTimeRanges: true,
 		categories: [
 			{ name: "Work", displayName: "Work", color: "#d0e1fd", isDefault: true },
@@ -50,6 +50,7 @@ function settingWithoutPlaceholder(): Setting {
 	const match = Setting.created.find(
 		(setting) =>
 			setting.components.texts.length > 0 &&
+			setting.nameEl.textContent === "Event heading text" &&
 			setting.components.texts.every((text) => text.inputEl.placeholder === "")
 	);
 	if (!match) throw new Error("No setting found without a placeholder");
@@ -92,7 +93,7 @@ describe("DailyWorkLogSettingTab", () => {
 		const definitions = tab.getSettingDefinitions();
 
 		expect(definitions.some((definition) => definition.type === "page")).toBe(false);
-		expect(definitions.some((definition) => definition.name === "Day Start Hour")).toBe(true);
+			expect(definitions.some((definition) => definition.name === "Day Start Time")).toBe(true);
 		const categoryGroup = definitions.find((definition) => definition.type === "group");
 		expect(categoryGroup?.type).toBe("group");
 		if (categoryGroup?.type === "group") {

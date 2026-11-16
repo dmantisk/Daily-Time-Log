@@ -120,8 +120,8 @@ function createPluginStub(
 		},
 		settings: {
 			categories: [{ name: "Work", displayName: "Work", color: "#d0e1fd" }],
-			startHour: 0,
-			endHour: 24,
+					dayStartMinutes: 0,
+					dayEndMinutes: 1440,
 		},
 		getUiLanguage: () => "en",
 		getEventHeadingConfig: () => ({ text: "Event", level: 1 }),

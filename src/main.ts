@@ -8,7 +8,7 @@ import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
-import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, resolveHour, type DailyWorkLogSettings } from "./settings";
+import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, resolveMinutes, migrateLegacyHoursToMinutes, isValidMinuteValue, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 
@@ -144,7 +144,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		const loadedData = (await this.loadData()) as
-			| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown })
+				| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown; startHour?: number; endHour?: number })
 			| null;
 		const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
 		const settingsData = Object.fromEntries(
@@ -180,16 +180,44 @@ export default class DailyWorkLogPlugin extends Plugin {
 			this.settings.eventHeadingLevel = resolvedLevel;
 			shouldSave = true;
 		}
-		const resolvedStart = resolveHour(loadedData?.startHour, DEFAULT_SETTINGS.startHour);
-		if (resolvedStart !== this.settings.startHour) {
-			this.settings.startHour = resolvedStart;
-			shouldSave = true;
-		}
-		const resolvedEnd = resolveHour(loadedData?.endHour, DEFAULT_SETTINGS.endHour);
-		if (resolvedEnd !== this.settings.endHour) {
-			this.settings.endHour = resolvedEnd;
-			shouldSave = true;
-		}
+
+			// Migrate legacy hour-based settings to minute-based settings
+			// Prefer new-format settings if they already exist
+			const hasNewFormat = loadedData !== null &&
+				typeof loadedData.dayStartMinutes === "number" &&
+				typeof loadedData.dayEndMinutes === "number" &&
+				isValidMinuteValue(loadedData.dayStartMinutes) &&
+				isValidMinuteValue(loadedData.dayEndMinutes);
+			if (hasNewFormat) {
+				// Use resolveMinutes directly with the loadedData properties
+				// The type guard ensures they are valid numbers
+				const dayStartMinutes = loadedData.dayStartMinutes as number;
+				const dayEndMinutes = loadedData.dayEndMinutes as number;
+				const resolvedStart = resolveMinutes(dayStartMinutes, DEFAULT_SETTINGS.dayStartMinutes);
+				if (resolvedStart !== this.settings.dayStartMinutes) {
+		this.settings.dayStartMinutes = resolvedStart;
+		shouldSave = true;
+				}
+				const resolvedEnd = resolveMinutes(dayEndMinutes, DEFAULT_SETTINGS.dayEndMinutes);
+				if (resolvedEnd !== this.settings.dayEndMinutes) {
+		this.settings.dayEndMinutes = resolvedEnd;
+		shouldSave = true;
+				}
+			} else {
+				// Migrate from legacy hour-based settings
+				const legacyStartHour: number | undefined = loadedData !== null && typeof loadedData.startHour === "number" ? loadedData.startHour : undefined;
+				const legacyEndHour: number | undefined = loadedData !== null && typeof loadedData.endHour === "number" ? loadedData.endHour : undefined;
+				const migrated = migrateLegacyHoursToMinutes(legacyStartHour, legacyEndHour);
+				if (migrated.dayStartMinutes !== this.settings.dayStartMinutes) {
+		this.settings.dayStartMinutes = migrated.dayStartMinutes;
+		shouldSave = true;
+				}
+				if (migrated.dayEndMinutes !== this.settings.dayEndMinutes) {
+		this.settings.dayEndMinutes = migrated.dayEndMinutes;
+		shouldSave = true;
+				}
+			}
+
 		if (typeof loadedData?.tabularTimeRanges !== "boolean") {
 			this.settings.tabularTimeRanges = DEFAULT_SETTINGS.tabularTimeRanges;
 			shouldSave = true;

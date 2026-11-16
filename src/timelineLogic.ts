@@ -1,4 +1,5 @@
 import { minutesToTime } from "./parser";
+import { cellIndexToTime, getTimelineCellCount, timeToCellIndex } from "./settings";
 
 export const CELL_MINUTES = 10;
 export const CELLS_PER_HOUR = 60 / CELL_MINUTES;
@@ -26,25 +27,62 @@ export interface TimelineBlockGeometry {
 	isShort: boolean;
 }
 
+/**
+ * Converts a timeline-relative cell index to clock time string (HH:mm).
+ * Uses the configured timeline start time as the reference.
+ */
+export function cellIndexToTimeString(cellIndex: number, dayStartMinutes: number): string {
+	const timeMinutes = cellIndexToTime(cellIndex, dayStartMinutes);
+	return minutesToTime(timeMinutes);
+}
+
+/**
+ * Converts a clock time string (HH:mm) to a timeline-relative cell index.
+ * Returns -1 if the time is not in the timeline window.
+ */
+export function timeStringToCellIndex(timeStr: string, dayStartMinutes: number, dayEndMinutes: number): number {
+	const [hours, minutes] = timeStr.split(":").map(Number);
+	const timeMinutes = hours * 60 + minutes;
+	return timeToCellIndex(timeMinutes, dayStartMinutes, dayEndMinutes);
+}
+
 export function cellIndexForHour(hour: number, columnIndex: number): number {
 	return hour * CELLS_PER_HOUR + columnIndex;
 }
 
-export function dragRangeToTimes(startIndex: number, endIndex: number): { start: string; end: string } {
+/**
+ * Calculates the end time string for a cell boundary, handling the special case
+ * where the boundary is exactly at the timeline end and the timeline ends at midnight
+ * (which should be "24:00" not "00:00").
+ */
+function cellBoundaryToTimeString(cellIndex: number, dayStartMinutes: number, dayEndMinutes: number): string {
+	const boundaryMinutes = dayStartMinutes + cellIndex * CELL_MINUTES;
+	const timelineEndMinutes = dayEndMinutes === 0 ? 1440 : dayEndMinutes;
+	
+	// If this boundary is exactly at the timeline end AND the timeline ends at midnight,
+	// return "24:00" instead of "00:00"
+	if (boundaryMinutes === timelineEndMinutes && dayEndMinutes === 0) {
+		return "24:00";
+	}
+	
+	// Otherwise use normal modulo wrapping
+	return minutesToTime(boundaryMinutes % 1440);
+}
+
+export function dragRangeToTimes(startIndex: number, endIndex: number, dayStartMinutes: number, dayEndMinutes: number): { start: string; end: string } {
 	const firstCell = Math.min(startIndex, endIndex);
 	const lastCell = Math.max(startIndex, endIndex);
 	return {
-		start: minutesToTime(firstCell * CELL_MINUTES),
-		end: minutesToTime((lastCell + 1) * CELL_MINUTES),
+		start: cellIndexToTimeString(firstCell, dayStartMinutes),
+		end: cellBoundaryToTimeString(lastCell + 1, dayStartMinutes, dayEndMinutes),
 	};
 }
 
-export function touchTapRangeToTimes(cellIndex: number, endHour: number): { start: string; end: string } {
-	const endCellIndex = endHour * CELLS_PER_HOUR;
-	const cellCount = Math.max(0, endCellIndex);
+export function touchTapRangeToTimes(cellIndex: number, dayStartMinutes: number, dayEndMinutes: number): { start: string; end: string } {
+	const cellCount = getTimelineCellCount(dayStartMinutes, dayEndMinutes);
 	const startIndex = Math.min(Math.max(0, cellIndex), Math.max(0, cellCount - 3));
 	const endIndex = Math.min(startIndex + 2, cellCount - 1);
-	return dragRangeToTimes(startIndex, endIndex);
+	return dragRangeToTimes(startIndex, endIndex, dayStartMinutes, dayEndMinutes);
 }
 
 export function shouldCancelPendingTouchPress(

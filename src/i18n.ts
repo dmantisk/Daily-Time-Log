@@ -53,10 +53,10 @@ export type UIStringKey =
 	| "dashboardEmptyVault"
 	| "dashboardFolderNotFound"
 	| "dashboardFutureOnlyNotice"
-	| "settingStartHourName"
-	| "settingStartHourDesc"
-	| "settingEndHourName"
-	| "settingEndHourDesc"
+	| "settingDayStartTimeName"
+	| "settingDayStartTimeDesc"
+	| "settingDayEndTimeName"
+	| "settingDayEndTimeDesc"
 	| "settingTabularTimeRangesName"
 	| "settingTabularTimeRangesDesc"
 	| "settingEventHeadingTextName"
@@ -66,8 +66,6 @@ export type UIStringKey =
 	| "alertInvalidEventHeading"
 	| "settingLanguageName"
 	| "settingLanguageDesc"
-	| "alertStartBeforeEnd"
-	| "alertEndAfterStart"
 	| "settingCategoriesSection"
 	| "settingCategoriesDesc"
 	| "settingResetCategoriesName"
@@ -175,11 +173,11 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		dashboardFolderNotFound: "Daily Notes folder not found: %s",
 		dashboardFutureOnlyNotice:
 			"Only future-dated notes were found. They record no time yet, so nothing is counted until their date arrives.",
-		settingStartHourName: "Day Start Hour",
-		settingStartHourDesc: "Set the start hour to display on the timeline.",
-		settingEndHourName: "Day End Hour",
-		settingEndHourDesc: "Set the end hour to display on the timeline. (Supports up to midnight 24:00)",
-		settingTabularTimeRangesName: "Tabular time numerals",
+		settingDayStartTimeName: "Day Start Time",
+				settingDayStartTimeDesc: "Set the start time to display on the timeline. Supports 10-minute increments.",
+				settingDayEndTimeName: "Day End Time",
+				settingDayEndTimeDesc: "Set the end time to display on the timeline. Supports 10-minute increments. An end time earlier than the start time means the timeline ends the following day. Equal start and end times represent a full 24-hour timeline.",
+				settingTabularTimeRangesName: "Tabular time numerals",
 		settingTabularTimeRangesDesc:
 			"Align digits consistently in event times without changing the font. Requires a font that supports tabular numerals.",
 		settingLanguageName: "Language",
@@ -189,8 +187,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingEventHeadingLevelDesc: "Markdown heading depth used for the Event section (1-6).",
 		alertInvalidEventHeading: "The Event heading must be a single line.",
 		settingLanguageDesc: "Follow Obsidian's language, or choose English or Korean.",
-		alertStartBeforeEnd: "Start hour must be earlier than end hour.",
-		alertEndAfterStart: "End hour must be later than start hour.",
 		settingCategoriesSection: "Category Management",
 		settingCategoriesDesc: "Customize the categories and colors used in your daily logs.",
 		settingResetCategoriesName: "Reset Default Categories",
@@ -284,11 +280,11 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		dashboardFolderNotFound: "일일 노트 폴더를 찾을 수 없습니다: %s",
 		dashboardFutureOnlyNotice:
 			"미래 날짜의 노트만 있습니다. 아직 기록된 시간이 없으므로 해당 날짜가 될 때까지 집계되지 않습니다.",
-		settingStartHourName: "하루 시작 시간",
-		settingStartHourDesc: "타임라인에 표시할 시작 시간(시)을 설정합니다.",
-		settingEndHourName: "하루 종료 시간",
-		settingEndHourDesc: "타임라인에 표시할 종료 시간(시)을 설정합니다. (자정 24:00까지 지원)",
-		settingTabularTimeRangesName: "시간 숫자를 고정폭으로 표시",
+		settingDayStartTimeName: "하루 시작 시간",
+				settingDayStartTimeDesc: "타임라인에 표시할 시작 시간을 설정합니다. 10분 단위로 설정 가능합니다.",
+				settingDayEndTimeName: "하루 종료 시간",
+				settingDayEndTimeDesc: "타임라인에 표시할 종료 시간을 설정합니다. 10분 단위로 설정 가능합니다. 종료 시간이 시작 시간보다 이르면 다음 날로 이어지는 타임라인이 됩니다. 시작과 종료 시간이 같으면 24시간 타임라인이 됩니다.",
+				settingTabularTimeRangesName: "시간 숫자를 고정폭으로 표시",
 		settingTabularTimeRangesDesc:
 			"글꼴을 바꾸지 않고 이벤트 시간의 숫자 폭을 일정하게 맞춥니다. 고정폭 숫자를 지원하는 글꼴이 필요합니다.",
 		settingLanguageName: "언어",
@@ -298,8 +294,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingEventHeadingLevelDesc: "Event 섹션에 사용할 마크다운 제목 수준입니다 (1-6).",
 		alertInvalidEventHeading: "Event 제목은 한 줄이어야 합니다.",
 		settingLanguageDesc: "Obsidian 언어를 따르거나 영어 또는 한국어를 선택합니다.",
-		alertStartBeforeEnd: "시작 시간은 종료 시간보다 빨라야 합니다.",
-		alertEndAfterStart: "종료 시간은 시작 시간보다 늦어야 합니다.",
 		settingCategoriesSection: "카테고리 설정",
 		settingCategoriesDesc: "일과 기록에 사용할 카테고리와 색상을 관리합니다.",
 		settingResetCategoriesName: "기본 카테고리 색상 재설정",
@@ -364,4 +358,23 @@ export function formatHourLabel(hour: number, language: MarkerLanguage): string 
 	if (hour === 12) return t("hourMidnightPm", language);
 	if (hour < 12) return t("hourAm", language).replace("%s", String(hour));
 	return t("hourPm", language).replace("%s", String(hour - 12));
+}
+
+/**
+ * Formats minutes since midnight as HH:mm for use in time input value attribute.
+ * Always uses 24-hour format regardless of locale.
+ */
+export function formatTimeInputValue(minutes: number): string {
+	const safeMinutes = Math.max(0, Math.min(1430, Math.floor(minutes / 10) * 10));
+	const hours = Math.floor(safeMinutes / 60);
+	const mins = safeMinutes % 60;
+	return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+}
+
+/**
+ * Formats minutes since midnight as a display label (e.g., "08:00", "00:00").
+ * Uses 24-hour format for consistency in the time picker.
+ */
+export function formatTimeLabel(minutes: number, _language: MarkerLanguage): string {
+	return formatTimeInputValue(minutes);
 }

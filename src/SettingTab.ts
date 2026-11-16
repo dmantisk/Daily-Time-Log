@@ -5,7 +5,7 @@ import {
 	type SettingDefinitionItem,
 	type SettingGroupItem,
 } from "obsidian";
-import { formatHourLabel, t } from "./i18n";
+import { formatTimeLabel, t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
 import { createDefaultCategories, validateCategoryName, type LanguagePreference } from "./settings";
@@ -31,45 +31,59 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 		const lang = this.plugin.getUiLanguage();
 		const settings: SettingDefinitionItem[] = [
 			{
-				name: t("settingStartHourName", lang),
-				desc: t("settingStartHourDesc", lang),
+					name: t("settingDayStartTimeName", lang),
+					desc: t("settingDayStartTimeDesc", lang),
 				render: (setting) => {
-					setting.addDropdown((dropdown) => {
-						for (let hour = 0; hour <= 23; hour++) {
-							dropdown.addOption(String(hour), formatHourLabel(hour, lang));
-						}
-						dropdown.setValue(String(this.plugin.settings.startHour)).onChange(async (value) => {
-							const hour = parseInt(value, 10);
-							if (hour >= this.plugin.settings.endHour) {
-								new Notice(t("alertStartBeforeEnd", lang));
-								dropdown.setValue(String(this.plugin.settings.startHour));
-								return;
-							}
-							this.plugin.settings.startHour = hour;
-							await this.plugin.saveSettings();
-							this.plugin.refreshViews();
+						const startMinutes = this.plugin.settings.dayStartMinutes;
+						setting.addText((text) => {
+							text.inputEl.type = "time";
+							text.inputEl.step = "600"; // 10 minutes = 600 seconds
+							text.inputEl.value = formatTimeLabel(startMinutes, lang);
+							text.inputEl.addEventListener("change", () => {
+								void (async () => {
+									const value = text.inputEl.value;
+									if (!value) return;
+									const [hours, minutes] = value.split(":").map(Number);
+									const totalMinutes = hours * 60 + minutes;
+									// Validate: must be multiple of 10, 0-1430
+									if (totalMinutes < 0 || totalMinutes > 1430 || totalMinutes % 10 !== 0) {
+										new Notice(t("invalidTimeFormat", lang));
+										text.inputEl.value = formatTimeLabel(this.plugin.settings.dayStartMinutes, lang);
+										return;
+									}
+									this.plugin.settings.dayStartMinutes = totalMinutes;
+									await this.plugin.saveSettings();
+									this.plugin.refreshViews();
+								})();
 						});
 					});
 				},
 			},
 			{
-				name: t("settingEndHourName", lang),
-				desc: t("settingEndHourDesc", lang),
+					name: t("settingDayEndTimeName", lang),
+					desc: t("settingDayEndTimeDesc", lang),
 				render: (setting) => {
-					setting.addDropdown((dropdown) => {
-						for (let hour = 1; hour <= 24; hour++) {
-							dropdown.addOption(String(hour), formatHourLabel(hour, lang));
-						}
-						dropdown.setValue(String(this.plugin.settings.endHour)).onChange(async (value) => {
-							const hour = parseInt(value, 10);
-							if (hour <= this.plugin.settings.startHour) {
-								new Notice(t("alertEndAfterStart", lang));
-								dropdown.setValue(String(this.plugin.settings.endHour));
-								return;
-							}
-							this.plugin.settings.endHour = hour;
-							await this.plugin.saveSettings();
-							this.plugin.refreshViews();
+						const endMinutes = this.plugin.settings.dayEndMinutes;
+						setting.addText((text) => {
+							text.inputEl.type = "time";
+							text.inputEl.step = "600"; // 10 minutes = 600 seconds
+							text.inputEl.value = formatTimeLabel(endMinutes, lang);
+							text.inputEl.addEventListener("change", () => {
+								void (async () => {
+									const value = text.inputEl.value;
+									if (!value) return;
+									const [hours, minutes] = value.split(":").map(Number);
+									const totalMinutes = hours * 60 + minutes;
+									// Validate: must be multiple of 10, 0-1430
+									if (totalMinutes < 0 || totalMinutes > 1430 || totalMinutes % 10 !== 0) {
+										new Notice(t("invalidTimeFormat", lang));
+										text.inputEl.value = formatTimeLabel(this.plugin.settings.dayEndMinutes, lang);
+										return;
+									}
+									this.plugin.settings.dayEndMinutes = totalMinutes;
+									await this.plugin.saveSettings();
+									this.plugin.refreshViews();
+								})();
 						});
 					});
 				},

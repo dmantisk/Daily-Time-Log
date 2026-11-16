@@ -2,12 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
 	DEFAULT_CATEGORIES,
 	DEFAULT_SETTINGS,
+	calculateTimelineDuration,
 	copyCategories,
 	createDefaultCategories,
 	findCategoryByDisplayName,
+	isTimeInWindow,
+	isValidMinutes,
+	migrateLegacyHoursToMinutes,
 	resolveEventHeadingLevel,
 	resolveEventHeadingText,
 	resolveHour,
+	resolveMinutes,
+	timeToCellIndex,
 	validateCategoryName,
 	type CustomCategory,
 	type DailyWorkLogSettings,
@@ -21,8 +27,8 @@ describe("settings defaults", () => {
 
 	it("provides the default categories and timeline range", () => {
 		expect(DEFAULT_SETTINGS.categories).toHaveLength(5);
-		expect(DEFAULT_SETTINGS.startHour).toBe(0);
-		expect(DEFAULT_SETTINGS.endHour).toBe(24);
+		expect(DEFAULT_SETTINGS.dayStartMinutes).toBe(0);
+		expect(DEFAULT_SETTINGS.dayEndMinutes).toBe(0); // 0 means midnight next day (full 24-hour timeline)
 		expect(DEFAULT_SETTINGS.tabularTimeRanges).toBe(true);
 	});
 
@@ -191,5 +197,153 @@ describe("validateCategoryName", () => {	const categories: CustomCategory[] = [
 		// be rejected.
 		expect(validateCategoryName(categories, "Work", 0)).toBeNull();
 		expect(validateCategoryName(categories, "Study", 0)).toBe("duplicate");
+	});
+});
+
+describe("isValidMinutes", () => {
+	it("accepts valid minute values (0-1430, multiples of 10)", () => {
+		expect(isValidMinutes(0)).toBe(true);
+		expect(isValidMinutes(10)).toBe(true);
+		expect(isValidMinutes(540)).toBe(true); // 09:00
+		expect(isValidMinutes(1430)).toBe(true); // 23:50
+	});
+
+	it("rejects invalid minute values", () => {
+		expect(isValidMinutes(-1)).toBe(false);
+		expect(isValidMinutes(1431)).toBe(false);
+		expect(isValidMinutes(1440)).toBe(false);
+		expect(isValidMinutes(5)).toBe(false); // Not multiple of 10
+		expect(isValidMinutes(545)).toBe(false); // Not multiple of 10
+		expect(isValidMinutes(2.5)).toBe(false); // Not integer
+		expect(isValidMinutes("540")).toBe(false); // Not number
+		expect(isValidMinutes(undefined)).toBe(false);
+	});
+});
+
+describe("resolveMinutes", () => {
+	it("keeps a valid minute value", () => {
+		expect(resolveMinutes(0, 0)).toBe(0);
+		expect(resolveMinutes(540, 0)).toBe(540);
+		expect(resolveMinutes(1430, 1440)).toBe(1430);
+	});
+
+	it("falls back to default for invalid values", () => {
+		expect(resolveMinutes(-1, 0)).toBe(0);
+		expect(resolveMinutes(1440, 1440)).toBe(1440);
+		expect(resolveMinutes(5, 0)).toBe(0);
+		expect(resolveMinutes(2.5, 0)).toBe(0);
+		expect(resolveMinutes("540", 0)).toBe(0);
+		expect(resolveMinutes(undefined, 0)).toBe(0);
+	});
+});
+
+describe("calculateTimelineDuration", () => {
+	it("calculates duration for same-day ranges", () => {
+		expect(calculateTimelineDuration(8 * 60, 14 * 60)).toBe(360); // 08:00 to 14:00 = 6 hours
+		expect(calculateTimelineDuration(0, 1440)).toBe(1440); // Full day (but end=1440 is not valid input)
+	});
+
+	it("calculates duration for overnight ranges", () => {
+		expect(calculateTimelineDuration(8 * 60, 2 * 60)).toBe(1080); // 08:00 to 02:00 = 18 hours
+		expect(calculateTimelineDuration(12 * 60, 6 * 60)).toBe(1080); // 12:00 to 06:00 = 18 hours
+		expect(calculateTimelineDuration(23 * 60 + 50, 0)).toBe(10); // 23:50 to 00:00 = 10 minutes
+	});
+
+	it("calculates 24-hour duration for equal start and end", () => {
+		expect(calculateTimelineDuration(0, 0)).toBe(1440);
+		expect(calculateTimelineDuration(4 * 60, 4 * 60)).toBe(1440);
+		expect(calculateTimelineDuration(8 * 60, 8 * 60)).toBe(1440);
+	});
+});
+
+describe("isTimeInWindow", () => {
+	it("checks time in same-day window", () => {
+		const start = 8 * 60;
+		const end = 14 * 60;
+		expect(isTimeInWindow(8 * 60, start, end)).toBe(true);
+		expect(isTimeInWindow(10 * 60, start, end)).toBe(true);
+		expect(isTimeInWindow(13 * 60 + 50, start, end)).toBe(true);
+		expect(isTimeInWindow(14 * 60, start, end)).toBe(false); // Exclusive end
+		expect(isTimeInWindow(7 * 60, start, end)).toBe(false);
+	});
+
+	it("checks time in overnight window", () => {
+		const start = 8 * 60;
+		const end = 2 * 60;
+		expect(isTimeInWindow(8 * 60, start, end)).toBe(true);
+		expect(isTimeInWindow(14 * 60, start, end)).toBe(true);
+		expect(isTimeInWindow(23 * 60, start, end)).toBe(true);
+		expect(isTimeInWindow(0, start, end)).toBe(true);
+		expect(isTimeInWindow(1 * 60, start, end)).toBe(true);
+		expect(isTimeInWindow(2 * 60, start, end)).toBe(false); // Exclusive end
+		expect(isTimeInWindow(7 * 60, start, end)).toBe(false);
+	});
+
+	it("returns true for all times in 24-hour window", () => {
+		expect(isTimeInWindow(0, 0, 0)).toBe(true);
+		expect(isTimeInWindow(12 * 60, 0, 0)).toBe(true);
+		expect(isTimeInWindow(23 * 60 + 50, 0, 0)).toBe(true);
+	});
+});
+
+describe("timeToCellIndex", () => {
+	it("converts time to cell index for same-day window", () => {
+		const start = 8 * 60;
+		const end = 14 * 60;
+		expect(timeToCellIndex(8 * 60, start, end)).toBe(0);
+		expect(timeToCellIndex(9 * 60, start, end)).toBe(6);
+		expect(timeToCellIndex(13 * 60 + 50, start, end)).toBe(35);
+		expect(timeToCellIndex(14 * 60, start, end)).toBe(-1); // Exclusive end
+		expect(timeToCellIndex(7 * 60, start, end)).toBe(-1);
+	});
+
+	it("converts time to cell index for overnight window", () => {
+		const start = 8 * 60;
+		const end = 2 * 60;
+		expect(timeToCellIndex(8 * 60, start, end)).toBe(0);
+		expect(timeToCellIndex(14 * 60, start, end)).toBe(36);
+		expect(timeToCellIndex(23 * 60 + 50, start, end)).toBe(95);
+		expect(timeToCellIndex(0, start, end)).toBe(96);
+		expect(timeToCellIndex(1 * 60 + 50, start, end)).toBe(107);
+		expect(timeToCellIndex(2 * 60, start, end)).toBe(-1); // Exclusive end
+		expect(timeToCellIndex(7 * 60, start, end)).toBe(-1);
+	});
+
+	it("converts time to cell index for 24-hour window", () => {
+		expect(timeToCellIndex(0, 0, 0)).toBe(0);
+		expect(timeToCellIndex(12 * 60, 0, 0)).toBe(72);
+		expect(timeToCellIndex(23 * 60 + 50, 0, 0)).toBe(143);
+	});
+});
+
+describe("migrateLegacyHoursToMinutes", () => {
+	it("migrates default legacy settings (0-24) to full 24-hour timeline", () => {
+		const result = migrateLegacyHoursToMinutes(0, 24);
+		expect(result.dayStartMinutes).toBe(0);
+		expect(result.dayEndMinutes).toBe(0); // 24 -> 0 (midnight next day)
+	});
+
+	it("migrates same-day legacy settings", () => {
+		const result = migrateLegacyHoursToMinutes(8, 14);
+		expect(result.dayStartMinutes).toBe(480); // 08:00
+		expect(result.dayEndMinutes).toBe(840); // 14:00
+	});
+
+	it("migrates overnight legacy settings", () => {
+		const result = migrateLegacyHoursToMinutes(8, 2);
+		expect(result.dayStartMinutes).toBe(480); // 08:00
+		expect(result.dayEndMinutes).toBe(120); // 02:00
+	});
+
+	it("handles missing legacy values with defaults", () => {
+		const result = migrateLegacyHoursToMinutes(undefined, undefined);
+		expect(result.dayStartMinutes).toBe(0);
+		expect(result.dayEndMinutes).toBe(0); // Default endHour was 24 -> 0
+	});
+
+	it("handles partial legacy values", () => {
+		const result = migrateLegacyHoursToMinutes(8, undefined);
+		expect(result.dayStartMinutes).toBe(480);
+		expect(result.dayEndMinutes).toBe(0); // Default endHour was 24 -> 0
 	});
 });

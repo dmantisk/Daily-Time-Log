@@ -126,9 +126,10 @@ export interface DailyWorkLogSettings {
 	eventHeadingText: string;
 	/** Markdown heading level (1-6) used for the Event block. */
 	eventHeadingLevel: number;
-	/** Grid timeline's displayed hour range, inclusive start / exclusive end (0-24). */
-	startHour: number;
-	endHour: number;
+	/** Grid timeline's displayed start time in minutes since midnight (0-1430, 10-min increments). */
+		dayStartMinutes: number;
+		/** Grid timeline's displayed end time in minutes since midnight (0-1430, 10-min increments). */
+		dayEndMinutes: number;
 	/** Whether event time ranges use tabular numerals in the editor and reading view. */
 	tabularTimeRanges: boolean;
 	/** Up to 10 entries; see CustomCategory for how these map into note bodies. */
@@ -141,8 +142,8 @@ export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	// settings UI can never offer something the parser would not accept.
 	eventHeadingText: DEFAULT_EVENT_HEADING.text,
 	eventHeadingLevel: DEFAULT_EVENT_HEADING.level,
-	startHour: 0,
-	endHour: 24,
+	dayStartMinutes: 0,
+	dayEndMinutes: 0, // 0 means midnight next day (full 24-hour timeline)
 	tabularTimeRanges: true,
 	categories: createDefaultCategories(),
 };
@@ -181,10 +182,136 @@ export function resolveEventHeadingLevel(value: unknown): number {
 /**
  * Resolves start/end hour from persisted settings.
  * Falls back to default unless value is an integer 0-24.
+ * @deprecated Use resolveMinutes instead for new minute-based settings.
  */
 export function resolveHour(value: unknown, defaultValue: number): number {
 	if (!Number.isInteger(value)) return defaultValue;
 	const hour = value as number;
 	if (hour < 0 || hour > 24) return defaultValue;
 	return hour;
+}
+
+/**
+ * Validates a minute value for timeline settings.
+ * Must be an integer 0-1430, multiple of 10.
+ */
+export function isValidMinutes(value: unknown): boolean {
+	if (!Number.isInteger(value)) return false;
+	const minutes = value as number;
+	return minutes >= 0 && minutes <= 1430 && minutes % 10 === 0;
+}
+
+/**
+ * Resolves minute-based timeline setting from persisted settings.
+ * Falls back to default unless value is a valid minute value (0-1430, multiple of 10).
+ */
+export function resolveMinutes(value: unknown, defaultValue: number): number {
+	if (!isValidMinutes(value)) return defaultValue;
+	return value as number;
+}
+
+/**
+ * Type guard to check if a value is a valid minute value.
+ */
+export function isValidMinuteValue(value: unknown): value is number {
+	return isValidMinutes(value);
+}
+
+/**
+ * Resolves minute-based timeline setting from persisted settings with type narrowing.
+ * Falls back to default unless value is a valid minute value (0-1430, multiple of 10).
+ */
+export function resolveMinutesSafe(value: unknown, defaultValue: number): number {
+	if (!isValidMinutes(value)) return defaultValue;
+	return value as number;
+}
+
+/**
+ * Calculates the timeline duration in minutes from start and end minutes.
+ * - If end > start: duration = end - start
+ * - If end < start: duration = (1440 - start) + end (crosses midnight)
+ * - If end = start: duration = 1440 (full 24-hour timeline)
+ */
+export function calculateTimelineDuration(startMinutes: number, endMinutes: number): number {
+	if (endMinutes > startMinutes) {
+		return endMinutes - startMinutes;
+	}
+	if (endMinutes < startMinutes) {
+		return (1440 - startMinutes) + endMinutes;
+	}
+	// endMinutes === startMinutes means full 24-hour timeline
+	return 1440;
+}
+
+/**
+ * Checks if a time (in minutes since midnight) falls within the configured timeline window.
+ * Handles overnight ranges correctly.
+ */
+export function isTimeInWindow(timeMinutes: number, startMinutes: number, endMinutes: number): boolean {
+	if (endMinutes > startMinutes) {
+		return timeMinutes >= startMinutes && timeMinutes < endMinutes;
+	}
+	if (endMinutes < startMinutes) {
+		// Overnight range: time is in window if it's >= start OR < end
+		return timeMinutes >= startMinutes || timeMinutes < endMinutes;
+	}
+	// endMinutes === startMinutes means full 24-hour timeline
+	return true;
+}
+
+/**
+ * Returns the number of 10-minute cells in the timeline.
+ */
+export function getTimelineCellCount(startMinutes: number, endMinutes: number): number {
+	const duration = calculateTimelineDuration(startMinutes, endMinutes);
+	return duration / 10;
+}
+
+/**
+ * Converts a timeline-relative cell index (0-based) to clock time in minutes since midnight.
+ */
+export function cellIndexToTime(cellIndex: number, startMinutes: number): number {
+	return (startMinutes + cellIndex * 10) % 1440;
+}
+
+/**
+ * Converts a clock time (minutes since midnight) to a timeline-relative cell index.
+ * Returns -1 if the time is not in the timeline window.
+ */
+export function timeToCellIndex(timeMinutes: number, startMinutes: number, endMinutes: number): number {
+	if (!isTimeInWindow(timeMinutes, startMinutes, endMinutes)) {
+		return -1;
+	}
+	if (timeMinutes >= startMinutes) {
+		return Math.floor((timeMinutes - startMinutes) / 10);
+	}
+	// Time is before start (overnight case)
+	return Math.floor((1440 - startMinutes + timeMinutes) / 10);
+}
+
+/**
+ * Migrates legacy hour-based settings to minute-based settings.
+ * - Converts startHour to minutes (startHour * 60)
+ * - Converts endHour to minutes (endHour * 60), with special case: 24 -> 0 (midnight next day)
+ * - Preserves effective duration of existing configurations
+ * - Maps original default (0-24) to full 24-hour timeline (0-1440)
+ */
+export function migrateLegacyHoursToMinutes(
+	legacyStartHour: number | undefined,
+	legacyEndHour: number | undefined
+): { dayStartMinutes: number; dayEndMinutes: number } {
+	// Default to original defaults if legacy values missing
+	const startHour = typeof legacyStartHour === 'number' && legacyStartHour >= 0 && legacyStartHour <= 24
+		? legacyStartHour
+		: 0; // Old default was 0
+	const endHour = typeof legacyEndHour === 'number' && legacyEndHour >= 0 && legacyEndHour <= 24
+		? legacyEndHour
+		: 24; // Old default was 24
+
+	// Convert to minutes
+	const dayStartMinutes = startHour * 60;
+	// Special case: endHour 24 means midnight next day -> 0 minutes
+	const dayEndMinutes = endHour === 24 ? 0 : endHour * 60;
+
+	return { dayStartMinutes, dayEndMinutes };
 }
