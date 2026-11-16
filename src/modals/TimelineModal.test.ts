@@ -49,6 +49,16 @@ function textareaOf(modal: TimelineModal): HTMLTextAreaElement {
 	return bodyOf(modal).querySelector("textarea") as HTMLTextAreaElement;
 }
 
+/** The category dropdown `<select>`. */
+function categoryDropdownOf(modal: TimelineModal): HTMLSelectElement {
+	return bodyOf(modal).querySelector("select.dwl-category-dropdown") as HTMLSelectElement;
+}
+
+/** The category dot `<span>`. */
+function categoryDotOf(modal: TimelineModal): HTMLSpanElement {
+	return bodyOf(modal).querySelector("span.dwl-category-dot") as HTMLSpanElement;
+}
+
 /** The buttons of the modal's action row, in order. */
 function buttonsOf(modal: TimelineModal): HTMLButtonElement[] {
 	return [...modal.contentEl.querySelectorAll<HTMLButtonElement>(".modal-button-container button")];
@@ -106,6 +116,11 @@ describe("TimelineModal", () => {
 		expect(inputs).toHaveLength(2);
 		expect(inputs[0].type).toBe("text");
 		expect(textareaOf(modal).tagName).toBe("TEXTAREA");
+
+			// Category dropdown is a native <select>
+			const dropdown = categoryDropdownOf(modal);
+			expect(dropdown.tagName).toBe("SELECT");
+			expect(dropdown.getAttribute("aria-label")).toBe("Category");
 
 		// The action row is Obsidian's own `.modal-button-container`.
 		const buttons = buttonsOf(modal);
@@ -197,35 +212,83 @@ describe("TimelineModal", () => {
 		expect(Notice.shown).toHaveLength(1);
 	});
 
-	it("saves the picked category and toggles it off when clicked again", () => {
-		const { modal, saved } = openModal(null);
+	it("shows dropdown with 'No category' first, then settings categories", () => {
+			const { modal } = openModal(null);
+			const dropdown = categoryDropdownOf(modal);
 
-		/** The chips currently in the DOM — they are re-rendered on click. */
-		const chips = (): HTMLButtonElement[] => [
-			...bodyOf(modal).querySelectorAll<HTMLButtonElement>(".dwl-category-chip"),
-		];
+			// First option is "No category" with empty value
+			expect(dropdown.options[0].text).toBe("No category");
+			expect(dropdown.options[0].value).toBe("");
 
-		expect(chips().map((c) => c.textContent)).toEqual(["Work", "Study"]);
+			// Then settings categories in order
+			expect(dropdown.options[1].text).toBe("Work");
+			expect(dropdown.options[1].value).toBe("Work");
+			expect(dropdown.options[2].text).toBe("Study");
+			expect(dropdown.options[2].value).toBe("Study");
+		});
 
-		chips()[0].click();
-		expect(chips()[0].classList.contains("mod-cta")).toBe(true);
+		it("selecting a category changes the saved value", () => {
+			const { modal, saved } = openModal(null);
+			const dropdown = categoryDropdownOf(modal);
+
+			dropdown.value = "Work";
+			dropdown.dispatchEvent(new Event("change", { bubbles: true }));
 
 		buttonLabelled(modal, "Save").click();
 		expect(saved[0].category).toBe("Work");
+		});
 
-		// Clicking the selected chip again clears the category, so the
-		// entry can be taken back to "uncategorized".
-		const { modal: second, saved: secondSaved } = openModal(null);
-		const secondChips = (): HTMLButtonElement[] => [
-			...bodyOf(second).querySelectorAll<HTMLButtonElement>(".dwl-category-chip"),
-		];
-		secondChips()[1].click();
-		expect(secondChips()[1].classList.contains("mod-cta")).toBe(true);
-		secondChips()[1].click();
-		expect(secondChips()[1].classList.contains("mod-cta")).toBe(false);
+		it("selecting 'No category' saves undefined", () => {
+			const { modal, saved } = openModal(null);
+			const dropdown = categoryDropdownOf(modal);
 
-		buttonLabelled(second, "Save").click();
-		expect(secondSaved[0].category).toBeUndefined();
+			dropdown.value = "";
+			dropdown.dispatchEvent(new Event("change", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+			expect(saved[0].category).toBeUndefined();
+		});
+
+		it("a category missing from settings still appears and can be cleared", () => {
+			const { modal, saved } = openModal(item({ category: "OldCategory" }));
+			const dropdown = categoryDropdownOf(modal);
+
+			// OldCategory should appear as an extra option
+			const values = [...dropdown.options].map((o) => o.value);
+			expect(values).toContain("OldCategory");
+
+			// Initially selected
+			expect(dropdown.value).toBe("OldCategory");
+
+			// Can be cleared by selecting "No category"
+			dropdown.value = "";
+			dropdown.dispatchEvent(new Event("change", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+			expect(saved[0].category).toBeUndefined();
+		});
+
+		it("focus goes to the dropdown for a new entry", () => {
+			const { modal } = openModal(null);
+			const dropdown = categoryDropdownOf(modal);
+			// Use toStrictEqual because happy-dom may return different object references for the same element
+			expect(document.activeElement).toStrictEqual(dropdown);
+		});
+
+		it("focus goes to the description when editing", () => {
+			const { modal } = openModal(item());
+			const textarea = textareaOf(modal);
+			expect(document.activeElement).toStrictEqual(textarea);
+		});
+
+		it("resolves stale category case-insensitively in dropdown", () => {
+			const { modal, saved } = openModal(item({ category: "work" }));
+			const dropdown = categoryDropdownOf(modal);
+
+			// A differently-cased old tag should resolve to the configured category
+			expect(dropdown.value).toBe("Work");
+			buttonLabelled(modal, "Save").click();
+			expect(saved[0].category).toBe("work");
 	});
 
 	it("allows overnight ranges (end before start)", () => {
@@ -263,18 +326,6 @@ describe("TimelineModal", () => {
 
 		expect(saved).toHaveLength(1);
 		expect(saved[0].start).toBe("09:00");
-	});
-
-	it("resolves stale category chips case-insensitively", () => {
-		const { modal, saved } = openModal(item({ category: "work" }));
-		const chips = (): HTMLButtonElement[] => [
-			...bodyOf(modal).querySelectorAll<HTMLButtonElement>(".dwl-category-chip"),
-		];
-
-		// A differently-cased old tag should resolve to the configured category.
-		expect(chips().map((c) => c.textContent)).toContain("Work");
-		buttonLabelled(modal, "Save").click();
-		expect(saved[0].category).toBe("work");
 	});
 
 	it("asks for the delete and closes when the delete button is pressed", () => {

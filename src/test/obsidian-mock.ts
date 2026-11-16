@@ -501,6 +501,10 @@ export class DropdownComponent {
 			containerEl.appendChild(this.selectEl);
 			containerEl.appendChild(this.measureEl);
 		}
+			// Fire change handler when select value changes (mimics real component)
+			this.selectEl.addEventListener("change", () => {
+				this.changeHandler?.(this.selectEl.value);
+			});
 	}
 
 	addOption(value: string, label: string): this {

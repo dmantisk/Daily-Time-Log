@@ -244,23 +244,24 @@
 	flex-direction: column;
 }
 
-.dwl-category-chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.35rem;
-}
-
-.dwl-category-chip {
+.dwl-category-dropdown-row {
 	display: flex;
 	align-items: center;
-	gap: 0.4rem;
+	gap: 0.5rem;
 }
 
-.dwl-category-chip-preview {
+.dwl-category-dropdown {
+	flex: 1;
+	min-width: 0;
+}
+
+.dwl-category-dot {
 	width: 10px;
 	height: 10px;
 	min-width: 10px;
 	border-radius: 50%;
+	background-color: #95a5a6;
+	flex-shrink: 0;
 }
 
 .dwl-modal-text {

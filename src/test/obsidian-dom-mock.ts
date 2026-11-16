@@ -16,6 +16,22 @@ export function installObsidianDomHelpers(): void {
 	const proto = globalThis.HTMLElement?.prototype as ObsidianElementProto | undefined;
 	if (!proto || proto.__dwlObsidianDomInstalled) return;
 
+	// Track active element for focus tests
+	let activeElement: HTMLElement | null = document.body;
+	Object.defineProperty(document, "activeElement", {
+		get: () => activeElement,
+		set: (value: HTMLElement | null) => {
+			activeElement = value;
+		},
+		configurable: true,
+	});
+
+	const originalFocus = HTMLElement.prototype.focus;
+	HTMLElement.prototype.focus = function (this: HTMLElement): void {
+		activeElement = this;
+		originalFocus?.call(this);
+	};
+
 	Object.assign(globalThis, {
 		createFragment: () => globalThis.document.createDocumentFragment(),
 		createDiv: (options?: DomElementInfoLike | string) =>

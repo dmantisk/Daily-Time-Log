@@ -1,4 +1,4 @@
-import { App, ButtonComponent, Modal, Notice, TextAreaComponent, TextComponent } from "obsidian";
+import { App, ButtonComponent, DropdownComponent, Modal, Notice, TextAreaComponent, TextComponent } from "obsidian";
 import { t } from "../i18n";
 import { findCategoryByDisplayName } from "../settings";
 import { isTopLevelOrMarker, stripHtml, TIME_END_VALUE_REGEX, TIME_VALUE_REGEX, timeToMinutes, type MarkerLanguage, type TimelineItem } from "../parser";
@@ -16,25 +16,19 @@ export interface EventEntryValues {
  * Add/edit modal for Event (Timeline) items.
  *
  * The body is built from Obsidian's own components — `TextComponent`,
- * `TextAreaComponent` and `ButtonComponent` — so the inputs, the button
- * row and the destructive/primary button styling are the app's own and
- * follow the active theme (AGENTS.md §2, §3).
- *
- * The category chips stay hand-rolled: Obsidian has no native control
- * for a set of coloured category labels, so they are the one piece of
- * custom UI this modal keeps.
+ * `TextAreaComponent`, `DropdownComponent` and `ButtonComponent` — so the
+ * inputs, the button row and the destructive/primary button styling are
+ * the app's own and follow the active theme (AGENTS.md §2, §3).
  */
 export class TimelineModal extends Modal {
 	private startComponent: TextComponent | null = null;
 	private endComponent: TextComponent | null = null;
 	private descriptionComponent: TextAreaComponent | null = null;
+		private categoryDropdown: DropdownComponent | null = null;
+		private categoryDot: HTMLSpanElement | null = null;
 
 	/**
 	 * The category picked in the modal, or `undefined` for uncategorized.
-	 *
-	 * Held on the instance rather than in a local because the chips are
-	 * re-rendered whenever the selection changes, and the value has to
-	 * survive that.
 	 */
 	private selectedCategory: string | undefined;
 
@@ -92,8 +86,39 @@ export class TimelineModal extends Modal {
 
 		// --- Category ---
 		const categoryField = body.createDiv({ cls: "dwl-modal-field" });
-		categoryField.createEl("label", { cls: "dwl-modal-label", text: t("fieldCategory", this.language) });
-		this.renderCategoryChips(categoryField);
+				const labelRow = categoryField.createDiv({ cls: "dwl-category-dropdown-row" });
+				labelRow.createEl("label", { cls: "dwl-modal-label", text: t("fieldCategory", this.language) });
+
+				this.categoryDropdown = new DropdownComponent(labelRow);
+				this.categoryDropdown.selectEl.addClass("dwl-category-dropdown");
+				this.categoryDropdown.selectEl.setAttribute("aria-label", t("fieldCategory", this.language));
+
+				// "No category" option first
+				this.categoryDropdown.addOption("", t("categoryNone", this.language));
+
+				// Categories from settings, in order
+				for (const cat of this.categories) {
+					this.categoryDropdown.addOption(cat.displayName, cat.displayName);
+				}
+
+				// If the current category is not in settings, add it so it can be seen/cleared
+								if (this.selectedCategory && !this.categories.some((c) => c.displayName.trim().toLowerCase() === this.selectedCategory!.trim().toLowerCase())) {
+					this.categoryDropdown.addOption(this.selectedCategory, this.selectedCategory);
+				}
+
+				// Set initial value using case-insensitive, trimmed matching
+				const selectedCat = findCategoryByDisplayName(this.categories, this.selectedCategory);
+				const initialValue = selectedCat ? selectedCat.displayName : (this.selectedCategory ?? "");
+				this.categoryDropdown.setValue(initialValue);
+
+				// Colored dot next to dropdown
+				this.categoryDot = labelRow.createSpan({ cls: "dwl-category-dot" });
+				this.updateCategoryDot();
+
+				this.categoryDropdown.onChange((value) => {
+					this.selectedCategory = value || undefined;
+					this.updateCategoryDot();
+				});
 
 		// --- Description ---
 		const descriptionField = body.createDiv({ cls: "dwl-modal-field" });
@@ -119,6 +144,13 @@ export class TimelineModal extends Modal {
 				e.preventDefault();
 			}
 		});
+
+				// Focus: new entry -> dropdown, editing -> description
+				if (this.initial === null) {
+					this.categoryDropdown?.selectEl.focus();
+				} else {
+					this.descriptionComponent?.inputEl.focus();
+				}
 
 		// --- Actions ---
 		// The native `.modal-button-container` is the row Obsidian itself
@@ -157,39 +189,13 @@ export class TimelineModal extends Modal {
 	}
 
 	/**
-	 * Renders the category chips and keeps the selected one in sync.
-	 *
-	 * Obsidian has no native control for a set of coloured category
-	 * labels, so these stay hand-rolled — but the selected chip uses the
-	 * app's own `.mod-cta` styling.
+		 * Updates the colored dot next to the category dropdown.
 	 */
-	private renderCategoryChips(parent: HTMLElement): void {
-		// The chip row is rebuilt from scratch on every selection change,
-		// so the previous row has to go — otherwise the old chips would
-		// stay in the DOM next to the new ones.
-		const existing = parent.querySelector(".dwl-category-chips");
-		if (existing) existing.remove();
-
-		const chips = parent.createDiv({ cls: "dwl-category-chips" });
-		// Show categories no longer in settings so they can be seen or cleared.
-		const allCategories = new Set([...this.categories.map((c) => c.displayName), ...(this.selectedCategory ? [this.selectedCategory] : [])]);
-		for (const name of allCategories) {
-			const cat = findCategoryByDisplayName(this.categories, name) ?? { displayName: name, color: "#95a5a6" };
-			const selectedCat = findCategoryByDisplayName(this.categories, this.selectedCategory);
-			const selected = selectedCat ? selectedCat.displayName.trim().toLowerCase() === name.trim().toLowerCase() : false;
-			const chip = chips.createEl("button", {
-				cls: selected ? "dwl-category-chip mod-cta" : "dwl-category-chip",
-				type: "button",
-			});
-			chip.createSpan({ cls: "dwl-category-chip-preview" }).style.backgroundColor = cat.color;
-			chip.createSpan({ text: cat.displayName });
-			chip.addEventListener("click", () => {
-				// Clicking the selected chip clears the category, so the
-				// entry can be taken back to "uncategorized".
-				this.selectedCategory = selected ? undefined : name;
-				this.renderCategoryChips(parent);
-			});
-		}
+		private updateCategoryDot(): void {
+			if (!this.categoryDot) return;
+			const cat = findCategoryByDisplayName(this.categories, this.selectedCategory);
+			const color = cat?.color ?? "#95a5a6";
+			this.categoryDot.style.backgroundColor = color;
 	}
 
 	/**
@@ -251,6 +257,8 @@ export class TimelineModal extends Modal {
 		this.startComponent = null;
 		this.endComponent = null;
 		this.descriptionComponent = null;
+			this.categoryDropdown = null;
+			this.categoryDot = null;
 		this.contentEl.empty();
 	}
 }

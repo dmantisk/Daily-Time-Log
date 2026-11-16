@@ -25,6 +25,7 @@ export type UIStringKey =
 	| "lblTimeSet"
 	| "lblContent"
 	| "fieldCategory"
+		| "categoryNone"
 	| "uncategorized"
 	| "descPlaceholder"
 	| "btnSave"
@@ -142,6 +143,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		lblTimeSet: "Time Setting",
 		lblContent: "Content",
 		fieldCategory: "Category",
+				categoryNone: "No category",
 		uncategorized: "Uncategorized",
 		descPlaceholder: "Enter detailed content.",
 		btnSave: "Save",
@@ -250,6 +252,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		lblTimeSet: "시간 설정",
 		lblContent: "내용",
 		fieldCategory: "카테고리",
+				categoryNone: "카테고리 없음",
 		uncategorized: "미분류",
 		descPlaceholder: "상세 내용을 입력해 주세요.",
 		btnSave: "저장",
