@@ -8,7 +8,17 @@ import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
-import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, resolveMinutes, migrateLegacyHoursToMinutes, isValidMinuteValue, type DailyWorkLogSettings } from "./settings";
+import {
+	copyCategories,
+	createDefaultCategories,
+	DEFAULT_SETTINGS,
+	resolveEventHeadingLevel,
+	resolveEventHeadingText,
+	resolveMinutes,
+	migrateLegacyHoursToMinutes,
+	isValidMinuteValue,
+	type DailyWorkLogSettings,
+} from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 import { parseDailyNote, appendLineToBlock } from "./parser";
 import { buildTimelineLine } from "./timelineLogic";
@@ -54,40 +64,44 @@ export default class DailyWorkLogPlugin extends Plugin {
 			void this.activateDashboard();
 		});
 
-		this.sidebarRibbonEl = this.addRibbonIcon("calendar-clock", t("ribbonOpenSidebar", this.getUiLanguage()), () => {
-			void this.activateView();
-		});
+		this.sidebarRibbonEl = this.addRibbonIcon(
+			"calendar-clock",
+			t("ribbonOpenSidebar", this.getUiLanguage()),
+			() => {
+				void this.activateView();
+			}
+		);
 
 		// Command names, unlike the ribbon tooltips above, have no supported
 		// live-update API (no setTooltip equivalent) — they're set once here
 		// at startup language and won't change until Obsidian restarts, even
 		// if the user flips the language setting mid-session.
 		// Command: Open sidebar
-				if (this.settings.commandOpenSidebarEnabled) {
-					this.addCommand({
-						id: "open-sidebar",
-						name: t("commandOpenSidebar", this.getUiLanguage()),
-						callback: () => void this.activateView(),
-					});
-				}
+		if (this.settings.commandOpenSidebarEnabled) {
+			this.addCommand({
+				id: "open-sidebar",
+				name: t("commandOpenSidebar", this.getUiLanguage()),
+				callback: () => void this.activateView(),
+			});
+		}
 
-				// Command: Open dashboard
-				if (this.settings.commandOpenDashboardEnabled) {
-					this.addCommand({
-						id: "open-dashboard",
-						name: t("commandOpenDashboard", this.getUiLanguage()),
-						callback: () => void this.activateDashboard(),
-					});
-				}
+		// Command: Open dashboard
+		if (this.settings.commandOpenDashboardEnabled) {
+			this.addCommand({
+				id: "open-dashboard",
+				name: t("commandOpenDashboard", this.getUiLanguage()),
+				callback: () => void this.activateDashboard(),
+			});
+		}
 
-				// Command: Add log entry
-				if (this.settings.commandAddLogEntryEnabled) {
-					this.addCommand({
-						id: "add-log-entry",
-						name: t("commandAddLogEntry", this.getUiLanguage()),
-						callback: () => void this.addLogEntry(),
-					});
-				}
+		// Command: Add log entry
+		if (this.settings.commandAddLogEntryEnabled) {
+			this.addCommand({
+				id: "add-log-entry",
+				name: t("commandAddLogEntry", this.getUiLanguage()),
+				callback: () => void this.addLogEntry(),
+			});
+		}
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", (leaf) => {
@@ -112,9 +126,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 				void this.handleVaultModify(file);
 			})
 		);
-		this.registerInterval(
-			window.setInterval(() => this.refreshDataViews(), 5 * 60 * 1000)
-		);
+		this.registerInterval(window.setInterval(() => this.refreshDataViews(), 5 * 60 * 1000));
 		this.register(() => {
 			if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
 			this.refreshTimelineAfterDebounce = false;
@@ -144,24 +156,22 @@ export default class DailyWorkLogPlugin extends Plugin {
 		);
 		this.registerEditorExtension(this.categoryBadgeExtensions);
 
-		this.registerMarkdownPostProcessor(
-			(el: HTMLElement, ctx) => {
-				processCategoryBadgesInReadingView(
-					el,
-					ctx,
-					this.settings.categories,
-					this.getDailyNoteFolder(),
-					this.getEventHeadingConfig(),
-					this.getDailyNoteFormat(),
-					this.settings.tabularTimeRanges
-				);
-			}
-		);
+		this.registerMarkdownPostProcessor((el: HTMLElement, ctx) => {
+			processCategoryBadgesInReadingView(
+				el,
+				ctx,
+				this.settings.categories,
+				this.getDailyNoteFolder(),
+				this.getEventHeadingConfig(),
+				this.getDailyNoteFormat(),
+				this.settings.tabularTimeRanges
+			);
+		});
 	}
 
 	async loadSettings(): Promise<void> {
 		const loadedData = (await this.loadData()) as
-				| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown; startHour?: number; endHour?: number })
+			| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown; startHour?: number; endHour?: number })
 			| null;
 		const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
 		const settingsData = Object.fromEntries(
@@ -198,42 +208,45 @@ export default class DailyWorkLogPlugin extends Plugin {
 			shouldSave = true;
 		}
 
-			// Migrate legacy hour-based settings to minute-based settings
-			// Prefer new-format settings if they already exist
-			const hasNewFormat = loadedData !== null &&
-				typeof loadedData.dayStartMinutes === "number" &&
-				typeof loadedData.dayEndMinutes === "number" &&
-				isValidMinuteValue(loadedData.dayStartMinutes) &&
-				isValidMinuteValue(loadedData.dayEndMinutes);
-			if (hasNewFormat) {
-				// Use resolveMinutes directly with the loadedData properties
-				// The type guard ensures they are valid numbers
-				const dayStartMinutes = loadedData.dayStartMinutes as number;
-				const dayEndMinutes = loadedData.dayEndMinutes as number;
-				const resolvedStart = resolveMinutes(dayStartMinutes, DEFAULT_SETTINGS.dayStartMinutes);
-				if (resolvedStart !== this.settings.dayStartMinutes) {
-		this.settings.dayStartMinutes = resolvedStart;
-		shouldSave = true;
-				}
-				const resolvedEnd = resolveMinutes(dayEndMinutes, DEFAULT_SETTINGS.dayEndMinutes);
-				if (resolvedEnd !== this.settings.dayEndMinutes) {
-		this.settings.dayEndMinutes = resolvedEnd;
-		shouldSave = true;
-				}
-			} else {
-				// Migrate from legacy hour-based settings
-				const legacyStartHour: number | undefined = loadedData !== null && typeof loadedData.startHour === "number" ? loadedData.startHour : undefined;
-				const legacyEndHour: number | undefined = loadedData !== null && typeof loadedData.endHour === "number" ? loadedData.endHour : undefined;
-				const migrated = migrateLegacyHoursToMinutes(legacyStartHour, legacyEndHour);
-				if (migrated.dayStartMinutes !== this.settings.dayStartMinutes) {
-		this.settings.dayStartMinutes = migrated.dayStartMinutes;
-		shouldSave = true;
-				}
-				if (migrated.dayEndMinutes !== this.settings.dayEndMinutes) {
-		this.settings.dayEndMinutes = migrated.dayEndMinutes;
-		shouldSave = true;
-				}
+		// Migrate legacy hour-based settings to minute-based settings
+		// Prefer new-format settings if they already exist
+		const hasNewFormat =
+			loadedData !== null &&
+			typeof loadedData.dayStartMinutes === "number" &&
+			typeof loadedData.dayEndMinutes === "number" &&
+			isValidMinuteValue(loadedData.dayStartMinutes) &&
+			isValidMinuteValue(loadedData.dayEndMinutes);
+		if (hasNewFormat) {
+			// Use resolveMinutes directly with the loadedData properties
+			// The type guard ensures they are valid numbers
+			const dayStartMinutes = loadedData.dayStartMinutes as number;
+			const dayEndMinutes = loadedData.dayEndMinutes as number;
+			const resolvedStart = resolveMinutes(dayStartMinutes, DEFAULT_SETTINGS.dayStartMinutes);
+			if (resolvedStart !== this.settings.dayStartMinutes) {
+				this.settings.dayStartMinutes = resolvedStart;
+				shouldSave = true;
 			}
+			const resolvedEnd = resolveMinutes(dayEndMinutes, DEFAULT_SETTINGS.dayEndMinutes);
+			if (resolvedEnd !== this.settings.dayEndMinutes) {
+				this.settings.dayEndMinutes = resolvedEnd;
+				shouldSave = true;
+			}
+		} else {
+			// Migrate from legacy hour-based settings
+			const legacyStartHour: number | undefined =
+				loadedData !== null && typeof loadedData.startHour === "number" ? loadedData.startHour : undefined;
+			const legacyEndHour: number | undefined =
+				loadedData !== null && typeof loadedData.endHour === "number" ? loadedData.endHour : undefined;
+			const migrated = migrateLegacyHoursToMinutes(legacyStartHour, legacyEndHour);
+			if (migrated.dayStartMinutes !== this.settings.dayStartMinutes) {
+				this.settings.dayStartMinutes = migrated.dayStartMinutes;
+				shouldSave = true;
+			}
+			if (migrated.dayEndMinutes !== this.settings.dayEndMinutes) {
+				this.settings.dayEndMinutes = migrated.dayEndMinutes;
+				shouldSave = true;
+			}
+		}
 
 		if (typeof loadedData?.tabularTimeRanges !== "boolean") {
 			this.settings.tabularTimeRanges = DEFAULT_SETTINGS.tabularTimeRanges;
@@ -284,9 +297,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 	private async handleVaultModify(file: unknown): Promise<void> {
 		if (!(file instanceof TFile) || file.extension !== "md") return;
-		if (
-			parseDateFromDailyNotePath(file.path, this.getDailyNoteFormat(), this.getDailyNoteFolder()) === null
-		) return;
+		if (parseDateFromDailyNotePath(file.path, this.getDailyNoteFormat(), this.getDailyNoteFolder()) === null)
+			return;
 		if (await this.isSelfTriggeredWrite(file)) {
 			this.scheduleRefresh(false);
 			return;
@@ -414,97 +426,102 @@ export default class DailyWorkLogPlugin extends Plugin {
 		void workspace.revealLeaf(leaf);
 	}
 
-			/**
-				 * Opens the TimelineModal to add a new log entry with smart default times.
-				 * - If the active note is a daily note with existing entries, uses the last entry's end time as start time
-				 * - Otherwise uses current time rounded down to nearest 10 minutes
-				 * - End time is start time + 10 minutes
-				 */
-				private async addLogEntry(): Promise<void> {
-					const activeFile = this.app.workspace.getActiveFile();
-					if (!activeFile || activeFile.extension !== "md") {
-						new Notice(t("emptyStateDescNoNote", this.getUiLanguage()));
-						return;
-					}
+	/**
+	 * Opens the TimelineModal to add a new log entry with smart default times.
+	 * - If the active note is a daily note with existing entries, uses the last entry's end time as start time
+	 * - Otherwise uses current time rounded down to nearest 10 minutes
+	 * - End time is start time + 10 minutes
+	 */
+	private async addLogEntry(): Promise<void> {
+		const activeFile = this.app.workspace.getActiveFile();
+		if (!activeFile || activeFile.extension !== "md") {
+			new Notice(t("emptyStateDescNoNote", this.getUiLanguage()));
+			return;
+		}
 
-					// Check if it's a daily note
-					const date = parseDateFromDailyNotePath(activeFile.path, this.getDailyNoteFormat(), this.getDailyNoteFolder());
-					if (date === null) {
-						new Notice(t("emptyStateTitleNotDaily", this.getUiLanguage()));
-						return;
-					}
+		// Check if it's a daily note
+		const date = parseDateFromDailyNotePath(activeFile.path, this.getDailyNoteFormat(), this.getDailyNoteFolder());
+		if (date === null) {
+			new Notice(t("emptyStateTitleNotDaily", this.getUiLanguage()));
+			return;
+		}
 
-					// Read the file content and parse existing timeline
-					const content = await this.app.vault.read(activeFile);
-					const { timeline } = parseDailyNote(content, this.getEventHeadingConfig());
+		// Read the file content and parse existing timeline
+		const content = await this.app.vault.read(activeFile);
+		const { timeline } = parseDailyNote(content, this.getEventHeadingConfig());
 
-					let defaultStart: string;
-					let defaultEnd: string;
+		let defaultStart: string;
+		let defaultEnd: string;
 
-					if (timeline.length > 0) {
-						// Use the last entry's end time as the new start time
-						const lastEntry = timeline[timeline.length - 1];
-						defaultStart = lastEntry.end;
-						// End time = start time + 10 minutes
-						const startMinutes = this.timeToMinutes(defaultStart);
-						const endMinutes = (startMinutes + 10) % 1440;
-						defaultEnd = this.minutesToTime(endMinutes);
-					} else {
-						// No existing entries - use current time rounded down to nearest 10 minutes
-						const now = new Date();
-						const currentMinutes = now.getHours() * 60 + now.getMinutes();
-						const roundedMinutes = Math.floor(currentMinutes / 10) * 10;
-						defaultStart = this.minutesToTime(roundedMinutes);
-						defaultEnd = this.minutesToTime((roundedMinutes + 10) % 1440);
-					}
+		if (timeline.length > 0) {
+			// Use the last entry's end time as the new start time
+			const lastEntry = timeline[timeline.length - 1];
+			defaultStart = lastEntry.end;
+			// End time = start time + 10 minutes
+			const startMinutes = this.timeToMinutes(defaultStart);
+			const endMinutes = (startMinutes + 10) % 1440;
+			defaultEnd = this.minutesToTime(endMinutes);
+		} else {
+			// No existing entries - use current time rounded down to nearest 10 minutes
+			const now = new Date();
+			const currentMinutes = now.getHours() * 60 + now.getMinutes();
+			const roundedMinutes = Math.floor(currentMinutes / 10) * 10;
+			defaultStart = this.minutesToTime(roundedMinutes);
+			defaultEnd = this.minutesToTime((roundedMinutes + 10) % 1440);
+		}
 
-					// Open the modal
-					const language = this.getUiLanguage();
-					const { TimelineModal } = await import("./modals/TimelineModal");
-					new TimelineModal(
-						this.app,
-						language,
-						this.settings.categories,
-						null, // initial item (null = new entry)
-						defaultStart,
-						defaultEnd,
-						async (values) => {
-							await this.addEventToFile(activeFile, values);
-						},
-						null // no delete callback for new entries
-					).open();
-				}
+		// Open the modal
+		const language = this.getUiLanguage();
+		const { TimelineModal } = await import("./modals/TimelineModal");
+		new TimelineModal(
+			this.app,
+			language,
+			this.settings.categories,
+			null, // initial item (null = new entry)
+			defaultStart,
+			defaultEnd,
+			async (values) => {
+				await this.addEventToFile(activeFile, values);
+			},
+			null // no delete callback for new entries
+		).open();
+	}
 
-				/**
-				 * Adds a new event to the daily note file using the parser's appendLineToBlock.
-				 */
-				private async addEventToFile(file: TFile, values: { start: string; end: string; category?: string; description: string }): Promise<void> {
-					try {
-						await this.processWrite(file, (content) => {
-							const newLine = buildTimelineLine(values);
-							return appendLineToBlock(content, newLine, this.getEventHeadingConfig());
-						});
+	/**
+	 * Adds a new event to the daily note file using the parser's appendLineToBlock.
+	 */
+	private async addEventToFile(
+		file: TFile,
+		values: { start: string; end: string; category?: string; description: string }
+	): Promise<void> {
+		try {
+			await this.processWrite(file, (content) => {
+				const newLine = buildTimelineLine(values);
+				return appendLineToBlock(content, newLine, this.getEventHeadingConfig());
+			});
 
-						new Notice("Event saved");
-					} catch (error) {
-						new Notice(`${t("noticeSaveEventFailed", this.getUiLanguage())}: ${error instanceof Error ? error.message : String(error)}`);
-					}
-				}
+			new Notice("Event saved");
+		} catch (error) {
+			new Notice(
+				`${t("noticeSaveEventFailed", this.getUiLanguage())}: ${error instanceof Error ? error.message : String(error)}`
+			);
+		}
+	}
 
-				/**
-				 * Converts HH:mm time string to minutes since midnight.
-				 */
-				private timeToMinutes(timeStr: string): number {
-					const [hours, minutes] = timeStr.split(":").map(Number);
-					return hours * 60 + minutes;
-				}
+	/**
+	 * Converts HH:mm time string to minutes since midnight.
+	 */
+	private timeToMinutes(timeStr: string): number {
+		const [hours, minutes] = timeStr.split(":").map(Number);
+		return hours * 60 + minutes;
+	}
 
-				/**
-				 * Converts minutes since midnight to HH:mm time string.
-				 */
-				private minutesToTime(minutes: number): string {
-					const hours = Math.floor(minutes / 60) % 24;
-					const mins = minutes % 60;
-					return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
-				}
+	/**
+	 * Converts minutes since midnight to HH:mm time string.
+	 */
+	private minutesToTime(minutes: number): string {
+		const hours = Math.floor(minutes / 60) % 24;
+		const mins = minutes % 60;
+		return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+	}
 }
