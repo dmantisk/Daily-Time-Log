@@ -21,7 +21,7 @@ import {
 } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 import { parseDailyNote, appendLineToBlock } from "./parser";
-import { buildTimelineLine } from "./timelineLogic";
+import { buildTimelineLine, getDefaultEntryTimes } from "./timelineLogic";
 import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 
 interface CoreDailyNotesOptions {
@@ -450,25 +450,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 		const content = await this.app.vault.read(activeFile);
 		const { timeline } = parseDailyNote(content, this.getEventHeadingConfig());
 
-		let defaultStart: string;
-		let defaultEnd: string;
-
-		if (timeline.length > 0) {
-			// Use the last entry's end time as the new start time
-			const lastEntry = timeline[timeline.length - 1];
-			defaultStart = lastEntry.end;
-			// End time = start time + 10 minutes
-			const startMinutes = this.timeToMinutes(defaultStart);
-			const endMinutes = (startMinutes + 10) % 1440;
-			defaultEnd = this.minutesToTime(endMinutes);
-		} else {
-			// No existing entries - use current time rounded down to nearest 10 minutes
-			const now = new Date();
-			const currentMinutes = now.getHours() * 60 + now.getMinutes();
-			const roundedMinutes = Math.floor(currentMinutes / 10) * 10;
-			defaultStart = this.minutesToTime(roundedMinutes);
-			defaultEnd = this.minutesToTime((roundedMinutes + 10) % 1440);
-		}
+		const now = new Date();
+		const nowMinutes = now.getHours() * 60 + now.getMinutes();
+		const { start: defaultStart, end: defaultEnd } = getDefaultEntryTimes(timeline, nowMinutes);
 
 		// Open the modal
 		const language = this.getUiLanguage();
@@ -506,22 +490,5 @@ export default class DailyWorkLogPlugin extends Plugin {
 				`${t("noticeSaveEventFailed", this.getUiLanguage())}: ${error instanceof Error ? error.message : String(error)}`
 			);
 		}
-	}
-
-	/**
-	 * Converts HH:mm time string to minutes since midnight.
-	 */
-	private timeToMinutes(timeStr: string): number {
-		const [hours, minutes] = timeStr.split(":").map(Number);
-		return hours * 60 + minutes;
-	}
-
-	/**
-	 * Converts minutes since midnight to HH:mm time string.
-	 */
-	private minutesToTime(minutes: number): string {
-		const hours = Math.floor(minutes / 60) % 24;
-		const mins = minutes % 60;
-		return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 	}
 }

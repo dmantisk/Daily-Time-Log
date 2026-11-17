@@ -4,6 +4,7 @@ import {
 	cellIndexForHour,
 	cellIndexToTimeString,
 	dragRangeToTimes,
+	getDefaultEntryTimes,
 	shouldCancelPendingTouchPress,
 	timelineBlockGeometry,
 	timeStringToCellIndex,
@@ -189,5 +190,27 @@ describe("timelineBlockGeometry", () => {
 
 	it("does not return geometry for a segment outside the hour", () => {
 		expect(timelineBlockGeometry(600, 660, 540, 600)).toBeNull();
+	});
+});
+
+describe("getDefaultEntryTimes", () => {
+	it("empty timeline, now 09:47 -> 09:40 / 09:50", () => {
+		expect(getDefaultEntryTimes([], 9 * 60 + 47)).toEqual({ start: "09:40", end: "09:50" });
+	});
+
+	it("empty timeline, now 23:55 -> 23:50 / 00:00", () => {
+		expect(getDefaultEntryTimes([], 23 * 60 + 55)).toEqual({ start: "23:50", end: "00:00" });
+	});
+
+	it("last end 12:30 -> 12:30 / 12:40", () => {
+		expect(getDefaultEntryTimes([{ end: "12:30" }], 0)).toEqual({ start: "12:30", end: "12:40" });
+	});
+
+	it("last end 23:55 -> 23:55 / 00:05", () => {
+		expect(getDefaultEntryTimes([{ end: "23:55" }], 0)).toEqual({ start: "23:55", end: "00:05" });
+	});
+
+	it("last end 24:00 -> 00:00 / 00:10", () => {
+		expect(getDefaultEntryTimes([{ end: "24:00" }], 0)).toEqual({ start: "00:00", end: "00:10" });
 	});
 });

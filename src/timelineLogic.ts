@@ -1,10 +1,35 @@
-import { minutesToTime } from "./parser";
+import { minutesToTime, timeToMinutes } from "./parser";
 import { cellIndexToTime, getTimelineCellCount, timeToCellIndex } from "./settings";
+import type { TimelineItem } from "./parser";
 
 export const CELL_MINUTES = 10;
 export const CELLS_PER_HOUR = 60 / CELL_MINUTES;
 export const LONG_PRESS_DURATION_MS = 250;
 export const TOUCH_MOVE_CANCEL_THRESHOLD = 8;
+
+/**
+ * Returns default start/end times for a new log entry.
+ * - If timeline has entries, start = last entry's end (modulo 1440)
+ * - Otherwise start = nowMinutes rounded down to nearest 10
+ * - End = (start + 10) % 1440
+ */
+export function getDefaultEntryTimes(
+	timeline: Pick<TimelineItem, "end">[],
+	nowMinutes: number
+): { start: string; end: string } {
+	let startMinutes: number;
+	if (timeline.length > 0) {
+		const lastEnd = timeline[timeline.length - 1].end;
+		startMinutes = timeToMinutes(lastEnd) % 1440;
+	} else {
+		startMinutes = Math.floor(nowMinutes / 10) * 10;
+	}
+	const endMinutes = (startMinutes + 10) % 1440;
+	return {
+		start: minutesToTime(startMinutes),
+		end: minutesToTime(endMinutes),
+	};
+}
 
 export interface PendingTouchPress {
 	pointerId: number;
