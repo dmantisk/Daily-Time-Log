@@ -245,7 +245,7 @@ DayTime Tracker's `timeline-*` classes were ported with the **`dwl-` prefix** to
 
 **The short bar's cut is clean — no trailing ellipsis** (`text-overflow: clip`). The bar itself already signals that the name is cut short, and an ellipsis at that size reads as part of the category's name rather than as a truncation mark. A **longer** bar keeps the ellipsis: it is a box of its own, so the ellipsis is the normal "this does not fit" signal.
 
-**Grid gutter.** The gap between neighbouring Event blocks is set by the `--dwl-block-gap` custom property on `.dwl-grid` (default `5px`). It is applied as **geometry**, not as borders: the vertical gutter splits the gap above and below each block (`height: calc(100% - var(--dwl-block-gap))`, `top: calc(var(--dwl-block-gap) / 2)`), and the horizontal gutter insets each block by half a gap on either side (the inline `left`/`width` `calc()` offsets in `TimelineView.tsx`). Both axes read the same property, so the horizontal and vertical gutters always match. Borders are deliberately avoided here, because Chrome floors fractional border widths to whole pixels and the two axes would drift apart.
+**Grid gutter.** The gap between neighbouring Event blocks is set by the `--dwl-block-gap` custom property on `.dwl-grid` (default `5px`). It is applied as **geometry**, not as borders: the vertical gutter splits the gap above and below each block (`height: calc(100% - var(--dwl-block-gap))`, `top: calc(var(--dwl-block-gap) / 2)`), and the horizontal gutter insets each block by half a gap on either side (the inline `left`/`width` `calc()` offsets in `src/components/TimelineController.ts`). Both axes read the same property, so the horizontal and vertical gutters always match. Borders are deliberately avoided here, because Chrome floors fractional border widths to whole pixels and the two axes would drift apart.
 
 ---
 
@@ -269,10 +269,10 @@ DayTime Tracker's `timeline-*` classes were ported with the **`dwl-` prefix** to
 | **1** | `src/i18n.ts` — EN/KO string tables + the `t()` helper | `src/i18n.ts` | ✅ done |
 | **2** | To-Do inline add input | `components/TodoList.ts`, `view.ts`, `styles.css` | ✅ done (removed in 0.5.0) |
 | **3** | To-Do ✕ delete + confirmation popup | `components/TodoList.ts`, `modals/ConfirmDeleteModal.ts` | ✅ done (removed in 0.5.0) |
-| **4** | Timeline "+ Add" modal | `modals/TimelineModal.tsx`, `components/TimelineView.tsx` | ✅ done |
-| **5** | Click a timeline entry → edit modal | `components/TimelineView.tsx`, `modals/TimelineModal.tsx` | ✅ done |
+| **4** | Timeline "+ Add" modal | `src/modals/TimelineModal.ts`, `src/components/TimelineController.ts` | ✅ done |
+| **5** | Click a timeline entry → edit modal | `src/components/TimelineController.ts`, `src/modals/TimelineModal.ts` | ✅ done |
 | **6** | Apply the full CSS styling | `styles.css` | ✅ done |
-| **7** | Grid drag input + category chips (the DayTime Tracker port) | `components/TimelineView.tsx`, `modals/TimelineModal.tsx`, `styles.css` | ✅ done |
+| **7** | Grid drag input + category chips (the DayTime Tracker port) | `src/components/TimelineController.ts`, `src/modals/TimelineModal.ts`, `styles.css` | ✅ done |
 
 Each phase builds and tests independently.
 
