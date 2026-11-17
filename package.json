@@ -24,6 +24,7 @@
 		"eslint-plugin-obsidianmd": "^0.4.2",
 		"happy-dom": "^21.0.3",
 		"obsidian": "1.13.0",
+		"prettier": "^3.10.1",
 		"tslib": "^2.6.0",
 		"typescript": "^5.4.0",
 		"vitest": "^4.1.11"
