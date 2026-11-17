@@ -111,6 +111,7 @@ export type UIStringKey =
 	| "noticeUpdateEventFailed"
 	| "noticeDeleteEventFailed"
 	| "noticeEventChangedReloaded"
+		| "noticeEventSaved"
 	| "languageAuto"
 	| "languageEnglish"
 	| "languageKorean"
@@ -130,6 +131,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		noticeUpdateEventFailed: "Failed to update event",
 		noticeDeleteEventFailed: "Failed to delete event",
 		noticeEventChangedReloaded: "Event changed in the note — reloaded",
+				noticeEventSaved: "Event saved",
 		languageAuto: "Auto",
 		languageEnglish: "English",
 		languageKorean: "한국어",
@@ -246,6 +248,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		noticeUpdateEventFailed: "일과 수정 실패",
 		noticeDeleteEventFailed: "일과 삭제 실패",
 		noticeEventChangedReloaded: "노트의 일과가 변경되어 다시 불러왔습니다",
+				noticeEventSaved: "일과 저장됨",
 		languageAuto: "자동",
 		languageEnglish: "English",
 		languageKorean: "한국어",

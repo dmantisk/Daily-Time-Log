@@ -484,7 +484,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 				return appendLineToBlock(content, newLine, this.getEventHeadingConfig());
 			});
 
-			new Notice("Event saved");
+			new Notice(t("noticeEventSaved", this.getUiLanguage()));
 		} catch (error) {
 			new Notice(
 				`${t("noticeSaveEventFailed", this.getUiLanguage())}: ${error instanceof Error ? error.message : String(error)}`
