@@ -1,4 +1,4 @@
-import { getLanguage, Plugin, setTooltip, TFile } from "obsidian";
+import { getLanguage, Plugin, setTooltip, TFile, Notice } from "obsidian";
 import {
 	buildCategoryBadgeEditorPlugin,
 	buildTimeRangeEditorPlugin,
@@ -10,6 +10,8 @@ import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
 import { copyCategories, createDefaultCategories, DEFAULT_SETTINGS, resolveEventHeadingLevel, resolveEventHeadingText, resolveMinutes, migrateLegacyHoursToMinutes, isValidMinuteValue, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
+import { parseDailyNote, appendLineToBlock } from "./parser";
+import { buildTimelineLine } from "./timelineLogic";
 import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 
 interface CoreDailyNotesOptions {
@@ -71,6 +73,12 @@ export default class DailyWorkLogPlugin extends Plugin {
 			name: t("commandOpenDashboard", this.getUiLanguage()),
 			callback: () => void this.activateDashboard(),
 		});
+
+				this.addCommand({
+					id: "add-log-entry",
+					name: t("commandAddLogEntry", this.getUiLanguage()),
+					callback: () => void this.addLogEntry(),
+				});
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", (leaf) => {
@@ -396,4 +404,98 @@ export default class DailyWorkLogPlugin extends Plugin {
 
 		void workspace.revealLeaf(leaf);
 	}
+
+			/**
+				 * Opens the TimelineModal to add a new log entry with smart default times.
+				 * - If the active note is a daily note with existing entries, uses the last entry's end time as start time
+				 * - Otherwise uses current time rounded down to nearest 10 minutes
+				 * - End time is start time + 10 minutes
+				 */
+				private async addLogEntry(): Promise<void> {
+					const activeFile = this.app.workspace.getActiveFile();
+					if (!activeFile || activeFile.extension !== "md") {
+						new Notice(t("emptyStateDescNoNote", this.getUiLanguage()));
+						return;
+					}
+
+					// Check if it's a daily note
+					const date = parseDateFromDailyNotePath(activeFile.path, this.getDailyNoteFormat(), this.getDailyNoteFolder());
+					if (date === null) {
+						new Notice(t("emptyStateTitleNotDaily", this.getUiLanguage()));
+						return;
+					}
+
+					// Read the file content and parse existing timeline
+					const content = await this.app.vault.read(activeFile);
+					const { timeline } = parseDailyNote(content, this.getEventHeadingConfig());
+
+					let defaultStart: string;
+					let defaultEnd: string;
+
+					if (timeline.length > 0) {
+						// Use the last entry's end time as the new start time
+						const lastEntry = timeline[timeline.length - 1];
+						defaultStart = lastEntry.end;
+						// End time = start time + 10 minutes
+						const startMinutes = this.timeToMinutes(defaultStart);
+						const endMinutes = (startMinutes + 10) % 1440;
+						defaultEnd = this.minutesToTime(endMinutes);
+					} else {
+						// No existing entries - use current time rounded down to nearest 10 minutes
+						const now = new Date();
+						const currentMinutes = now.getHours() * 60 + now.getMinutes();
+						const roundedMinutes = Math.floor(currentMinutes / 10) * 10;
+						defaultStart = this.minutesToTime(roundedMinutes);
+						defaultEnd = this.minutesToTime((roundedMinutes + 10) % 1440);
+					}
+
+					// Open the modal
+					const language = this.getUiLanguage();
+					const { TimelineModal } = await import("./modals/TimelineModal");
+					new TimelineModal(
+						this.app,
+						language,
+						this.settings.categories,
+						null, // initial item (null = new entry)
+						defaultStart,
+						defaultEnd,
+						async (values) => {
+							await this.addEventToFile(activeFile, values);
+						},
+						null // no delete callback for new entries
+					).open();
+				}
+
+				/**
+				 * Adds a new event to the daily note file using the parser's appendLineToBlock.
+				 */
+				private async addEventToFile(file: TFile, values: { start: string; end: string; category?: string; description: string }): Promise<void> {
+					try {
+						await this.processWrite(file, (content) => {
+							const newLine = buildTimelineLine(values);
+							return appendLineToBlock(content, newLine, this.getEventHeadingConfig());
+						});
+
+						new Notice("Event saved");
+					} catch (error) {
+						new Notice(`${t("noticeSaveEventFailed", this.getUiLanguage())}: ${error instanceof Error ? error.message : String(error)}`);
+					}
+				}
+
+				/**
+				 * Converts HH:mm time string to minutes since midnight.
+				 */
+				private timeToMinutes(timeStr: string): number {
+					const [hours, minutes] = timeStr.split(":").map(Number);
+					return hours * 60 + minutes;
+				}
+
+				/**
+				 * Converts minutes since midnight to HH:mm time string.
+				 */
+				private minutesToTime(minutes: number): string {
+					const hours = Math.floor(minutes / 60) % 24;
+					const mins = minutes % 60;
+					return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+				}
 }

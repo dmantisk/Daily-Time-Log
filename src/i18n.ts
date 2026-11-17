@@ -19,6 +19,7 @@ export type UIStringKey =
 	| "ribbonOpenDashboard"
 	| "commandOpenSidebar"
 	| "commandOpenDashboard"
+		| "commandAddLogEntry"
 	| "viewTitle"
 	| "modalAddTitle"
 	| "modalEditTitle"
@@ -135,6 +136,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		ribbonOpenDashboard: "Open Work Insights",
 		commandOpenSidebar: "Open sidebar",
 		commandOpenDashboard: "Open Work Insights",
+				commandAddLogEntry: "Add log entry",
 		viewTitle: "Daily time log",
 		modalAddTitle: "What did you do?",
 		modalEditTitle: "Edit Daily Activity",
@@ -242,6 +244,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		ribbonOpenDashboard: "Daily Time Log 일과 인사이트 열기",
 		commandOpenSidebar: "사이드바 열기",
 		commandOpenDashboard: "일과 인사이트 열기",
+				commandAddLogEntry: "일과 추가",
 		viewTitle: "일과 기록",
 		modalAddTitle: "무엇을 했나요?",
 		modalEditTitle: "일과 수정",
