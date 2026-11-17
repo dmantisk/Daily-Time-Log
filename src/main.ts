@@ -109,8 +109,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 					this.refreshBadgesIfNeeded();
 					if (leaf.view instanceof DailyWorkLogView) {
 						void leaf.view.refresh();
-					} else {
-						this.refreshDataViews(false);
+					} else if (leaf.view instanceof DashboardView) {
+						void leaf.view.refresh();
 					}
 				}
 			})
