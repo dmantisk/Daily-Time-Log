@@ -62,23 +62,32 @@ export default class DailyWorkLogPlugin extends Plugin {
 		// live-update API (no setTooltip equivalent) — they're set once here
 		// at startup language and won't change until Obsidian restarts, even
 		// if the user flips the language setting mid-session.
-		this.addCommand({
-			id: "open-sidebar",
-			name: t("commandOpenSidebar", this.getUiLanguage()),
-			callback: () => void this.activateView(),
-		});
+		// Command: Open sidebar
+				if (this.settings.commandOpenSidebarEnabled) {
+					this.addCommand({
+						id: "open-sidebar",
+						name: t("commandOpenSidebar", this.getUiLanguage()),
+						callback: () => void this.activateView(),
+					});
+				}
 
-		this.addCommand({
-			id: "open-dashboard",
-			name: t("commandOpenDashboard", this.getUiLanguage()),
-			callback: () => void this.activateDashboard(),
-		});
+				// Command: Open dashboard
+				if (this.settings.commandOpenDashboardEnabled) {
+					this.addCommand({
+						id: "open-dashboard",
+						name: t("commandOpenDashboard", this.getUiLanguage()),
+						callback: () => void this.activateDashboard(),
+					});
+				}
 
-				this.addCommand({
-					id: "add-log-entry",
-					name: t("commandAddLogEntry", this.getUiLanguage()),
-					callback: () => void this.addLogEntry(),
-				});
+				// Command: Add log entry
+				if (this.settings.commandAddLogEntryEnabled) {
+					this.addCommand({
+						id: "add-log-entry",
+						name: t("commandAddLogEntry", this.getUiLanguage()),
+						callback: () => void this.addLogEntry(),
+					});
+				}
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", (leaf) => {

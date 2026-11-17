@@ -94,7 +94,11 @@ describe("DailyWorkLogSettingTab", () => {
 
 		expect(definitions.some((definition) => definition.type === "page")).toBe(false);
 			expect(definitions.some((definition) => definition.name === "Day Start Time")).toBe(true);
-		const categoryGroup = definitions.find((definition) => definition.type === "group");
+			// Find the "Category Management" group (not the "Commands" group)
+			const categoryGroup = definitions.find((definition) => 
+				definition.type === "group" && 
+				definition.items?.some((item) => item.name === "Category Management")
+			);
 		expect(categoryGroup?.type).toBe("group");
 		if (categoryGroup?.type === "group") {
 			expect(categoryGroup.items?.some((item) => item.name === "Category Management")).toBe(true);

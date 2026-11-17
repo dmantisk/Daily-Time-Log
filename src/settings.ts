@@ -134,6 +134,12 @@ export interface DailyWorkLogSettings {
 	tabularTimeRanges: boolean;
 	/** Up to 10 entries; see CustomCategory for how these map into note bodies. */
 	categories: CustomCategory[];
+	/** Whether the "Open sidebar" command is enabled. */
+	commandOpenSidebarEnabled: boolean;
+	/** Whether the "Open Work Insights" command is enabled. */
+	commandOpenDashboardEnabled: boolean;
+	/** Whether the "Add log entry" command is enabled. */
+	commandAddLogEntryEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
@@ -146,6 +152,9 @@ export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	dayEndMinutes: 0, // 0 means midnight next day (full 24-hour timeline)
 	tabularTimeRanges: true,
 	categories: createDefaultCategories(),
+	commandOpenSidebarEnabled: true,
+	commandOpenDashboardEnabled: true,
+	commandAddLogEntryEnabled: true,
 };
 
 /**

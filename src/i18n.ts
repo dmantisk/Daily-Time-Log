@@ -81,6 +81,14 @@ export type UIStringKey =
 	| "alertCatNameEmpty"
 	| "alertCatLimitMax"
 	| "alertCatNameExists"
+		| "settingCommandsSection"
+		| "settingCommandsDesc"
+		| "settingCommandOpenSidebarName"
+		| "settingCommandOpenSidebarDesc"
+		| "settingCommandOpenDashboardName"
+		| "settingCommandOpenDashboardDesc"
+		| "settingCommandAddLogEntryName"
+		| "settingCommandAddLogEntryDesc"
 	| "window7Days"
 	| "window30Days"
 	| "window90Days"
@@ -203,6 +211,14 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		alertCatNameEmpty: "Please enter a category name.",
 		alertCatLimitMax: "You cannot have more than 10 categories.",
 		alertCatNameExists: "This category name already exists.",
+				settingCommandsSection: "Commands",
+				settingCommandsDesc: "Enable or disable plugin commands.",
+				settingCommandOpenSidebarName: "Open sidebar command",
+				settingCommandOpenSidebarDesc: "Enable the command to open the Daily Time Log sidebar.",
+				settingCommandOpenDashboardName: "Open Work Insights command",
+				settingCommandOpenDashboardDesc: "Enable the command to open the Work Insights dashboard.",
+				settingCommandAddLogEntryName: "Add log entry command",
+				settingCommandAddLogEntryDesc: "Enable the command to add a new log entry.",
 		window7Days: "Last 7 Days",
 		window30Days: "Last 30 Days",
 		window90Days: "Last 90 Days",
@@ -311,6 +327,14 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		alertCatNameEmpty: "카테고리 이름을 입력해 주세요.",
 		alertCatLimitMax: "카테고리는 최대 10개까지 등록할 수 있습니다.",
 		alertCatNameExists: "이미 존재하는 카테고리 이름입니다.",
+				settingCommandsSection: "명령어",
+				settingCommandsDesc: "플러그인 명령어를 활성화 또는 비활성화합니다.",
+				settingCommandOpenSidebarName: "사이드바 열기 명령어",
+				settingCommandOpenSidebarDesc: "Daily Time Log 사이드바를 여는 명령어를 활성화합니다.",
+				settingCommandOpenDashboardName: "일과 인사이트 열기 명령어",
+				settingCommandOpenDashboardDesc: "일과 인사이트 대시보드를 여는 명령어를 활성화합니다.",
+				settingCommandAddLogEntryName: "일과 추가 명령어",
+				settingCommandAddLogEntryDesc: "새 일과를 추가하는 명령어를 활성화합니다.",
 		window7Days: "최근 7일",
 		window30Days: "최근 30일",
 		window90Days: "최근 90일",

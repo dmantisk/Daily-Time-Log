@@ -163,11 +163,76 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			},
 			{
 				type: "group",
+					items: this.getCommandsDefinitions(lang),
+				},
+				{
+					type: "group",
 				items: this.getCategoryDefinitions(lang),
 			},
 		];
 		return settings;
 	}
+
+		private getCommandsDefinitions(lang: MarkerLanguage): SettingGroupItem[] {
+			return [
+				{
+					name: t("settingCommandsSection", lang),
+					desc: t("settingCommandsDesc", lang),
+					searchable: false,
+					render: (setting) => {
+						setting.setHeading();
+					},
+				},
+				{
+					name: t("settingCommandOpenSidebarName", lang),
+					desc: t("settingCommandOpenSidebarDesc", lang),
+					render: (setting) => {
+						setting.addToggle((toggle) =>
+							toggle
+								.setValue(this.plugin.settings.commandOpenSidebarEnabled)
+								.onChange(async (value) => {
+									this.plugin.settings.commandOpenSidebarEnabled = value;
+									await this.plugin.saveSettings();
+									this.plugin.refreshViews();
+									this.update();
+								})
+						);
+					},
+				},
+				{
+					name: t("settingCommandOpenDashboardName", lang),
+					desc: t("settingCommandOpenDashboardDesc", lang),
+					render: (setting) => {
+						setting.addToggle((toggle) =>
+							toggle
+								.setValue(this.plugin.settings.commandOpenDashboardEnabled)
+								.onChange(async (value) => {
+									this.plugin.settings.commandOpenDashboardEnabled = value;
+									await this.plugin.saveSettings();
+									this.plugin.refreshViews();
+									this.update();
+								})
+						);
+					},
+				},
+				{
+					name: t("settingCommandAddLogEntryName", lang),
+					desc: t("settingCommandAddLogEntryDesc", lang),
+					render: (setting) => {
+						setting.addToggle((toggle) =>
+							toggle
+								.setValue(this.plugin.settings.commandAddLogEntryEnabled)
+								.onChange(async (value) => {
+									this.plugin.settings.commandAddLogEntryEnabled = value;
+									await this.plugin.saveSettings();
+									this.plugin.refreshViews();
+									this.update();
+								})
+						);
+					},
+				},
+			];
+		}
 
 	private getCategoryDefinitions(lang: MarkerLanguage): SettingGroupItem[] {
 		const categories = this.plugin.settings.categories;
