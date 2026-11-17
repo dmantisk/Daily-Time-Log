@@ -303,7 +303,7 @@ function walkDocumentOrder(
 		// `#` line inside a fence never becomes a heading element, and an
 		// event-shaped line inside a fence never becomes a paragraph the
 		// badge rule should pick up. The parser treats a fence as a
-		// boundary too (AGENTS.md 1.3), so skipping these keeps the two
+				// boundary too (AGENTS-reference.md), so skipping these keeps the two
 		// sides in agreement.
 		if (isInsideCodeElement(current)) continue;
 

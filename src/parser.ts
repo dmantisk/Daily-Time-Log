@@ -1,16 +1,16 @@
 /**
  * Pure parsing utilities for Daily Work Log notes.
  * ZERO Obsidian API dependency — must stay unit-testable in plain Node/Vitest.
- * See .agents/AGENTS.md section 1 for the full spec these functions implement.
+ * See AGENTS-reference.md for the full spec these functions implement.
  */
 
 export interface TimelineItem {
 	line: number;
-	/** Number of physical lines this item occupies, including any absorbed continuation lines (AGENTS.md 1.4.2). Always >= 1. */
+	/** Number of physical lines this item occupies, including any absorbed continuation lines (AGENTS-reference.md). Always >= 1. */
 	lineCount: number;
 	start: string;
 	end: string;
-	/** Category display name, verbatim as stored in the body (AGENTS.md 1.4.1). `undefined` = uncategorized (legacy line, or user never set one). */
+	/** Category display name, verbatim as stored in the body (AGENTS-reference.md). `undefined` = uncategorized (legacy line, or user never set one). */
 	category?: string;
 	description: string;
 }
@@ -45,7 +45,7 @@ export type MarkerLanguage = "en" | "ko";
 
 /**
  * Exported so callers (e.g. view.ts) can re-validate a line before mutating it in place.
- * Group 3 (category) is optional — AGENTS.md 1.4.1: `- HH:mm - HH:mm [Category] description`.
+ * Group 3 (category) is optional — AGENTS-reference.md: `- HH:mm - HH:mm [Category] description`.
  * Lines written before the category feature existed have no `[...]` token at all and still
  * match, with group 3 `undefined` (see parseTimeline / timelineLineMatches).
  */
@@ -275,7 +275,7 @@ function stripTrailingCarriageReturn(line: string): string {
  * `"\r"` here makes the parse line-ending agnostic.
  *
  * The line COUNT is unchanged by this, so line indices stay relative to the
- * original file (AGENTS.md 1.2).
+  * original file (AGENTS-reference.md).
  */
 export function splitContentLines(content: string): string[] {
 	return content.split("\n").map(stripTrailingCarriageReturn);
@@ -549,7 +549,7 @@ export function findEventBlockInContent(
 
 /**
  * Parses Timeline items from a contiguous line range.
- * Implements AGENTS.md 1.4.2 continuation-line absorption:
+ * Implements AGENTS-reference.md continuation-line absorption:
  * - A line matching TIME_RANGE_REGEX starts a new item.
  * - A non-matching, non-heading line is absorbed verbatim into the previous
  *   item's description (joined with `\n`).
@@ -673,7 +673,7 @@ export function isTopLevelOrMarker(line: string): boolean {
 	// a to-do marker just like a top-level "- [ ] nested task" - it must
 	// never be treated as ordinary detail, or the save-time guard would
 	// accept a description whose checkbox line would then be lost on the
-	// next parse (AGENTS.md 1.4.2).
+	// next parse (AGENTS-reference.md).
 	//
 	// The time-range test stays on the RAW line, because that is exactly
 	// what `parseTimeline()` does - the two must agree, or the guard would
@@ -805,7 +805,7 @@ const MAX_MINUTE = 59;
  *
  * The parsed hours and minutes are CLAMPED to their valid ranges: hours
  * to 0-24 and minutes to 0-59. `TIME_RANGE_REGEX` is deliberately
- * shape-only (AGENTS.md 1.4 — it is not a validator), so it happily
+ * shape-only (AGENTS-reference.md — it is not a validator), so it happily
  * matches a typo like `99:99`. Without the clamp, `timeToMinutes("99:99")`
  * returned 6039 and a single mistyped line contributed 5499 minutes
  * (91.6 hours) to the dashboard's totals.

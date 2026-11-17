@@ -1,7 +1,7 @@
 /**
  * Pure statistics computation for the Dashboard view.
  * ZERO Obsidian API dependency — same "decoupled parser strategy" as
- * parser.ts/dailyNote.ts (AGENTS.md 4), so this stays unit-testable in
+ * parser.ts/dailyNote.ts (AGENTS-reference.md), so this stays unit-testable in
  * plain Node/Vitest. The Obsidian-dependent side (scanning the vault,
  * reading file contents) lives in DashboardView.ts, which calls into this
  * module with already-extracted data.

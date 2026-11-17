@@ -3,7 +3,7 @@ import { DEFAULT_EVENT_HEADING, type MarkerLanguage } from "./parser";
 export type LanguagePreference = MarkerLanguage | "auto";
 
 /**
- * A Timeline category (AGENTS.md 1.4.1) — its `displayName` is what actually
+ * A Timeline category (AGENTS-reference.md) — its `displayName` is what actually
  * gets written into note bodies (`- HH:mm - HH:mm [displayName] ...`), so
  * renaming a category does NOT retroactively relabel already-written lines.
  * `name` is a stable key used only for settings-side bookkeeping (matching

@@ -13,7 +13,7 @@
  * `obsidian` package via its `obsidian.d.ts` types entry.
  *
  * Keep this in sync with the `from "obsidian"` imports listed in
- * `.agents/AGENTS.md` §4 (test coverage) — every symbol added to a
+  * AGENTS-reference.md (test coverage) — every symbol added to a
  * production import from "obsidian" needs a runtime counterpart here.
  */
 

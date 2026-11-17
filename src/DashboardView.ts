@@ -23,11 +23,11 @@ interface CachedDailyNote {
 /**
  * Central "Dashboard" panel — a vault-wide summary of daily notes, opened
  * as a normal tab in the main workspace area (not the right sidebar).
- * Follows Obsidian's own theme variables (see AGENTS.md 2. Settings).
+ * Follows Obsidian's own theme variables (see AGENTS-reference.md).
  */
 export class DashboardView extends ItemView {
 	private readonly plugin: DailyWorkLogPlugin;
-	// Same re-entrancy guard as DailyWorkLogView.refresh() — see AGENTS.md 3.
+		// Same re-entrancy guard as DailyWorkLogView.refresh() — see AGENTS-reference.md.
 	private refreshToken = 0;
 	private selectedWindowDays = 30; // 7, 30, 90, 0 (all)
 	private readonly parsedNotes = new Map<string, CachedDailyNote>();
@@ -170,7 +170,7 @@ export class DashboardView extends ItemView {
 		}
 
 		const parsed = parseDailyNote(await this.app.vault.cachedRead(file), headingConfig);
-		// Cache strict Moment parse results by path and format when collecting daily-note files.
+		// The parsed note is cached per path and reused while mtime and heading config are unchanged.
 		this.parsedNotes.set(file.path, { mtime: file.stat.mtime, headingConfigKey, parsed });
 		return parsed;
 	}

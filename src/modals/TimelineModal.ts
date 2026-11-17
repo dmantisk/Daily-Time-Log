@@ -7,7 +7,7 @@ import type { CustomCategory } from "../settings";
 export interface EventEntryValues {
 	start: string;
 	end: string;
-	/** Category *display name*, stored verbatim in the body (AGENTS.md 1.4.1) — undefined when left uncategorized. */
+	/** Category *display name*, stored verbatim in the body (AGENTS-reference.md) — undefined when left uncategorized. */
 	category?: string;
 	description: string;
 }
@@ -18,7 +18,7 @@ export interface EventEntryValues {
  * The body is built from Obsidian's own components — `TextComponent`,
  * `TextAreaComponent`, `DropdownComponent` and `ButtonComponent` — so the
  * inputs, the button row and the destructive/primary button styling are
- * the app's own and follow the active theme (AGENTS.md §2, §3).
+ * the app's own and follow the active theme (AGENTS-reference.md).
  */
 export class TimelineModal extends Modal {
 	private startComponent: TextComponent | null = null;
@@ -214,7 +214,7 @@ export class TimelineModal extends Modal {
 	 * 3. A continuation line shaped like a real event, checkbox, or
 	 *    heading would be misread as a new top-level item on the next
 	 *    parse instead of staying part of this description
-	 *    (AGENTS.md 1.4.2) — reject rather than silently losing it.
+	 	 *    (AGENTS-reference.md) — reject rather than silently losing it.
 	 */
 	private handleSave(): void {
 		const start = this.startComponent?.getValue() ?? "";

@@ -384,7 +384,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 				this.settings.tabularTimeRanges
 			)
 		);
-		// Debounce settings saves and CodeMirror extension rebuilds.
+		// The extensions are rebuilt immediately and only workspace.updateOptions() is debounced (200 ms).
 		if (this.badgeRefreshTimer !== null) window.clearTimeout(this.badgeRefreshTimer);
 		this.badgeRefreshTimer = window.setTimeout(() => {
 			this.app.workspace.updateOptions();

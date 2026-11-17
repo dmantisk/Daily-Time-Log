@@ -14,7 +14,7 @@ const MAX_CATEGORIES = 10;
 const MAX_CATEGORY_NAME_LENGTH = 10;
 
 /**
- * DayTime Tracker-parity settings surface (AGENTS.md §2, design.md §14):
+ * DayTime Tracker-parity settings surface (AGENTS-reference.md, design.md §14):
  * general (hour range / folder / language / Event heading) and category
  * management.
  * Every label goes through i18n.ts (t()) exactly like the sidebar/modal.
