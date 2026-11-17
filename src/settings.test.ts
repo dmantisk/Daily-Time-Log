@@ -9,6 +9,7 @@ import {
 	isTimeInWindow,
 	isValidMinutes,
 	migrateLegacyHoursToMinutes,
+	migrateLoadedSettings,
 	resolveEventHeadingLevel,
 	resolveEventHeadingText,
 	resolveHour,
@@ -345,5 +346,83 @@ describe("migrateLegacyHoursToMinutes", () => {
 		const result = migrateLegacyHoursToMinutes(8, undefined);
 		expect(result.dayStartMinutes).toBe(480);
 		expect(result.dayEndMinutes).toBe(0); // Default endHour was 24 -> 0
+	});
+});
+
+describe("migrateLoadedSettings", () => {
+	it("null input (fresh install) returns defaults with shouldSave=true (tabularTimeRanges defaulted)", () => {
+		const { settings, shouldSave } = migrateLoadedSettings(null);
+		expect(settings).toEqual(DEFAULT_SETTINGS);
+		expect(shouldSave).toBe(true); // tabularTimeRanges not provided -> defaulted -> shouldSave
+	});
+
+	it("legacy dailyNoteFolder key triggers shouldSave", () => {
+		const loaded = { dailyNoteFolder: "some/path", language: "en" };
+		const { settings, shouldSave } = migrateLoadedSettings(loaded);
+		expect(settings.language).toBe("en");
+		expect(shouldSave).toBe(true);
+	});
+
+	it("unknown keys are dropped", () => {
+		const loaded = { unknownKey: "value", language: "ko", anotherUnknown: 123 };
+		const { settings, shouldSave } = migrateLoadedSettings(loaded);
+		expect(settings.language).toBe("ko");
+		expect("unknownKey" in settings).toBe(false);
+		expect("anotherUnknown" in settings).toBe(false);
+		expect(shouldSave).toBe(true); // tabularTimeRanges not provided -> defaulted -> shouldSave
+	});
+
+	it("categories deep-copied (mutating the result does not change DEFAULT_SETTINGS)", () => {
+		const loaded = { categories: [{ name: "Custom", displayName: "Custom", color: "#ff0000" }] };
+		const { settings } = migrateLoadedSettings(loaded);
+		// Mutate the returned categories
+		settings.categories[0].displayName = "Mutated";
+		settings.categories[0].color = "#00ff00";
+		// DEFAULT_SETTINGS should be unchanged
+		expect(DEFAULT_SETTINGS.categories[0].displayName).toBe("Work");
+		expect(DEFAULT_SETTINGS.categories[0].color).toBe("#d0e1fd");
+		// A fresh call should also get unmutated defaults
+		const { settings: fresh } = migrateLoadedSettings(null);
+		expect(fresh.categories[0].displayName).toBe("Work");
+		expect(fresh.categories[0].color).toBe("#d0e1fd");
+	});
+
+	it("invalid eventHeadingText and eventHeadingLevel are corrected", () => {
+		const loaded = {
+			eventHeadingText: "", // empty -> default
+			eventHeadingLevel: 7, // out of range -> default
+		};
+		const { settings, shouldSave } = migrateLoadedSettings(loaded);
+		expect(settings.eventHeadingText).toBe(DEFAULT_SETTINGS.eventHeadingText);
+		expect(settings.eventHeadingLevel).toBe(DEFAULT_SETTINGS.eventHeadingLevel);
+		expect(shouldSave).toBe(true);
+	});
+
+	it("legacy startHour/endHour become minutes", () => {
+		const loaded = { startHour: 8, endHour: 14 };
+		const { settings, shouldSave } = migrateLoadedSettings(loaded);
+		expect(settings.dayStartMinutes).toBe(480); // 8 * 60
+		expect(settings.dayEndMinutes).toBe(840); // 14 * 60
+		expect(shouldSave).toBe(true);
+	});
+
+	it("valid new-format minutes win over legacy hours", () => {
+		const loaded = {
+			dayStartMinutes: 540, // 09:00
+			dayEndMinutes: 1020, // 17:00
+			startHour: 8, // legacy 08:00
+			endHour: 14, // legacy 14:00
+		};
+		const { settings, shouldSave } = migrateLoadedSettings(loaded);
+		expect(settings.dayStartMinutes).toBe(540); // new format wins
+		expect(settings.dayEndMinutes).toBe(1020); // new format wins
+		expect(shouldSave).toBe(true); // tabularTimeRanges not provided -> defaulted -> shouldSave
+	});
+
+	it("non-boolean tabularTimeRanges is defaulted", () => {
+		const loaded = { tabularTimeRanges: "true" }; // string instead of boolean
+		const { settings, shouldSave } = migrateLoadedSettings(loaded);
+		expect(settings.tabularTimeRanges).toBe(DEFAULT_SETTINGS.tabularTimeRanges);
+		expect(shouldSave).toBe(true);
 	});
 });
