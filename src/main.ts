@@ -9,14 +9,8 @@ import { DashboardView, VIEW_TYPE_DASHBOARD } from "./DashboardView";
 import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
 import {
-	copyCategories,
-	createDefaultCategories,
 	DEFAULT_SETTINGS,
-	resolveEventHeadingLevel,
-	resolveEventHeadingText,
-	resolveMinutes,
-	migrateLegacyHoursToMinutes,
-	isValidMinuteValue,
+	migrateLoadedSettings,
 	type DailyWorkLogSettings,
 } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
@@ -170,88 +164,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		const loadedData = (await this.loadData()) as
-			| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown; startHour?: number; endHour?: number })
-			| null;
-		const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
-		const settingsData = Object.fromEntries(
-			Object.entries(loadedData ?? {}).filter(([key]) =>
-				Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key)
-			)
-		);
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, settingsData);
-
-		// The settings screen mutates category objects in place, so the
-		// category list must be a deep copy. Without this, a fresh install
-		// would share the very objects held in DEFAULT_CATEGORIES, and
-		// editing a category would permanently alter the defaults.
-		if (Array.isArray(this.settings.categories)) {
-			this.settings.categories = copyCategories(this.settings.categories);
-		} else {
-			this.settings.categories = createDefaultCategories();
-		}
-
-		let shouldSave = legacyFolderSettingPresent;
-
-		// The Event heading is part of the note FORMAT, not a UI string, so
-		// its default never depends on the interface language. Resolving it
-		// here (rather than from the i18n table) keeps the settings UI and
-		// the parser in agreement for every user, in every language.
-		const resolvedText = resolveEventHeadingText(loadedData?.eventHeadingText);
-		if (resolvedText !== this.settings.eventHeadingText) {
-			this.settings.eventHeadingText = resolvedText;
-			shouldSave = true;
-		}
-		const resolvedLevel = resolveEventHeadingLevel(loadedData?.eventHeadingLevel);
-		if (resolvedLevel !== this.settings.eventHeadingLevel) {
-			this.settings.eventHeadingLevel = resolvedLevel;
-			shouldSave = true;
-		}
-
-		// Migrate legacy hour-based settings to minute-based settings
-		// Prefer new-format settings if they already exist
-		const hasNewFormat =
-			loadedData !== null &&
-			typeof loadedData.dayStartMinutes === "number" &&
-			typeof loadedData.dayEndMinutes === "number" &&
-			isValidMinuteValue(loadedData.dayStartMinutes) &&
-			isValidMinuteValue(loadedData.dayEndMinutes);
-		if (hasNewFormat) {
-			// Use resolveMinutes directly with the loadedData properties
-			// The type guard ensures they are valid numbers
-			const dayStartMinutes = loadedData.dayStartMinutes as number;
-			const dayEndMinutes = loadedData.dayEndMinutes as number;
-			const resolvedStart = resolveMinutes(dayStartMinutes, DEFAULT_SETTINGS.dayStartMinutes);
-			if (resolvedStart !== this.settings.dayStartMinutes) {
-				this.settings.dayStartMinutes = resolvedStart;
-				shouldSave = true;
-			}
-			const resolvedEnd = resolveMinutes(dayEndMinutes, DEFAULT_SETTINGS.dayEndMinutes);
-			if (resolvedEnd !== this.settings.dayEndMinutes) {
-				this.settings.dayEndMinutes = resolvedEnd;
-				shouldSave = true;
-			}
-		} else {
-			// Migrate from legacy hour-based settings
-			const legacyStartHour: number | undefined =
-				loadedData !== null && typeof loadedData.startHour === "number" ? loadedData.startHour : undefined;
-			const legacyEndHour: number | undefined =
-				loadedData !== null && typeof loadedData.endHour === "number" ? loadedData.endHour : undefined;
-			const migrated = migrateLegacyHoursToMinutes(legacyStartHour, legacyEndHour);
-			if (migrated.dayStartMinutes !== this.settings.dayStartMinutes) {
-				this.settings.dayStartMinutes = migrated.dayStartMinutes;
-				shouldSave = true;
-			}
-			if (migrated.dayEndMinutes !== this.settings.dayEndMinutes) {
-				this.settings.dayEndMinutes = migrated.dayEndMinutes;
-				shouldSave = true;
-			}
-		}
-
-		if (typeof loadedData?.tabularTimeRanges !== "boolean") {
-			this.settings.tabularTimeRanges = DEFAULT_SETTINGS.tabularTimeRanges;
-			shouldSave = true;
-		}
+		const loadedData = await this.loadData();
+		const { settings, shouldSave } = migrateLoadedSettings(loadedData);
+		this.settings = settings;
 		if (shouldSave) await this.saveSettings();
 	}
 

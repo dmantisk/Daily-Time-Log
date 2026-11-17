@@ -324,3 +324,94 @@ export function migrateLegacyHoursToMinutes(
 
 	return { dayStartMinutes, dayEndMinutes };
 }
+
+/**
+ * Migrates loaded settings data to the current settings format.
+ * This is a pure function that does not depend on Obsidian APIs.
+ */
+export function migrateLoadedSettings(loaded: unknown): { settings: DailyWorkLogSettings; shouldSave: boolean } {
+	const loadedData = loaded as
+		| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown; startHour?: number; endHour?: number })
+		| null;
+	const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
+	const settingsData = Object.fromEntries(
+		Object.entries(loadedData ?? {}).filter(([key]) =>
+			Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key)
+		)
+	);
+	const settings = Object.assign({}, DEFAULT_SETTINGS, settingsData);
+
+	// The settings screen mutates category objects in place, so the
+	// category list must be a deep copy. Without this, a fresh install
+	// would share the very objects held in DEFAULT_CATEGORIES, and
+	// editing a category would permanently alter the defaults.
+	if (Array.isArray(settings.categories)) {
+		settings.categories = copyCategories(settings.categories);
+	} else {
+		settings.categories = createDefaultCategories();
+	}
+
+	let shouldSave = legacyFolderSettingPresent;
+
+	// The Event heading is part of the note FORMAT, not a UI string, so
+	// its default never depends on the interface language. Resolving it
+	// here (rather than from the i18n table) keeps the settings UI and
+	// the parser in agreement for every user, in every language.
+	const resolvedText = resolveEventHeadingText(loadedData?.eventHeadingText);
+	if (resolvedText !== settings.eventHeadingText) {
+		settings.eventHeadingText = resolvedText;
+		shouldSave = true;
+	}
+	const resolvedLevel = resolveEventHeadingLevel(loadedData?.eventHeadingLevel);
+	if (resolvedLevel !== settings.eventHeadingLevel) {
+		settings.eventHeadingLevel = resolvedLevel;
+		shouldSave = true;
+	}
+
+	// Migrate legacy hour-based settings to minute-based settings
+	// Prefer new-format settings if they already exist
+	const hasNewFormat =
+		loadedData !== null &&
+		typeof loadedData.dayStartMinutes === "number" &&
+		typeof loadedData.dayEndMinutes === "number" &&
+		isValidMinuteValue(loadedData.dayStartMinutes) &&
+		isValidMinuteValue(loadedData.dayEndMinutes);
+	if (hasNewFormat) {
+		// Use resolveMinutes directly with the loadedData properties
+		// The type guard ensures they are valid numbers
+		const dayStartMinutes = loadedData.dayStartMinutes as number;
+		const dayEndMinutes = loadedData.dayEndMinutes as number;
+		const resolvedStart = resolveMinutes(dayStartMinutes, DEFAULT_SETTINGS.dayStartMinutes);
+		if (resolvedStart !== settings.dayStartMinutes) {
+			settings.dayStartMinutes = resolvedStart;
+			shouldSave = true;
+		}
+		const resolvedEnd = resolveMinutes(dayEndMinutes, DEFAULT_SETTINGS.dayEndMinutes);
+		if (resolvedEnd !== settings.dayEndMinutes) {
+			settings.dayEndMinutes = resolvedEnd;
+			shouldSave = true;
+		}
+	} else {
+		// Migrate from legacy hour-based settings
+		const legacyStartHour: number | undefined =
+			loadedData !== null && typeof loadedData.startHour === "number" ? loadedData.startHour : undefined;
+		const legacyEndHour: number | undefined =
+			loadedData !== null && typeof loadedData.endHour === "number" ? loadedData.endHour : undefined;
+		const migrated = migrateLegacyHoursToMinutes(legacyStartHour, legacyEndHour);
+		if (migrated.dayStartMinutes !== settings.dayStartMinutes) {
+			settings.dayStartMinutes = migrated.dayStartMinutes;
+			shouldSave = true;
+		}
+		if (migrated.dayEndMinutes !== settings.dayEndMinutes) {
+			settings.dayEndMinutes = migrated.dayEndMinutes;
+			shouldSave = true;
+		}
+	}
+
+	if (typeof loadedData?.tabularTimeRanges !== "boolean") {
+		settings.tabularTimeRanges = DEFAULT_SETTINGS.tabularTimeRanges;
+		shouldSave = true;
+	}
+
+	return { settings, shouldSave };
+}
