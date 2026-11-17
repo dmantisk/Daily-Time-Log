@@ -29,7 +29,11 @@ Keep this file short: it is the always-on project context. Load detailed referen
 
 ## On-demand references
 
-- [Detailed architecture and correctness rules](./.agents/AGENTS-reference.md): parser, file-write, settings, refresh, test edge cases. Numbered refs in older docs point here.
+- [Parser rules & file parsing](./.agents/ref/parser-rules.md): §1 — document format, frontmatter, line endings, Event block marker, Event block, continuation lines, no-fallback, dashboard stats.
+- [Settings & i18n](./.agents/ref/settings-i18n.md): §2 — settings persistence, language, categories, validation, deep copy, category resolution.
+- [Obsidian API best practices](./.agents/ref/obsidian-api.md): §3 — UI framework scope, native components, Vault/Workspace APIs, event listeners, CSS variables, note creation policy.
+- [Testing guidelines](./.agents/ref/testing.md): §4 — decoupled parser, build pipeline, test vault setup, required test coverage for all modules.
+- [UI design reference](./.agents/ref/ui-design.md): §6 — links to `.agents/design.md` for design principles, layouts, CSS conventions, color system, write safety.
 - [UI/UX design guide](./.agents/design.md): read before changing views, modals, or CSS.
 - [Open work](./TODO.md): only current, actionable items.
 

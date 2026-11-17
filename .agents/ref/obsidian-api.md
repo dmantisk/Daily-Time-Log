@@ -1,0 +1,32 @@
+# Project Rules & Instructions for AI Agents
+
+> Detailed, on-demand reference. The concise always-on project guide is [AGENTS.md](./AGENTS.md); this file retains the former numbered rules referenced by older design and review notes.
+
+Welcome, AI Agent! You are working on the **Daily Work Log** Obsidian Plugin. This project aims to build an Obsidian plugin that visualizes daily time tracking directly from daily markdown files.
+
+Please strictly adhere to the following rules and specifications during development.
+
+---
+
+## 3. Obsidian API Best Practices
+
+- *(decided 2026-08-05; updated 2026-10-30; updated 2026-11-17)* **UI framework scope**: The sidebar is plain DOM in `src/components/TimelineController.ts`. The Dashboard view, the Add/Edit Timeline Entry modal and all confirm-style modals use Obsidian components or vanilla DOM. **`parser.ts` remains framework-agnostic regardless** — the "zero Obsidian API dependency, pure functions" rule in §4 is scoped to `parser.ts` specifically, not to the codebase as a whole. The View layer choosing React vs. vanilla DOM is an orthogonal, separate decision. (Historical: React 18 was previously used for the sidebar's Timeline/To-Do view in `view.tsx`/`TimelineView.tsx`.)
+- *(added 2026-10-30)* **Prefer Obsidian's own components over hand-rolled markup.** A control that Obsidian already ships — `ButtonComponent`, `TextComponent`, `TextAreaComponent`, `DropdownComponent`, `Setting`, `ConfirmationModal` — must be used rather than re-implemented in plugin CSS, so the control follows the active theme, the user's accessibility settings and Obsidian's own keyboard handling. The only custom UI left is what Obsidian has no equivalent for (the category chips, the timeline grid, the dashboard's multi-segment distribution bar).
+  - Do NOT re-style a native component's colours, borders or focus ring in `styles.css` — that is exactly the duplication this rule exists to prevent. Only the sizing Obsidian does not provide (e.g. `input[type="text"]` and `textarea` carry no width in the app's stylesheet) may be set by the plugin.
+  - `ButtonComponent` has no `setSecondary()` — that method belongs to `ConfirmationButton`. The `mod-secondary` **class** is plain CSS and applies to any element, so use `.setClass("mod-secondary")` when a button must be pushed to the far left of a `.modal-button-container` row.
+  - Use `.setDestructive().setCta()` for a destructive primary action — that is the combination Obsidian uses for its own delete confirmation. `setWarning()` does exactly the same thing but is deprecated in favour of the explicit pair, so do not use it.
+  - Prefer a component's own `setClass()` over reaching into its element (`settingEl.addClass(...)`) — `Setting.setClass()` and `ButtonComponent.setClass()` are public API and are what the plugin's own CSS keys off.
+- **Avoid Raw Node `fs` API**: Always use Obsidian's Vault and Workspace APIs (`this.app.vault.read()`, `this.app.vault.modify()`, `this.app.workspace.getActiveFile()`) to modify and read note contents. Using node's native filesystem library bypasses Obsidian's sync mechanisms and may corrupt indices.
+- **Event Listeners**:
+  - Listen to `layout-change` or `active-leaf-change` on `this.app.workspace` to update the view state dynamically when the user switches documents.
+  - Listen to `modify` events on `this.app.vault` to sync edits made in the editor panel to the sidebar UI.
+  - **Guard against self-triggered updates**: when the plugin itself writes a change (e.g. adding or editing an Event), the resulting `modify` event must not cause a redundant/looping re-render. Track the last write the plugin performed (e.g. file path + content hash, or a short-lived flag) and skip reprocessing a `modify` event that matches it.
+  - **Don't let the tracked "current file" go stale on `active-leaf-change`**: if there IS an active file and it's not a daily note, clear the tracked current file (otherwise the sidebar keeps showing — and can keep writing to — a note that's no longer on screen). If there is NO active file at all (e.g. the sidebar itself has focus), leave the tracked file as-is rather than blanking the view on every leaf switch.
+  - **`refresh()`-style re-render MUST guard against overlapping calls.** The current implementation does a synchronous `container.empty()` before an `await vault.read()`; if two triggers (e.g. `active-leaf-change` and `modify` firing close together) call it around the same time, a later call's `empty()` can wipe an earlier call's DOM mid-flight, and then BOTH calls' post-`await` continuations append their own Event sections into the same container — producing visibly duplicated sections. Use an incrementing token: capture it at the top of the render function, and after the `await`, bail out without rendering if a newer call has since incremented it. Any manual/imperative render paths (e.g. Dashboard, which stays vanilla DOM) must keep this guard.
+  - ~~**`refresh()` MUST reuse the same `Calendar` instance...**~~ *(2026-08-05, obsolete since the Calendar component was removed)* This whole concern (preserving `Calendar`'s viewed-month state across re-renders) no longer applies once the Calendar component is removed.
+- **CSS Variable Usage**: Use Obsidian's CSS custom properties (variables) like `--text-normal`, `--background-secondary`, `--interactive-accent`, etc. This ensures the plugin respects the user's active theme (light/dark mode) seamlessly.
+- **New Daily Note Creation & Confirmation Policy**:
+  - **The plugin does not create or open daily notes.** There is no "today note" button and no scaffolding path. Users create notes with Obsidian's Daily Notes core plugin (or any other workflow) and configure that plugin's own folder and template.
+  - The core plugin's date format and new-file location are the source of truth for identifying notes; Daily Time Log does not offer duplicate settings for them.
+  - *(same behaviour as DayTime Tracker)* There is no calendar/date-picker UI — the sidebar only ever reflects the currently active file.
+  - Jumping to a specific past/future date's note is no longer a plugin feature — users rely on Obsidian's own file explorer / quick switcher for that.
