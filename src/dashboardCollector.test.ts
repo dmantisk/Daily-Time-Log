@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeDashboardStats, getRecentWindowStart, isOnOrBeforeToday, isWithinRecentWindow } from "./dashboardCollector";
+import {
+	computeDashboardStats,
+	getRecentWindowStart,
+	isOnOrBeforeToday,
+	isWithinRecentWindow,
+} from "./dashboardCollector";
 import type { ParsedDailyNote } from "./parser";
 
 const EMPTY_NOTE: ParsedDailyNote = { timeline: [] };
@@ -109,8 +114,22 @@ describe("computeDashboardStats — future-dated notes", () => {
 		const stats = computeDashboardStats(
 			[today, future],
 			[
-				{ date: today, parsed: { timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" }] } satisfies ParsedDailyNote },
-				{ date: future, parsed: { timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "b" }] } satisfies ParsedDailyNote },
+				{
+					date: today,
+					parsed: {
+						timeline: [
+							{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" },
+						],
+					} satisfies ParsedDailyNote,
+				},
+				{
+					date: future,
+					parsed: {
+						timeline: [
+							{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "b" },
+						],
+					} satisfies ParsedDailyNote,
+				},
 			],
 			today,
 			[{ name: "Work", displayName: "Work", color: "#d0e1fd" }],
@@ -237,8 +256,22 @@ describe("computeDashboardStats", () => {
 				date: new Date(2026, 6, 14),
 				parsed: {
 					timeline: [
-						{ line: 0, lineCount: 1, start: "09:00", end: "10:30", category: "Work", description: "work task" },
-						{ line: 1, lineCount: 1, start: "11:00", end: "12:00", category: "Study", description: "study task" },
+						{
+							line: 0,
+							lineCount: 1,
+							start: "09:00",
+							end: "10:30",
+							category: "Work",
+							description: "work task",
+						},
+						{
+							line: 1,
+							lineCount: 1,
+							start: "11:00",
+							end: "12:00",
+							category: "Study",
+							description: "study task",
+						},
 					],
 				} satisfies ParsedDailyNote,
 			},
@@ -285,7 +318,14 @@ describe("computeDashboardStats", () => {
 				parsed: {
 					timeline: [
 						{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" },
-						{ line: 1, lineCount: 1, start: "10:00", end: "11:00", category: "OldRenamedCategory", description: "b" },
+						{
+							line: 1,
+							lineCount: 1,
+							start: "10:00",
+							end: "11:00",
+							category: "OldRenamedCategory",
+							description: "b",
+						},
 					],
 				} satisfies ParsedDailyNote,
 			},
@@ -313,7 +353,9 @@ describe("computeDashboardStats", () => {
 			{
 				date: today,
 				parsed: {
-					timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "work", description: "a" }],
+					timeline: [
+						{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "work", description: "a" },
+					],
 				} satisfies ParsedDailyNote,
 			},
 		];
@@ -335,7 +377,9 @@ describe("computeDashboardStats", () => {
 			{
 				date: today,
 				parsed: {
-					timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" }],
+					timeline: [
+						{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" },
+					],
 				} satisfies ParsedDailyNote,
 			},
 		];
@@ -352,11 +396,7 @@ describe("computeDashboardStats", () => {
 
 	it("ignores empty parsed notes without error", () => {
 		const today = new Date(2026, 6, 14);
-		const stats = computeDashboardStats(
-			[today],
-			[{ date: today, parsed: EMPTY_NOTE }],
-			today
-		);
+		const stats = computeDashboardStats([today], [{ date: today, parsed: EMPTY_NOTE }], today);
 		expect(stats.recentEventMinutes).toBe(0);
 	});
 

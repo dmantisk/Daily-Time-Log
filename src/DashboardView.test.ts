@@ -254,9 +254,11 @@ describe("DashboardView metric tooltips", () => {
 			},
 		};
 
-		const files = (view as unknown as {
-			collectDailyNoteFiles: () => Array<{ file: TFile }>;
-		}).collectDailyNoteFiles();
+		const files = (
+			view as unknown as {
+				collectDailyNoteFiles: () => Array<{ file: TFile }>;
+			}
+		).collectDailyNoteFiles();
 
 		expect(files.map(({ file }) => file.path)).toEqual(["2026/10/22.md"]);
 	});
@@ -265,9 +267,11 @@ describe("DashboardView metric tooltips", () => {
 		const view = new DashboardView({} as never, createPluginStub());
 		(view as unknown as { app: unknown }).app = createAppStub("");
 
-		const files = (view as unknown as {
-			collectDailyNoteFiles: () => Array<{ file: TFile }>;
-		}).collectDailyNoteFiles();
+		const files = (
+			view as unknown as {
+				collectDailyNoteFiles: () => Array<{ file: TFile }>;
+			}
+		).collectDailyNoteFiles();
 
 		expect(files).toHaveLength(1);
 		expect(files[0].file.path).toMatch(/^\d{4}-\d{2}-\d{2}\.md$/);
@@ -290,9 +294,11 @@ describe("DashboardView metric tooltips", () => {
 			},
 		};
 
-		const files = (view as unknown as {
-			collectDailyNoteFiles: () => Array<{ file: TFile }>;
-		}).collectDailyNoteFiles();
+		const files = (
+			view as unknown as {
+				collectDailyNoteFiles: () => Array<{ file: TFile }>;
+			}
+		).collectDailyNoteFiles();
 
 		expect(files.map(({ file }) => file.path)).toEqual(["2026-11/01.md"]);
 	});

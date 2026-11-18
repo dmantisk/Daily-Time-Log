@@ -127,9 +127,9 @@ export interface DailyWorkLogSettings {
 	/** Markdown heading level (1-6) used for the Event block. */
 	eventHeadingLevel: number;
 	/** Grid timeline's displayed start time in minutes since midnight (0-1430, 10-min increments). */
-		dayStartMinutes: number;
-		/** Grid timeline's displayed end time in minutes since midnight (0-1430, 10-min increments). */
-		dayEndMinutes: number;
+	dayStartMinutes: number;
+	/** Grid timeline's displayed end time in minutes since midnight (0-1430, 10-min increments). */
+	dayEndMinutes: number;
 	/** Whether event time ranges use tabular numerals in the editor and reading view. */
 	tabularTimeRanges: boolean;
 	/** Up to 10 entries; see CustomCategory for how these map into note bodies. */
@@ -246,7 +246,7 @@ export function calculateTimelineDuration(startMinutes: number, endMinutes: numb
 		return endMinutes - startMinutes;
 	}
 	if (endMinutes < startMinutes) {
-		return (1440 - startMinutes) + endMinutes;
+		return 1440 - startMinutes + endMinutes;
 	}
 	// endMinutes === startMinutes means full 24-hour timeline
 	return 1440;
@@ -310,12 +310,9 @@ export function migrateLegacyHoursToMinutes(
 	legacyEndHour: number | undefined
 ): { dayStartMinutes: number; dayEndMinutes: number } {
 	// Default to original defaults if legacy values missing
-	const startHour = typeof legacyStartHour === 'number' && legacyStartHour >= 0 && legacyStartHour <= 24
-		? legacyStartHour
-		: 0; // Old default was 0
-	const endHour = typeof legacyEndHour === 'number' && legacyEndHour >= 0 && legacyEndHour <= 24
-		? legacyEndHour
-		: 24; // Old default was 24
+	const startHour =
+		typeof legacyStartHour === "number" && legacyStartHour >= 0 && legacyStartHour <= 24 ? legacyStartHour : 0; // Old default was 0
+	const endHour = typeof legacyEndHour === "number" && legacyEndHour >= 0 && legacyEndHour <= 24 ? legacyEndHour : 24; // Old default was 24
 
 	// Convert to minutes
 	const dayStartMinutes = startHour * 60;
@@ -331,13 +328,10 @@ export function migrateLegacyHoursToMinutes(
  */
 export function migrateLoadedSettings(loaded: unknown): { settings: DailyWorkLogSettings; shouldSave: boolean } {
 	const loadedData = loaded as
-		| (Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown; startHour?: number; endHour?: number })
-		| null;
+		(Partial<DailyWorkLogSettings> & { dailyNoteFolder?: unknown; startHour?: number; endHour?: number }) | null;
 	const legacyFolderSettingPresent = loadedData !== null && "dailyNoteFolder" in loadedData;
 	const settingsData = Object.fromEntries(
-		Object.entries(loadedData ?? {}).filter(([key]) =>
-			Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key)
-		)
+		Object.entries(loadedData ?? {}).filter(([key]) => Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key))
 	);
 	const settings = Object.assign({}, DEFAULT_SETTINGS, settingsData);
 

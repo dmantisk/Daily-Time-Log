@@ -72,13 +72,11 @@ describe("formatDateBasename / formatDateFilename", () => {
 
 describe("Daily Notes plugin paths", () => {
 	it("formats a note path under the core plugin folder", () => {
-		expect(formatDailyNotePath(new Date(2026, 9, 22), "YYYY/MM/DD", "Log"))
-			.toBe("Log/2026/10/22.md");
+		expect(formatDailyNotePath(new Date(2026, 9, 22), "YYYY/MM/DD", "Log")).toBe("Log/2026/10/22.md");
 	});
 
 	it("parses a nested daily note path relative to the core plugin folder", () => {
-		expect(parseDateFromDailyNotePath("Log/2026/10/22.md", "YYYY/MM/DD", "Log"))
-			.toEqual(new Date(2026, 9, 22));
+		expect(parseDateFromDailyNotePath("Log/2026/10/22.md", "YYYY/MM/DD", "Log")).toEqual(new Date(2026, 9, 22));
 	});
 
 	it("does not identify paths outside the configured core folder", () => {
@@ -113,7 +111,8 @@ describe("isDailyNoteFileName", () => {
 	});
 });
 
-describe("isInDailyNoteFolder", () => {	it("returns true for any path when folder setting is empty or whitespace", () => {
+describe("isInDailyNoteFolder", () => {
+	it("returns true for any path when folder setting is empty or whitespace", () => {
 		expect(isInDailyNoteFolder("2026-07-13.md", "")).toBe(true);
 		expect(isInDailyNoteFolder("Daily Notes/2026-07-13.md", "   ")).toBe(true);
 	});

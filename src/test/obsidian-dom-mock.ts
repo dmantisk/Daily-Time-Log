@@ -34,10 +34,8 @@ export function installObsidianDomHelpers(): void {
 
 	Object.assign(globalThis, {
 		createFragment: () => globalThis.document.createDocumentFragment(),
-		createDiv: (options?: DomElementInfoLike | string) =>
-			createDetachedElement("div", options),
-		createSpan: (options?: DomElementInfoLike | string) =>
-			createDetachedElement("span", options),
+		createDiv: (options?: DomElementInfoLike | string) => createDetachedElement("div", options),
+		createSpan: (options?: DomElementInfoLike | string) => createDetachedElement("span", options),
 	});
 
 	proto.empty = function (this: HTMLElement): void {
@@ -150,10 +148,7 @@ function createDetachedElement<K extends "div" | "span">(
 interface ObsidianElementProto {
 	__dwlObsidianDomInstalled?: boolean;
 	empty(): void;
-	createEl<K extends keyof HTMLElementTagNameMap>(
-		tag: K,
-		options?: DomElementInfoLike
-	): HTMLElementTagNameMap[K];
+	createEl<K extends keyof HTMLElementTagNameMap>(tag: K, options?: DomElementInfoLike): HTMLElementTagNameMap[K];
 	createDiv(options?: DomElementInfoLike): HTMLDivElement;
 	createSpan(options?: DomElementInfoLike): HTMLSpanElement;
 	addClass(...classes: string[]): void;

@@ -1,8 +1,23 @@
-import { ButtonComponent, DropdownComponent, ItemView, setTooltip, TFile, TFolder, Vault, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
+import {
+	ButtonComponent,
+	DropdownComponent,
+	ItemView,
+	setTooltip,
+	TFile,
+	TFolder,
+	Vault,
+	type TAbstractFile,
+	type WorkspaceLeaf,
+} from "obsidian";
 import type DailyWorkLogPlugin from "./main";
 import { parseDailyNote, type MarkerLanguage, type ParsedDailyNote } from "./parser";
 import { formatDateBasename, isDatePathPrefix, parseDateFromDailyNotePath } from "./dailyNote";
-import { computeDashboardStats, isOnOrBeforeToday, isWithinRecentWindow, type DashboardStats } from "./dashboardCollector";
+import {
+	computeDashboardStats,
+	isOnOrBeforeToday,
+	isWithinRecentWindow,
+	type DashboardStats,
+} from "./dashboardCollector";
 import { getTextColorForBackground } from "./components/colorUtils";
 import { findCategoryByDisplayName } from "./settings";
 import { t } from "./i18n";
@@ -27,7 +42,7 @@ interface CachedDailyNote {
  */
 export class DashboardView extends ItemView {
 	private readonly plugin: DailyWorkLogPlugin;
-		// Same re-entrancy guard as DailyWorkLogView.refresh() — see AGENTS-reference.md.
+	// Same re-entrancy guard as DailyWorkLogView.refresh() — see AGENTS-reference.md.
 	private refreshToken = 0;
 	private selectedWindowDays = 30; // 7, 30, 90, 0 (all)
 	private readonly parsedNotes = new Map<string, CachedDailyNote>();
@@ -94,10 +109,14 @@ export class DashboardView extends ItemView {
 		};
 
 		if (allNotes.length === 0) {
-			const folderSetting = this.plugin.getDailyNoteFolder().trim().replace(/^\/+|\/+$/g, "");
-			const emptyMessage = folderSetting && !this.app.vault.getFolderByPath(folderSetting)
-				? t("dashboardFolderNotFound", language).replace("%s", folderSetting)
-				: t("dashboardEmptyVault", language);
+			const folderSetting = this.plugin
+				.getDailyNoteFolder()
+				.trim()
+				.replace(/^\/+|\/+$/g, "");
+			const emptyMessage =
+				folderSetting && !this.app.vault.getFolderByPath(folderSetting)
+					? t("dashboardFolderNotFound", language).replace("%s", folderSetting)
+					: t("dashboardEmptyVault", language);
 			nextContent.createDiv({ cls: "dwl-dashboard-empty", text: emptyMessage });
 			commitContent();
 			return;
@@ -295,7 +314,14 @@ export class DashboardView extends ItemView {
 			stats.categoryBreakdown.length > 0
 				? t("statTopCategoryPct", language).replace("%s", String(stats.categoryBreakdown[0].percentage))
 				: "-";
-		this.renderMetricCard(grid, t("statTopCategory", language), topCat, topCatSub, undefined, t("tipStatTopCategory", language));
+		this.renderMetricCard(
+			grid,
+			t("statTopCategory", language),
+			topCat,
+			topCatSub,
+			undefined,
+			t("tipStatTopCategory", language)
+		);
 	}
 
 	/**
@@ -329,7 +355,6 @@ export class DashboardView extends ItemView {
 		const footerEl = card.createDiv({ cls: "dwl-kpi-footer", text: footerText });
 		if (footerTooltip) setTooltip(footerEl, footerTooltip);
 	}
-
 
 	private renderCategoryDistribution(container: HTMLElement, stats: DashboardStats, language: MarkerLanguage): void {
 		const card = container.createDiv({ cls: "dwl-dashboard-card dwl-dashboard-distribution-card" });
@@ -392,7 +417,10 @@ export class DashboardView extends ItemView {
 				const row = activityList.createDiv({ cls: "dwl-dashboard-activity-row" });
 
 				// Left: Date — use user's Daily Notes date format.
-				row.createDiv({ cls: "dwl-activity-date", text: formatDateBasename(summary.date, this.plugin.getDailyNoteFormat()) });
+				row.createDiv({
+					cls: "dwl-activity-date",
+					text: formatDateBasename(summary.date, this.plugin.getDailyNoteFormat()),
+				});
 
 				// Middle: Category Badge
 				const mid = row.createDiv({ cls: "dwl-activity-mid" });

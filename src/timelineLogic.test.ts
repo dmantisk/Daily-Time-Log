@@ -153,21 +153,25 @@ describe("shouldCancelPendingTouchPress", () => {
 
 describe("buildTimelineLine", () => {
 	it("includes the category when present", () => {
-		expect(buildTimelineLine({
-			start: "09:00",
-			end: "10:00",
-			category: "Work",
-			description: "Planning",
-		})).toBe("- 09:00 - 10:00 [Work] Planning");
+		expect(
+			buildTimelineLine({
+				start: "09:00",
+				end: "10:00",
+				category: "Work",
+				description: "Planning",
+			})
+		).toBe("- 09:00 - 10:00 [Work] Planning");
 	});
 
 	it("omits an empty category and trims trailing whitespace", () => {
-		expect(buildTimelineLine({
-			start: "09:00",
-			end: "10:00",
-			category: "",
-			description: "",
-		})).toBe("- 09:00 - 10:00");
+		expect(
+			buildTimelineLine({
+				start: "09:00",
+				end: "10:00",
+				category: "",
+				description: "",
+			})
+		).toBe("- 09:00 - 10:00");
 	});
 });
 

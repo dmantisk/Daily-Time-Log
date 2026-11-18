@@ -18,10 +18,7 @@ export function formatDateFilename(date: Date, dateFormat = DEFAULT_DAILY_NOTE_F
 	return `${formatDateBasename(date, dateFormat)}.md`;
 }
 
-export function parseDateFromBasename(
-	basename: string,
-	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
-): Date | null {
+export function parseDateFromBasename(basename: string, dateFormat = DEFAULT_DAILY_NOTE_FORMAT): Date | null {
 	const parsed = momentFactory(basename, dateFormat, true);
 	return parsed.isValid() ? parsed.toDate() : null;
 }
@@ -34,11 +31,7 @@ export function isDatePathPrefix(pathPrefix: string, dateFormat = DEFAULT_DAILY_
 	return momentFactory(pathPrefix, prefixFormat, true).isValid();
 }
 
-export function formatDailyNotePath(
-	date: Date,
-	dateFormat = DEFAULT_DAILY_NOTE_FORMAT,
-	dailyNoteFolder = ""
-): string {
+export function formatDailyNotePath(date: Date, dateFormat = DEFAULT_DAILY_NOTE_FORMAT, dailyNoteFolder = ""): string {
 	const folder = normalizeFolder(dailyNoteFolder);
 	const datePath = formatDateFilename(date, dateFormat);
 	return folder ? `${folder}/${datePath}` : datePath;
@@ -75,10 +68,7 @@ export function isSameDate(a: Date, b: Date): boolean {
  *
  * Takes the file name WITH its extension (`2026-10-16.md`).
  */
-export function isDailyNoteFileName(
-	fileName: string,
-	dateFormat = DEFAULT_DAILY_NOTE_FORMAT
-): boolean {
+export function isDailyNoteFileName(fileName: string, dateFormat = DEFAULT_DAILY_NOTE_FORMAT): boolean {
 	const extensionIndex = fileName.lastIndexOf(".");
 	if (extensionIndex === -1) return false;
 	if (fileName.slice(extensionIndex + 1).toLowerCase() !== "md") return false;

@@ -74,7 +74,7 @@ describe("DailyWorkLogSettingTab", () => {
 		const tab = new DailyWorkLogSettingTab({} as never, plugin);
 		const container = document.createElement("div");
 		for (const definition of tab.getSettingDefinitions()) {
-			const items = definition.type === "group" ? definition.items ?? [] : [definition];
+			const items = definition.type === "group" ? (definition.items ?? []) : [definition];
 			for (const item of items) {
 				if ("render" in item && item.render) {
 					const setting = new Setting(container);
@@ -93,12 +93,12 @@ describe("DailyWorkLogSettingTab", () => {
 		const definitions = tab.getSettingDefinitions();
 
 		expect(definitions.some((definition) => definition.type === "page")).toBe(false);
-			expect(definitions.some((definition) => definition.name === "Day Start Time")).toBe(true);
-			// Find the "Category Management" group (not the "Commands" group)
-			const categoryGroup = definitions.find((definition) => 
-				definition.type === "group" && 
-				definition.items?.some((item) => item.name === "Category Management")
-			);
+		expect(definitions.some((definition) => definition.name === "Day Start Time")).toBe(true);
+		// Find the "Category Management" group (not the "Commands" group)
+		const categoryGroup = definitions.find(
+			(definition) =>
+				definition.type === "group" && definition.items?.some((item) => item.name === "Category Management")
+		);
 		expect(categoryGroup?.type).toBe("group");
 		if (categoryGroup?.type === "group") {
 			expect(categoryGroup.items?.some((item) => item.name === "Category Management")).toBe(true);
@@ -107,16 +107,16 @@ describe("DailyWorkLogSettingTab", () => {
 
 	it("updates declarative setting labels after changing the language", async () => {
 		const plugin = createPluginStub();
-		const settings = (plugin as unknown as {
-			settings: { language: string };
-		}).settings;
-		const getUiLanguage = () => settings.language === "ko" ? "ko" : "en";
+		const settings = (
+			plugin as unknown as {
+				settings: { language: string };
+			}
+		).settings;
+		const getUiLanguage = () => (settings.language === "ko" ? "ko" : "en");
 		(plugin as unknown as { getUiLanguage: () => string }).getUiLanguage = getUiLanguage;
 		const tab = new DailyWorkLogSettingTab({} as never, plugin);
 		const update = vi.spyOn(tab, "update");
-		const languageDefinition = tab.getSettingDefinitions().find(
-			(definition) => definition.name === "Language"
-		);
+		const languageDefinition = tab.getSettingDefinitions().find((definition) => definition.name === "Language");
 		if (!languageDefinition || !("render" in languageDefinition) || !languageDefinition.render) {
 			throw new Error("Language setting definition is missing its renderer");
 		}
@@ -211,8 +211,6 @@ describe("DailyWorkLogSettingTab", () => {
 				setting.nameEl.textContent === "Category Management"
 		);
 		expect(heading).toBeDefined();
-		expect(heading?.descEl.textContent).toBe(
-			"Customize the categories and colors used in your daily logs."
-		);
+		expect(heading?.descEl.textContent).toBe("Customize the categories and colors used in your daily logs.");
 	});
 });

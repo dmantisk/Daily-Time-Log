@@ -18,16 +18,7 @@ const SCRIPT_PATH = path.resolve(import.meta.dirname, "../.github/scripts/extrac
 
 /** A README whose newest changelog entry is the given heading. */
 function readmeWith(heading: string): string {
-	return [
-		"# Test",
-		"",
-		"## Changelog",
-		"",
-		`### ${heading}`,
-		"",
-		"- A note.",
-		"",
-	].join("\n");
+	return ["# Test", "", "## Changelog", "", `### ${heading}`, "", "- A note.", ""].join("\n");
 }
 
 interface RunResult {
@@ -44,11 +35,10 @@ function runGuard(expectedVersion: string, heading: string): RunResult {
 		writeFileSync(readmePath, readmeWith(heading), "utf8");
 
 		try {
-			const stdout = execFileSync(
-				process.execPath,
-				[SCRIPT_PATH, expectedVersion, readmePath, outPath],
-				{ encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
-			);
+			const stdout = execFileSync(process.execPath, [SCRIPT_PATH, expectedVersion, readmePath, outPath], {
+				encoding: "utf8",
+				stdio: ["ignore", "pipe", "pipe"],
+			});
 			return { status: 0, stdout };
 		} catch (error) {
 			const err = error as { status?: number; stdout?: string };

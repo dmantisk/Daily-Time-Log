@@ -1,4 +1,10 @@
-import { headingLevel, matchMarker, normalizeHeadingText, normalizeRenderedHeadingText, DEFAULT_EVENT_HEADING } from "./heading-normalization";
+import {
+	headingLevel,
+	matchMarker,
+	normalizeHeadingText,
+	normalizeRenderedHeadingText,
+	DEFAULT_EVENT_HEADING,
+} from "./heading-normalization";
 import type { EventHeadingConfig, HeadingInfo } from "./heading-normalization";
 
 /**
@@ -15,11 +21,7 @@ import type { EventHeadingConfig, HeadingInfo } from "./heading-normalization";
  * When null is returned the file has no Event block at all — there is no
  * whole-body fallback.
  */
-export function findEventBlock(
-	lines: string[],
-	bodyStart: number,
-	config: EventHeadingConfig
-): LineRange | null {
+export function findEventBlock(lines: string[], bodyStart: number, config: EventHeadingConfig): LineRange | null {
 	let blockStart: number | null = null;
 	const fence = new FenceTracker();
 
@@ -75,10 +77,7 @@ export function findEventBlockInContent(
  * Used by the sidebar to tell the user their note is missing the heading
  * instead of silently showing an empty timeline.
  */
-export function hasEventBlock(
-	content: string,
-	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
-): boolean {
+export function hasEventBlock(content: string, config: EventHeadingConfig = DEFAULT_EVENT_HEADING): boolean {
 	return findEventBlockInContent(content, config) !== null;
 }
 
@@ -114,8 +113,7 @@ export function isWithinEventHeading(
 	// The section opens at the first heading with the configured text AND level.
 	const start = headings.findIndex(
 		(heading) =>
-			heading.level === config.level &&
-			normalizeRenderedHeadingText(heading.text).toLowerCase() === wanted
+			heading.level === config.level && normalizeRenderedHeadingText(heading.text).toLowerCase() === wanted
 	);
 	if (start === -1) return false;
 
@@ -247,7 +245,7 @@ export function stripFrontmatter(content: string): { lines: string[]; bodyStart:
  * `"\r"` here makes the parse line-ending agnostic.
  *
  * The line COUNT is unchanged by this, so line indices stay relative to the
-  * original file (AGENTS-reference.md).
+ * original file (AGENTS-reference.md).
  */
 export function splitContentLines(content: string): string[] {
 	return content.split("\n").map(stripTrailingCarriageReturn);
@@ -280,5 +278,3 @@ export function joinLines(lines: string[], content: string): string {
 }
 
 export const FRONTMATTER_DELIMITER = "---";
-
-

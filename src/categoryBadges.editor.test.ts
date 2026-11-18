@@ -12,9 +12,7 @@ import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 
 installObsidianDomHelpers();
 
-const CATEGORIES: CustomCategory[] = [
-	{ name: "Work", displayName: "Work", color: "#d0e1fd" },
-];
+const CATEGORIES: CustomCategory[] = [{ name: "Work", displayName: "Work", color: "#d0e1fd" }];
 
 describe("category badge editor plugin", () => {
 	it("badges configured categories and leaves unknown tags as plain text", () => {
@@ -30,12 +28,7 @@ describe("category badge editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Log/2026/10/22.md" },
 				})),
-				buildCategoryBadgeEditorPlugin(
-					CATEGORIES,
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD"
-				),
+				buildCategoryBadgeEditorPlugin(CATEGORIES, "Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
 		const view = new EditorView({ state, parent: document.createElement("div") });
@@ -56,12 +49,7 @@ describe("category badge editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Log/2026/10/22.md" },
 				})),
-				buildCategoryBadgeEditorPlugin(
-					CATEGORIES,
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD"
-				),
+				buildCategoryBadgeEditorPlugin(CATEGORIES, "Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
 		const view = new EditorView({ state, parent: document.createElement("div") });
@@ -83,12 +71,7 @@ describe("category badge editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Log/2026/10/22.md" },
 				})),
-				buildCategoryBadgeEditorPlugin(
-					CATEGORIES,
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD"
-				),
+				buildCategoryBadgeEditorPlugin(CATEGORIES, "Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
 		const view = new EditorView({ state, parent: document.createElement("div") });
@@ -118,11 +101,7 @@ describe("time range editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Log/2026/10/22.md" },
 				})),
-				buildTimeRangeEditorPlugin(
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD"
-				),
+				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
 		const view = new EditorView({ state, parent: document.createElement("div") });
@@ -144,11 +123,7 @@ describe("time range editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Log/2026/10/22.md" },
 				})),
-				buildTimeRangeEditorPlugin(
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD"
-				),
+				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
 		const view = new EditorView({ state, parent: document.createElement("div") });
@@ -169,11 +144,7 @@ describe("time range editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Log/2026/10/22.md" },
 				})),
-				buildTimeRangeEditorPlugin(
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD"
-				),
+				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
 		const viewA = new EditorView({ state: stateOutsideSection, parent: document.createElement("div") });
@@ -184,11 +155,7 @@ describe("time range editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Other/RegularNote.md" },
 				})),
-				buildTimeRangeEditorPlugin(
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD"
-				),
+				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
 		const viewB = new EditorView({ state: stateNonDailyNote, parent: document.createElement("div") });
@@ -210,12 +177,7 @@ describe("time range editor plugin", () => {
 				editorInfoField.init(() => ({
 					file: { path: "Log/2026/10/22.md" },
 				})),
-				buildTimeRangeEditorPlugin(
-					"Log",
-					{ text: "Time Sheet", level: 2 },
-					"YYYY/MM/DD",
-					false
-				),
+				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD", false),
 			],
 		});
 		const view = new EditorView({ state, parent: document.createElement("div") });

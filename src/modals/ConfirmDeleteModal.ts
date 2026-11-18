@@ -33,8 +33,7 @@ export class ConfirmDeleteModal extends ConfirmationModal {
 		// confirmation. (`setWarning()` does exactly this, but it is
 		// deprecated in favour of the explicit pair.)
 		this.addButton((btn) => {
-			btn
-				.setButtonText(this.okText)
+			btn.setButtonText(this.okText)
 				.setDestructive()
 				.setCta()
 				.setInitialFocus()

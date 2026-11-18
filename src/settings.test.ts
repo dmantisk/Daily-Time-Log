@@ -168,7 +168,8 @@ describe("resolveHour", () => {
 	});
 });
 
-describe("validateCategoryName", () => {	const categories: CustomCategory[] = [
+describe("validateCategoryName", () => {
+	const categories: CustomCategory[] = [
 		{ name: "Work", displayName: "Work", color: "#d0e1fd" },
 		{ name: "Study", displayName: "Study", color: "#ebd3f8" },
 	];

@@ -189,12 +189,20 @@ describe("Event heading matching", () => {
 	it("ends the block at the next heading of the same level or above", () => {
 		// Configured at H2: a deeper H3 is a subheading and stays inside the
 		// block; an H1 (above) ends it.
-		const lines = ["# Intro", "before", "## Activity", "- 09:00 - 10:00 work", "### nested", "- 10:00 - 11:00 kept"];
+		const lines = [
+			"# Intro",
+			"before",
+			"## Activity",
+			"- 09:00 - 10:00 work",
+			"### nested",
+			"- 10:00 - 11:00 kept",
+		];
 		expect(findEventBlock(lines, 0, { text: "Activity", level: 2 })).toEqual({ start: 2, end: 5 });
 	});
 
 	it("keeps subheadings and their events inside the block", () => {
-		const content = "## Activity\n- 9:00 - 10:00 working\n### Detail\n- 10:00 - 11:00 nested\n# Other\n- 11:00 - 12:00 excluded";
+		const content =
+			"## Activity\n- 9:00 - 10:00 working\n### Detail\n- 10:00 - 11:00 nested\n# Other\n- 11:00 - 12:00 excluded";
 		const result = parseDailyNote(content, { text: "Activity", level: 2 });
 		expect(result.timeline.map((item) => item.description)).toEqual(["working", "nested"]);
 	});
@@ -290,7 +298,8 @@ describe("isWithinEventHeading", () => {
 	it("agrees with the file-based block rule", () => {
 		// The badge renderer works from rendered headings while the parser
 		// works from raw lines — both must agree on what is "inside".
-		const content = "# Intro\n## Event\n- 9:00 - 10:00 work\n### Detail\n- 10:00 - 11:00 nested\n# Other\n- 11:00 - 12:00 outside";
+		const content =
+			"# Intro\n## Event\n- 9:00 - 10:00 work\n### Detail\n- 10:00 - 11:00 nested\n# Other\n- 11:00 - 12:00 outside";
 		const config = { text: "Event", level: 2 };
 		const block = findEventBlockInContent(content, config);
 
@@ -308,8 +317,7 @@ describe("isWithinEventHeading", () => {
 	it("agrees with the file-based block rule for duplicate headings", () => {
 		// Two "# Event" headings: the parser takes the FIRST block, so the
 		// badge renderer must scope to the first one too.
-		const content =
-			"# Event\n- 9:00 - 10:00 work\n# Event\n- 11:00 - 12:00 second\n# Other\n- 13:00 - 14:00 third";
+		const content = "# Event\n- 9:00 - 10:00 work\n# Event\n- 11:00 - 12:00 second\n# Other\n- 13:00 - 14:00 third";
 		const config = { text: "Event", level: 1 };
 		const block = findEventBlockInContent(content, config);
 
@@ -381,16 +389,27 @@ describe("fenced code blocks", () => {
 	});
 
 	it("treats a tilde fence as a boundary too", () => {
-		const content = ["# Event", "- 09:00 - 10:00 [Work] a", "~~~", "# config", "~~~", "- 10:00 - 11:00 [Work] b"].join(
-			"\n"
-		);
+		const content = [
+			"# Event",
+			"- 09:00 - 10:00 [Work] a",
+			"~~~",
+			"# config",
+			"~~~",
+			"- 10:00 - 11:00 [Work] b",
+		].join("\n");
 		expect(parseDailyNote(content).timeline).toHaveLength(2);
 	});
 
 	it("does not let a backtick fence be closed by a tilde fence", () => {
-		const content = ["# Event", "- 09:00 - 10:00 [Work] a", "```", "~~~", "# config", "```", "- 10:00 - 11:00 [Work] b"].join(
-			"\n"
-		);
+		const content = [
+			"# Event",
+			"- 09:00 - 10:00 [Work] a",
+			"```",
+			"~~~",
+			"# config",
+			"```",
+			"- 10:00 - 11:00 [Work] b",
+		].join("\n");
 		expect(parseDailyNote(content).timeline).toHaveLength(2);
 	});
 
@@ -425,7 +444,10 @@ describe("parseTimeline", () => {
 
 	it("stops continuation absorption at a second consecutive blank line", () => {
 		const lines = ["- 9:00 - 10:00 work", "detail", "", "", "unrelated"];
-		expect(parseTimeline(lines, { start: 0, end: 4 })[0]).toMatchObject({ lineCount: 3, description: "work\ndetail" });
+		expect(parseTimeline(lines, { start: 0, end: 4 })[0]).toMatchObject({
+			lineCount: 3,
+			description: "work\ndetail",
+		});
 	});
 
 	it("does not absorb headings, time-range lines, or checkboxes as continuation text", () => {
@@ -433,8 +455,9 @@ describe("parseTimeline", () => {
 		expect(isTopLevelOrMarker("# Notes")).toBe(true);
 		expect(isTopLevelOrMarker("- 10:00 - 11:00 next")).toBe(true);
 		expect(isTopLevelOrMarker("plain note")).toBe(false);
-		expect(parseTimeline(["- 9:00 - 10:00 work", "- [ ] independent task", "note"], { start: 0, end: 2 })[0])
-			.toMatchObject({ lineCount: 1, description: "work" });
+		expect(
+			parseTimeline(["- 9:00 - 10:00 work", "- [ ] independent task", "note"], { start: 0, end: 2 })[0]
+		).toMatchObject({ lineCount: 1, description: "work" });
 	});
 });
 
@@ -480,10 +503,11 @@ describe("indented checkboxes", () => {
 
 describe("parseDailyNote", () => {
 	it("parses only the configured Event block and ignores subsequent sections", () => {
-		const content = "# Intro\n- 8:00 - 9:00 ignored\n## Activity\n- 09:00 - 10:00 working\n# Notes\n- 10:00 - 11:00 ignored";
-		expect(parseDailyNote(content, { text: "Activity", level: 2 }).timeline.map((item) => item.description)).toEqual([
-			"working",
-		]);
+		const content =
+			"# Intro\n- 8:00 - 9:00 ignored\n## Activity\n- 09:00 - 10:00 working\n# Notes\n- 10:00 - 11:00 ignored";
+		expect(
+			parseDailyNote(content, { text: "Activity", level: 2 }).timeline.map((item) => item.description)
+		).toEqual(["working"]);
 	});
 
 	it("returns no events when no Event heading exists", () => {
@@ -549,7 +573,9 @@ describe("line mutation and stale-item guards", () => {
 			category: "Work",
 			description: "report\nnote",
 		};
-		expect(timelineLineMatches("- 9:00 - 10:00 [Work] report", { ...item, lineCount: 1, description: "report" })).toBe(true);
+		expect(
+			timelineLineMatches("- 9:00 - 10:00 [Work] report", { ...item, lineCount: 1, description: "report" })
+		).toBe(true);
 		expect(timelineRangeMatches(["- 9:00 - 10:00 [Work] report", "note"], item)).toBe(true);
 		expect(timelineRangeMatches(["- 9:00 - 10:00 [Work] report", "changed"], item)).toBe(false);
 	});
@@ -621,15 +647,11 @@ describe("time helpers", () => {
 
 describe("timelineDaySegments", () => {
 	it("returns a single segment for a normal in-day range", () => {
-		expect(timelineDaySegments({ start: "09:00", end: "10:30" })).toEqual([
-			{ start: 540, end: 630 },
-		]);
+		expect(timelineDaySegments({ start: "09:00", end: "10:30" })).toEqual([{ start: 540, end: 630 }]);
 	});
 
 	it("returns a single segment running to the end of the day for a 24:00 end", () => {
-		expect(timelineDaySegments({ start: "23:00", end: "24:00" })).toEqual([
-			{ start: 1380, end: 1440 },
-		]);
+		expect(timelineDaySegments({ start: "23:00", end: "24:00" })).toEqual([{ start: 1380, end: 1440 }]);
 	});
 
 	it("splits an overnight range into an evening and a morning segment", () => {

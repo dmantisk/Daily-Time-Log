@@ -24,14 +24,7 @@
  */
 
 import { MarkdownPostProcessorContext } from "obsidian";
-import {
-	Decoration,
-	EditorView,
-	MatchDecorator,
-	ViewPlugin,
-	ViewUpdate,
-	WidgetType,
-} from "@codemirror/view";
+import { Decoration, EditorView, MatchDecorator, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
 import { editorInfoField } from "obsidian";
 import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 import { getTextColorForBackground } from "./components/colorUtils";
@@ -41,7 +34,6 @@ import {
 	findEventBlockInContent,
 	isWithinEventHeading,
 	normalizeRenderedHeadingText,
-
 	type EventHeadingConfig,
 	type HeadingInfo,
 } from "./parser";
@@ -58,11 +50,7 @@ export { CATEGORY_BADGE_REGEX_SOURCE };
  * Returns whether a vault-relative path matches the configured daily-note
  * folder and date format.
  */
-function isDailyNoteFile(
-	filePath: string,
-	dailyNoteFolder: string | undefined,
-	dateFormat: string
-): boolean {
+function isDailyNoteFile(filePath: string, dailyNoteFolder: string | undefined, dateFormat: string): boolean {
 	return parseDateFromDailyNotePath(filePath, dateFormat, dailyNoteFolder) !== null;
 }
 
@@ -104,10 +92,7 @@ function createDailyNoteEditorPlugin(
  * Shares `findCategoryByDisplayName` with the sidebar and the dashboard so
  * all three resolve a category token the same way.
  */
-function findCategory(
-	token: string,
-	categories: CustomCategory[]
-): CustomCategory | undefined {
+function findCategory(token: string, categories: CustomCategory[]): CustomCategory | undefined {
 	return findCategoryByDisplayName(categories, token);
 }
 
@@ -116,10 +101,7 @@ function findCategory(
  * category colors are explicit user data; unconfigured tokens inherit the
  * theme-aware fallback styles from CSS.
  */
-function makeBadgeSpan(
-	token: string,
-	categories: CustomCategory[]
-): HTMLSpanElement {
+function makeBadgeSpan(token: string, categories: CustomCategory[]): HTMLSpanElement {
 	const cat = findCategory(token, categories);
 	const span = createSpan();
 	span.className = `dwl-cat-badge dwl-cat-badge--${token.trim().toLowerCase().replace(/[\s]+/g, "-")}`;
@@ -140,10 +122,7 @@ interface ReadingViewSectionHeadings {
 }
 
 // A post-processor receives one rendered Markdown section, not the whole note.
-const readingViewSectionHeadings = new Map<
-	string,
-	Map<number, ReadingViewSectionHeadings>
->();
+const readingViewSectionHeadings = new Map<string, Map<number, ReadingViewSectionHeadings>>();
 const MAX_READING_VIEW_DOCUMENTS = 32;
 const MAX_READING_VIEW_SECTIONS_PER_DOCUMENT = 512;
 
@@ -206,9 +185,13 @@ export function buildCategoryBadgeEditorPlugin(
 			const tokenFrom = from + match[0].lastIndexOf("[");
 			const selection = view.state.selection.main;
 			if (selection.empty && selection.from >= tokenFrom && selection.from <= to) return;
-			add(tokenFrom, to, Decoration.replace({
-				widget: new CategoryBadgeWidget(match[1], categories),
-			}));
+			add(
+				tokenFrom,
+				to,
+				Decoration.replace({
+					widget: new CategoryBadgeWidget(match[1], categories),
+				})
+			);
 		},
 	});
 
@@ -257,11 +240,7 @@ export function buildTimeRangeEditorPlugin(
  * The document changes as the user edits, so the block range must be derived
  * from the current content rather than cached across editor updates.
  */
-function isInsideEventBlock(
-	view: EditorView,
-	pos: number,
-	eventHeading: EventHeadingConfig
-): boolean {
+function isInsideEventBlock(view: EditorView, pos: number, eventHeading: EventHeadingConfig): boolean {
 	const text = view.state.doc.toString();
 	const block = findEventBlockInContent(text, eventHeading);
 	if (!block) return false;
@@ -291,10 +270,7 @@ function walkDocumentOrder(
 	onHeading: (heading: HeadingInfo) => void,
 	onText: (node: Text) => void
 ): void {
-	const walker = document.createTreeWalker(
-		root,
-		NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT
-	);
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
 
 	let current: Node | null;
 	while ((current = walker.nextNode())) {
@@ -303,7 +279,7 @@ function walkDocumentOrder(
 		// `#` line inside a fence never becomes a heading element, and an
 		// event-shaped line inside a fence never becomes a paragraph the
 		// badge rule should pick up. The parser treats a fence as a
-				// boundary too (AGENTS-reference.md), so skipping these keeps the two
+		// boundary too (AGENTS-reference.md), so skipping these keeps the two
 		// sides in agreement.
 		if (isInsideCodeElement(current)) continue;
 
@@ -373,11 +349,8 @@ export function processCategoryBadgesInReadingView(
 	const targets: Text[] = [];
 	const timeRangePrefix = /^([-*]\s*)?(\d{1,2}:\d{2}\s*[-~]\s*\d{1,2}:\d{2})\b/;
 	const timeRangeTargets: Array<{ node: Text; prefix: string; range: string }> = [];
-	const sectionInfo =
-		typeof ctx.getSectionInfo === "function" ? ctx.getSectionInfo(el) : null;
-	const sectionStates = sectionInfo
-		? getReadingViewSectionStates(ctx.sourcePath)
-		: null;
+	const sectionInfo = typeof ctx.getSectionInfo === "function" ? ctx.getSectionInfo(el) : null;
+	const sectionStates = sectionInfo ? getReadingViewSectionStates(ctx.sourcePath) : null;
 	let headingsBefore: HeadingInfo[] = [];
 
 	if (sectionInfo && sectionStates) {
@@ -387,10 +360,7 @@ export function processCategoryBadgesInReadingView(
 		} else {
 			let previousLineStart = -1;
 			for (const previous of sectionStates.values()) {
-				if (
-					previous.lineEnd < sectionInfo.lineStart &&
-					previous.lineStart > previousLineStart
-				) {
+				if (previous.lineEnd < sectionInfo.lineStart && previous.lineStart > previousLineStart) {
 					headingsBefore = previous.after;
 					previousLineStart = previous.lineStart;
 				}
@@ -413,11 +383,7 @@ export function processCategoryBadgesInReadingView(
 		},
 		(node) => {
 			// Skip text already inside a badge span (avoid double-processing).
-			if (
-				node.parentElement &&
-				node.parentElement.classList.contains("dwl-cat-badge")
-			)
-				return;
+			if (node.parentElement && node.parentElement.classList.contains("dwl-cat-badge")) return;
 			// Strict scoping: only text inside the configured Event section is
 			// eligible for badge rendering.
 			if (!isWithinEventHeading(headings, eventHeading)) return;
@@ -499,10 +465,12 @@ export function processCategoryBadgesInReadingView(
 			if (from < rangeStart) {
 				frag.appendChild(document.createTextNode(text.slice(from, rangeStart)));
 			}
-			frag.appendChild(createSpan({
-				cls: "dwl-time-range",
-				text: text.slice(rangeStart, rangeEnd),
-			}));
+			frag.appendChild(
+				createSpan({
+					cls: "dwl-time-range",
+					text: text.slice(rangeStart, rangeEnd),
+				})
+			);
 			if (rangeEnd < to) {
 				frag.appendChild(document.createTextNode(text.slice(rangeEnd, to)));
 			}
@@ -530,9 +498,7 @@ export function processCategoryBadgesInReadingView(
 	});
 }
 
-function getReadingViewSectionStates(
-	sourcePath: string
-): Map<number, ReadingViewSectionHeadings> {
+function getReadingViewSectionStates(sourcePath: string): Map<number, ReadingViewSectionHeadings> {
 	let states = readingViewSectionHeadings.get(sourcePath);
 	if (!states) {
 		states = new Map();

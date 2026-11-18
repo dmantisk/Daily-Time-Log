@@ -1,8 +1,4 @@
-import {
-	type EventHeadingConfig,
-	DEFAULT_EVENT_HEADING,
-	headingLevel
-} from "./heading-normalization";
+import { type EventHeadingConfig, DEFAULT_EVENT_HEADING, headingLevel } from "./heading-normalization";
 
 import {
 	type LineRange,
@@ -11,7 +7,7 @@ import {
 	joinLines,
 	splitContentLines,
 	stripFrontmatter,
-	stripTrailingCarriageReturn
+	stripTrailingCarriageReturn,
 } from "./event-block";
 
 export interface TimelineItem {
@@ -150,10 +146,7 @@ function* linesInRange(lines: string[], range: LineRange): Generator<{ text: str
  * file, there is NO fallback — the result is an empty timeline. Events are
  * only ever read from under the configured heading.
  */
-export function parseDailyNote(
-	content: string,
-	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
-): ParsedDailyNote {
+export function parseDailyNote(content: string, config: EventHeadingConfig = DEFAULT_EVENT_HEADING): ParsedDailyNote {
 	const { lines, bodyStart } = stripFrontmatter(content);
 	const block = findEventBlock(lines, bodyStart, config);
 
@@ -182,11 +175,7 @@ export function isTopLevelOrMarker(line: string): boolean {
 	// The time-range test stays on the RAW line, because that is exactly
 	// what `parseTimeline()` does - the two must agree, or the guard would
 	// reject a description the parser handles without trouble.
-	return (
-		TIME_RANGE_REGEX.test(line) ||
-		CHECKBOX_REGEX.test(line.trim()) ||
-		/^#{1,6}\s/.test(line.trim())
-	);
+	return TIME_RANGE_REGEX.test(line) || CHECKBOX_REGEX.test(line.trim()) || /^#{1,6}\s/.test(line.trim());
 }
 
 /**
@@ -299,7 +288,3 @@ function appendAtEndOfFile(lines: string[], newLine: string, content: string): s
 	}
 	return joinLines([...lines, newLine], content);
 }
-
-
-
-

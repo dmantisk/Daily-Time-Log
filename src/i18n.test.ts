@@ -70,9 +70,7 @@ describe("STRINGS", () => {
 		// the definition site, not a use.
 		const withoutKeyUnion = sources.replace(/export type UIStringKey\s*=[^;]*;/, "");
 
-		const unused = Object.keys(STRINGS.en).filter(
-			(key) => !new RegExp(`["']${key}["']`).test(withoutKeyUnion)
-		);
+		const unused = Object.keys(STRINGS.en).filter((key) => !new RegExp(`["']${key}["']`).test(withoutKeyUnion));
 		expect(unused).toEqual([]);
 	});
 

@@ -1,7 +1,15 @@
 import { App, ButtonComponent, DropdownComponent, Modal, Notice, TextAreaComponent, TextComponent } from "obsidian";
 import { t } from "../i18n";
 import { findCategoryByDisplayName } from "../settings";
-import { isTopLevelOrMarker, stripHtml, TIME_END_VALUE_REGEX, TIME_VALUE_REGEX, timeToMinutes, type MarkerLanguage, type TimelineItem } from "../parser";
+import {
+	isTopLevelOrMarker,
+	stripHtml,
+	TIME_END_VALUE_REGEX,
+	TIME_VALUE_REGEX,
+	timeToMinutes,
+	type MarkerLanguage,
+	type TimelineItem,
+} from "../parser";
 import type { CustomCategory } from "../settings";
 
 export interface EventEntryValues {
@@ -24,8 +32,8 @@ export class TimelineModal extends Modal {
 	private startComponent: TextComponent | null = null;
 	private endComponent: TextComponent | null = null;
 	private descriptionComponent: TextAreaComponent | null = null;
-		private categoryDropdown: DropdownComponent | null = null;
-		private categoryDot: HTMLSpanElement | null = null;
+	private categoryDropdown: DropdownComponent | null = null;
+	private categoryDot: HTMLSpanElement | null = null;
 
 	/**
 	 * The category picked in the modal, or `undefined` for uncategorized.
@@ -61,9 +69,7 @@ export class TimelineModal extends Modal {
 
 		const timeRow = timeField.createDiv({ cls: "dwl-modal-time-row" });
 		this.startComponent = new TextComponent(timeRow);
-		this.startComponent
-			.setPlaceholder("09:00")
-			.setValue(this.initial ? this.initial.start : this.defaultStart);
+		this.startComponent.setPlaceholder("09:00").setValue(this.initial ? this.initial.start : this.defaultStart);
 		this.startComponent.inputEl.addClass("dwl-modal-time-input");
 		this.startComponent.inputEl.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
@@ -73,9 +79,7 @@ export class TimelineModal extends Modal {
 		});
 
 		this.endComponent = new TextComponent(timeRow);
-		this.endComponent
-			.setPlaceholder("10:00")
-			.setValue(this.initial ? this.initial.end : this.defaultEnd);
+		this.endComponent.setPlaceholder("10:00").setValue(this.initial ? this.initial.end : this.defaultEnd);
 		this.endComponent.inputEl.addClass("dwl-modal-time-input");
 		this.endComponent.inputEl.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
@@ -86,40 +90,43 @@ export class TimelineModal extends Modal {
 
 		// --- Category ---
 		const categoryField = body.createDiv({ cls: "dwl-modal-field" });
-				const labelRow = categoryField.createDiv({ cls: "dwl-category-dropdown-row" });
-				labelRow.createEl("label", { cls: "dwl-modal-label", text: t("fieldCategory", this.language) });
+		const labelRow = categoryField.createDiv({ cls: "dwl-category-dropdown-row" });
+		labelRow.createEl("label", { cls: "dwl-modal-label", text: t("fieldCategory", this.language) });
 
-				this.categoryDropdown = new DropdownComponent(labelRow);
-				this.categoryDropdown.selectEl.addClass("dwl-category-dropdown");
-				this.categoryDropdown.selectEl.setAttribute("aria-label", t("fieldCategory", this.language));
+		this.categoryDropdown = new DropdownComponent(labelRow);
+		this.categoryDropdown.selectEl.addClass("dwl-category-dropdown");
+		this.categoryDropdown.selectEl.setAttribute("aria-label", t("fieldCategory", this.language));
 
-				// "No category" option first
-				this.categoryDropdown.addOption("", t("categoryNone", this.language));
+		// "No category" option first
+		this.categoryDropdown.addOption("", t("categoryNone", this.language));
 
-				// Categories from settings, in order
-				for (const cat of this.categories) {
-					this.categoryDropdown.addOption(cat.displayName, cat.displayName);
-				}
+		// Categories from settings, in order
+		for (const cat of this.categories) {
+			this.categoryDropdown.addOption(cat.displayName, cat.displayName);
+		}
 
-				// If the current category is not in settings, add it so it can be seen/cleared
-								const currentCategory = this.selectedCategory;
-								if (currentCategory && !this.categories.some((c) => c.displayName.trim().toLowerCase() === currentCategory.trim().toLowerCase())) {
-									this.categoryDropdown.addOption(currentCategory, currentCategory);
-				}
+		// If the current category is not in settings, add it so it can be seen/cleared
+		const currentCategory = this.selectedCategory;
+		if (
+			currentCategory &&
+			!this.categories.some((c) => c.displayName.trim().toLowerCase() === currentCategory.trim().toLowerCase())
+		) {
+			this.categoryDropdown.addOption(currentCategory, currentCategory);
+		}
 
-				// Set initial value using case-insensitive, trimmed matching
-				const selectedCat = findCategoryByDisplayName(this.categories, this.selectedCategory);
-				const initialValue = selectedCat ? selectedCat.displayName : (this.selectedCategory ?? "");
-				this.categoryDropdown.setValue(initialValue);
+		// Set initial value using case-insensitive, trimmed matching
+		const selectedCat = findCategoryByDisplayName(this.categories, this.selectedCategory);
+		const initialValue = selectedCat ? selectedCat.displayName : (this.selectedCategory ?? "");
+		this.categoryDropdown.setValue(initialValue);
 
-				// Colored dot next to dropdown
-				this.categoryDot = labelRow.createSpan({ cls: "dwl-category-dot" });
-				this.updateCategoryDot();
+		// Colored dot next to dropdown
+		this.categoryDot = labelRow.createSpan({ cls: "dwl-category-dot" });
+		this.updateCategoryDot();
 
-				this.categoryDropdown.onChange((value) => {
-					this.selectedCategory = value || undefined;
-					this.updateCategoryDot();
-				});
+		this.categoryDropdown.onChange((value) => {
+			this.selectedCategory = value || undefined;
+			this.updateCategoryDot();
+		});
 
 		// --- Description ---
 		const descriptionField = body.createDiv({ cls: "dwl-modal-field" });
@@ -146,12 +153,12 @@ export class TimelineModal extends Modal {
 			}
 		});
 
-				// Focus: new entry -> dropdown, editing -> description
-				if (this.initial === null) {
-					this.categoryDropdown?.selectEl.focus();
-				} else {
-					this.descriptionComponent?.inputEl.focus();
-				}
+		// Focus: new entry -> dropdown, editing -> description
+		if (this.initial === null) {
+			this.categoryDropdown?.selectEl.focus();
+		} else {
+			this.descriptionComponent?.inputEl.focus();
+		}
 
 		// --- Actions ---
 		// The native `.modal-button-container` is the row Obsidian itself
@@ -179,9 +186,7 @@ export class TimelineModal extends Modal {
 				});
 		}
 
-		new ButtonComponent(buttons)
-			.setButtonText(t("btnCancel", this.language))
-			.onClick(() => this.close());
+		new ButtonComponent(buttons).setButtonText(t("btnCancel", this.language)).onClick(() => this.close());
 
 		new ButtonComponent(buttons)
 			.setButtonText(t("btnSave", this.language))
@@ -190,13 +195,13 @@ export class TimelineModal extends Modal {
 	}
 
 	/**
-		 * Updates the colored dot next to the category dropdown.
+	 * Updates the colored dot next to the category dropdown.
 	 */
-		private updateCategoryDot(): void {
-			if (!this.categoryDot) return;
-			const cat = findCategoryByDisplayName(this.categories, this.selectedCategory);
-			const color = cat?.color ?? "#95a5a6";
-			this.categoryDot.style.backgroundColor = color;
+	private updateCategoryDot(): void {
+		if (!this.categoryDot) return;
+		const cat = findCategoryByDisplayName(this.categories, this.selectedCategory);
+		const color = cat?.color ?? "#95a5a6";
+		this.categoryDot.style.backgroundColor = color;
 	}
 
 	/**
@@ -215,7 +220,7 @@ export class TimelineModal extends Modal {
 	 * 3. A continuation line shaped like a real event, checkbox, or
 	 *    heading would be misread as a new top-level item on the next
 	 *    parse instead of staying part of this description
-	 	 *    (AGENTS-reference.md) — reject rather than silently losing it.
+	 *    (AGENTS-reference.md) — reject rather than silently losing it.
 	 */
 	private handleSave(): void {
 		const start = this.startComponent?.getValue() ?? "";
@@ -258,8 +263,8 @@ export class TimelineModal extends Modal {
 		this.startComponent = null;
 		this.endComponent = null;
 		this.descriptionComponent = null;
-			this.categoryDropdown = null;
-			this.categoryDot = null;
+		this.categoryDropdown = null;
+		this.categoryDot = null;
 		this.contentEl.empty();
 	}
 }

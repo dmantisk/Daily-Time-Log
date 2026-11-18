@@ -44,7 +44,10 @@ function ruleBody(selector: string): string {
 
 describe("styles.css — grid block label", () => {
 	it("removes Obsidian's extra bottom padding from the sidebar view container", () => {
-		const body = cssWithoutComments.match(/(?:^|\})\s*\.workspace-leaf-content\s+\.view-content\.dwl-view-container\s*\{([^}]*)\}/m)?.[1] ?? "";
+		const body =
+			cssWithoutComments.match(
+				/(?:^|\})\s*\.workspace-leaf-content\s+\.view-content\.dwl-view-container\s*\{([^}]*)\}/m
+			)?.[1] ?? "";
 
 		expect(body).toMatch(/padding-bottom\s*:\s*0\s*!important\b/);
 	});

@@ -120,8 +120,8 @@ function createPluginStub(
 		},
 		settings: {
 			categories: [{ name: "Work", displayName: "Work", color: "#d0e1fd" }],
-					dayStartMinutes: 0,
-					dayEndMinutes: 1440,
+			dayStartMinutes: 0,
+			dayEndMinutes: 1440,
 		},
 		getUiLanguage: () => "en",
 		getEventHeadingConfig: () => ({ text: "Event", level: 1 }),
@@ -169,7 +169,11 @@ describe("TimelineController", () => {
 
 	async function renderController(
 		fixture = createPluginStub()
-	): Promise<{ fixture: ReturnType<typeof createPluginStub>; container: HTMLDivElement; controller: TimelineController }> {
+	): Promise<{
+		fixture: ReturnType<typeof createPluginStub>;
+		container: HTMLDivElement;
+		controller: TimelineController;
+	}> {
 		const container = document.createElement("div");
 		document.body.appendChild(container);
 		containers.push(container);
@@ -184,12 +188,7 @@ describe("TimelineController", () => {
 	}
 
 	it("renders the configured 10-minute grid and recognizes nested daily note paths", async () => {
-		const fixture = createPluginStub(
-			DAILY_NOTE_CONTENT,
-			"Log/2026/10/16.md",
-			"YYYY/MM/DD",
-			"Log"
-		);
+		const fixture = createPluginStub(DAILY_NOTE_CONTENT, "Log/2026/10/16.md", "YYYY/MM/DD", "Log");
 		const { container } = await renderController(fixture);
 
 		expect(cells(container)).toHaveLength(144);
@@ -204,7 +203,9 @@ describe("TimelineController", () => {
 
 		const nonDaily = createPluginStub(DAILY_NOTE_CONTENT, "ordinary-note.md");
 		const nonDailyView = await renderController(nonDaily);
-		expect(nonDailyView.container.querySelector(".dwl-empty-state-block h3")?.textContent).toMatch(/not a daily note/i);
+		expect(nonDailyView.container.querySelector(".dwl-empty-state-block h3")?.textContent).toMatch(
+			/not a daily note/i
+		);
 		expect(nonDailyView.container.querySelector(".dwl-empty-state-block p")).toBeNull();
 	});
 
@@ -217,9 +218,7 @@ describe("TimelineController", () => {
 
 	it("renders bar labels, tooltips, short-bar styling, and overnight segments", async () => {
 		const { container } = await renderController(
-			createPluginStub(
-				"# Event\n- 09:00 - 09:10 [Work] Short\n- 23:00 - 01:00 [Work] Overnight\n"
-			)
+			createPluginStub("# Event\n- 09:00 - 09:10 [Work] Short\n- 23:00 - 01:00 [Work] Overnight\n")
 		);
 		const blocks = Array.from(container.querySelectorAll<HTMLElement>(".dwl-grid-block"));
 		const shortBlock = blocks.find((block) => block.classList.contains("is-short"));
@@ -359,10 +358,12 @@ describe("TimelineController", () => {
 			const startTouch = { identifier: 15, clientX: 10, clientY: 10 };
 
 			cell.dispatchEvent(touchEvent("touchstart", [startTouch]));
-			const scrollMove = touchEvent("touchmove", [{
-				...startTouch,
-				clientY: 25,
-			}]);
+			const scrollMove = touchEvent("touchmove", [
+				{
+					...startTouch,
+					clientY: 25,
+				},
+			]);
 			activeWindow?.dispatchEvent(scrollMove);
 			await vi.advanceTimersByTimeAsync(250);
 
@@ -387,16 +388,20 @@ describe("TimelineController", () => {
 			const gridCells = cells(container);
 			const activeWindow = container.ownerDocument.defaultView;
 
-			gridCells[0].dispatchEvent(pointerEvent("pointerdown", {
-				pointerId: 20,
-				pointerType: "touch",
-				isPrimary: false,
-			}));
-			gridCells[0].dispatchEvent(pointerEvent("pointerup", {
-				pointerId: 20,
-				pointerType: "touch",
-				isPrimary: false,
-			}));
+			gridCells[0].dispatchEvent(
+				pointerEvent("pointerdown", {
+					pointerId: 20,
+					pointerType: "touch",
+					isPrimary: false,
+				})
+			);
+			gridCells[0].dispatchEvent(
+				pointerEvent("pointerup", {
+					pointerId: 20,
+					pointerType: "touch",
+					isPrimary: false,
+				})
+			);
 			expect(modalCalls).toHaveLength(0);
 
 			const touch = { identifier: 21, clientX: 10, clientY: 10 };
@@ -508,8 +513,7 @@ describe("TimelineController", () => {
 		const fixture = createPluginStub();
 		const { container, controller } = await renderController(fixture);
 		const nextFile = createFile("2026-10-17.md");
-		fixture.api.app.vault.cachedRead = async () =>
-			"# Event\n- 11:00 - 12:00 [Work] Next day\n";
+		fixture.api.app.vault.cachedRead = async () => "# Event\n- 11:00 - 12:00 [Work] Next day\n";
 		fixture.setActiveFile(nextFile);
 
 		const render = vi.spyOn(controller as unknown as { render: () => void }, "render");

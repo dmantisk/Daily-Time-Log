@@ -1,10 +1,4 @@
-import {
-	App,
-	Notice,
-	PluginSettingTab,
-	type SettingDefinitionItem,
-	type SettingGroupItem,
-} from "obsidian";
+import { App, Notice, PluginSettingTab, type SettingDefinitionItem, type SettingGroupItem } from "obsidian";
 import { formatTimeLabel, t } from "./i18n";
 import type DailyWorkLogPlugin from "./main";
 import type { MarkerLanguage } from "./parser";
@@ -31,59 +25,59 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 		const lang = this.plugin.getUiLanguage();
 		const settings: SettingDefinitionItem[] = [
 			{
-					name: t("settingDayStartTimeName", lang),
-					desc: t("settingDayStartTimeDesc", lang),
+				name: t("settingDayStartTimeName", lang),
+				desc: t("settingDayStartTimeDesc", lang),
 				render: (setting) => {
-						const startMinutes = this.plugin.settings.dayStartMinutes;
-						setting.addText((text) => {
-							text.inputEl.type = "time";
-							text.inputEl.step = "600"; // 10 minutes = 600 seconds
-							text.inputEl.value = formatTimeLabel(startMinutes, lang);
-							text.inputEl.addEventListener("change", () => {
-								void (async () => {
-									const value = text.inputEl.value;
-									if (!value) return;
-									const [hours, minutes] = value.split(":").map(Number);
-									const totalMinutes = hours * 60 + minutes;
-									// Validate: must be multiple of 10, 0-1430
-									if (totalMinutes < 0 || totalMinutes > 1430 || totalMinutes % 10 !== 0) {
-										new Notice(t("invalidTimeFormat", lang));
-										text.inputEl.value = formatTimeLabel(this.plugin.settings.dayStartMinutes, lang);
-										return;
-									}
-									this.plugin.settings.dayStartMinutes = totalMinutes;
-									await this.plugin.saveSettings();
-									this.plugin.refreshViews();
-								})();
+					const startMinutes = this.plugin.settings.dayStartMinutes;
+					setting.addText((text) => {
+						text.inputEl.type = "time";
+						text.inputEl.step = "600"; // 10 minutes = 600 seconds
+						text.inputEl.value = formatTimeLabel(startMinutes, lang);
+						text.inputEl.addEventListener("change", () => {
+							void (async () => {
+								const value = text.inputEl.value;
+								if (!value) return;
+								const [hours, minutes] = value.split(":").map(Number);
+								const totalMinutes = hours * 60 + minutes;
+								// Validate: must be multiple of 10, 0-1430
+								if (totalMinutes < 0 || totalMinutes > 1430 || totalMinutes % 10 !== 0) {
+									new Notice(t("invalidTimeFormat", lang));
+									text.inputEl.value = formatTimeLabel(this.plugin.settings.dayStartMinutes, lang);
+									return;
+								}
+								this.plugin.settings.dayStartMinutes = totalMinutes;
+								await this.plugin.saveSettings();
+								this.plugin.refreshViews();
+							})();
 						});
 					});
 				},
 			},
 			{
-					name: t("settingDayEndTimeName", lang),
-					desc: t("settingDayEndTimeDesc", lang),
+				name: t("settingDayEndTimeName", lang),
+				desc: t("settingDayEndTimeDesc", lang),
 				render: (setting) => {
-						const endMinutes = this.plugin.settings.dayEndMinutes;
-						setting.addText((text) => {
-							text.inputEl.type = "time";
-							text.inputEl.step = "600"; // 10 minutes = 600 seconds
-							text.inputEl.value = formatTimeLabel(endMinutes, lang);
-							text.inputEl.addEventListener("change", () => {
-								void (async () => {
-									const value = text.inputEl.value;
-									if (!value) return;
-									const [hours, minutes] = value.split(":").map(Number);
-									const totalMinutes = hours * 60 + minutes;
-									// Validate: must be multiple of 10, 0-1430
-									if (totalMinutes < 0 || totalMinutes > 1430 || totalMinutes % 10 !== 0) {
-										new Notice(t("invalidTimeFormat", lang));
-										text.inputEl.value = formatTimeLabel(this.plugin.settings.dayEndMinutes, lang);
-										return;
-									}
-									this.plugin.settings.dayEndMinutes = totalMinutes;
-									await this.plugin.saveSettings();
-									this.plugin.refreshViews();
-								})();
+					const endMinutes = this.plugin.settings.dayEndMinutes;
+					setting.addText((text) => {
+						text.inputEl.type = "time";
+						text.inputEl.step = "600"; // 10 minutes = 600 seconds
+						text.inputEl.value = formatTimeLabel(endMinutes, lang);
+						text.inputEl.addEventListener("change", () => {
+							void (async () => {
+								const value = text.inputEl.value;
+								if (!value) return;
+								const [hours, minutes] = value.split(":").map(Number);
+								const totalMinutes = hours * 60 + minutes;
+								// Validate: must be multiple of 10, 0-1430
+								if (totalMinutes < 0 || totalMinutes > 1430 || totalMinutes % 10 !== 0) {
+									new Notice(t("invalidTimeFormat", lang));
+									text.inputEl.value = formatTimeLabel(this.plugin.settings.dayEndMinutes, lang);
+									return;
+								}
+								this.plugin.settings.dayEndMinutes = totalMinutes;
+								await this.plugin.saveSettings();
+								this.plugin.refreshViews();
+							})();
 						});
 					});
 				},
@@ -93,13 +87,11 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				desc: t("settingTabularTimeRangesDesc", lang),
 				render: (setting) => {
 					setting.addToggle((toggle) =>
-						toggle
-							.setValue(this.plugin.settings.tabularTimeRanges)
-							.onChange(async (value) => {
-								this.plugin.settings.tabularTimeRanges = value;
-								await this.plugin.saveSettings();
-								this.plugin.refreshViews();
-							})
+						toggle.setValue(this.plugin.settings.tabularTimeRanges).onChange(async (value) => {
+							this.plugin.settings.tabularTimeRanges = value;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+						})
 					);
 				},
 			},
@@ -107,23 +99,20 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				name: t("settingEventHeadingTextName", lang),
 				desc: t("settingEventHeadingTextDesc", lang),
 				render: (setting) => {
-					setting
-						.addText((text) =>
-							text
-								.setValue(this.plugin.settings.eventHeadingText)
-								.onChange(async (value) => {
-									const trimmed = value.trim();
-									if (/[\r\n]/.test(value)) {
-										new Notice(t("alertInvalidEventHeading", lang));
-										text.setValue(this.plugin.settings.eventHeadingText);
-										return;
-									}
-									if (!trimmed) return;
-									this.plugin.settings.eventHeadingText = trimmed;
-									await this.plugin.saveSettings();
-									this.plugin.refreshViews();
-								})
-						);
+					setting.addText((text) =>
+						text.setValue(this.plugin.settings.eventHeadingText).onChange(async (value) => {
+							const trimmed = value.trim();
+							if (/[\r\n]/.test(value)) {
+								new Notice(t("alertInvalidEventHeading", lang));
+								text.setValue(this.plugin.settings.eventHeadingText);
+								return;
+							}
+							if (!trimmed) return;
+							this.plugin.settings.eventHeadingText = trimmed;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+						})
+					);
 				},
 			},
 			{
@@ -163,76 +152,70 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			},
 			{
 				type: "group",
-					items: this.getCommandsDefinitions(lang),
-				},
-				{
-					type: "group",
+				items: this.getCommandsDefinitions(lang),
+			},
+			{
+				type: "group",
 				items: this.getCategoryDefinitions(lang),
 			},
 		];
 		return settings;
 	}
 
-		private getCommandsDefinitions(lang: MarkerLanguage): SettingGroupItem[] {
-			return [
-				{
-					name: t("settingCommandsSection", lang),
-					desc: t("settingCommandsDesc", lang),
-					searchable: false,
-					render: (setting) => {
-						setting.setHeading();
-					},
+	private getCommandsDefinitions(lang: MarkerLanguage): SettingGroupItem[] {
+		return [
+			{
+				name: t("settingCommandsSection", lang),
+				desc: t("settingCommandsDesc", lang),
+				searchable: false,
+				render: (setting) => {
+					setting.setHeading();
 				},
-				{
-					name: t("settingCommandOpenSidebarName", lang),
-					desc: t("settingCommandOpenSidebarDesc", lang),
-					render: (setting) => {
-						setting.addToggle((toggle) =>
-							toggle
-								.setValue(this.plugin.settings.commandOpenSidebarEnabled)
-								.onChange(async (value) => {
-									this.plugin.settings.commandOpenSidebarEnabled = value;
-									await this.plugin.saveSettings();
-									this.plugin.refreshViews();
-									this.update();
-								})
-						);
-					},
+			},
+			{
+				name: t("settingCommandOpenSidebarName", lang),
+				desc: t("settingCommandOpenSidebarDesc", lang),
+				render: (setting) => {
+					setting.addToggle((toggle) =>
+						toggle.setValue(this.plugin.settings.commandOpenSidebarEnabled).onChange(async (value) => {
+							this.plugin.settings.commandOpenSidebarEnabled = value;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+							this.update();
+						})
+					);
 				},
-				{
-					name: t("settingCommandOpenDashboardName", lang),
-					desc: t("settingCommandOpenDashboardDesc", lang),
-					render: (setting) => {
-						setting.addToggle((toggle) =>
-							toggle
-								.setValue(this.plugin.settings.commandOpenDashboardEnabled)
-								.onChange(async (value) => {
-									this.plugin.settings.commandOpenDashboardEnabled = value;
-									await this.plugin.saveSettings();
-									this.plugin.refreshViews();
-									this.update();
-								})
-						);
-					},
+			},
+			{
+				name: t("settingCommandOpenDashboardName", lang),
+				desc: t("settingCommandOpenDashboardDesc", lang),
+				render: (setting) => {
+					setting.addToggle((toggle) =>
+						toggle.setValue(this.plugin.settings.commandOpenDashboardEnabled).onChange(async (value) => {
+							this.plugin.settings.commandOpenDashboardEnabled = value;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+							this.update();
+						})
+					);
 				},
-				{
-					name: t("settingCommandAddLogEntryName", lang),
-					desc: t("settingCommandAddLogEntryDesc", lang),
-					render: (setting) => {
-						setting.addToggle((toggle) =>
-							toggle
-								.setValue(this.plugin.settings.commandAddLogEntryEnabled)
-								.onChange(async (value) => {
-									this.plugin.settings.commandAddLogEntryEnabled = value;
-									await this.plugin.saveSettings();
-									this.plugin.refreshViews();
-									this.update();
-								})
-						);
-					},
+			},
+			{
+				name: t("settingCommandAddLogEntryName", lang),
+				desc: t("settingCommandAddLogEntryDesc", lang),
+				render: (setting) => {
+					setting.addToggle((toggle) =>
+						toggle.setValue(this.plugin.settings.commandAddLogEntryEnabled).onChange(async (value) => {
+							this.plugin.settings.commandAddLogEntryEnabled = value;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+							this.update();
+						})
+					);
 				},
-			];
-		}
+			},
+		];
+	}
 
 	private getCategoryDefinitions(lang: MarkerLanguage): SettingGroupItem[] {
 		const categories = this.plugin.settings.categories;
@@ -254,9 +237,7 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				render: (setting) => {
 					setting.setName("").setClass("dwl-category-setting-item");
 					setting.addText((text) => {
-						text
-							.setPlaceholder(t("settingCatDisplayNamePlaceholder", lang))
-							.setValue(category.displayName);
+						text.setPlaceholder(t("settingCatDisplayNamePlaceholder", lang)).setValue(category.displayName);
 						const saveName = async () => {
 							const trimmed = text.getValue().trim();
 							const problem = validateCategoryName(categories, trimmed, index);
@@ -305,20 +286,19 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 			name: t("settingResetCategoriesName", lang),
 			desc: t("settingResetCategoriesDesc", lang),
 			render: (setting) => {
-				setting
-					.addButton((button) => {
-						button
-							.setButtonText(t("btnReset", lang))
-							.setDestructive()
-							.setCta()
-							.onClick(async () => {
-								this.plugin.settings.categories = createDefaultCategories();
-								await this.plugin.saveSettings();
-								this.plugin.refreshViews();
-								new Notice(t("noticeResetCategories", lang));
-								this.update();
-							});
-					});
+				setting.addButton((button) => {
+					button
+						.setButtonText(t("btnReset", lang))
+						.setDestructive()
+						.setCta()
+						.onClick(async () => {
+							this.plugin.settings.categories = createDefaultCategories();
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+							new Notice(t("noticeResetCategories", lang));
+							this.update();
+						});
+				});
 			},
 		});
 
@@ -345,9 +325,11 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 					});
 					text.inputEl.maxLength = MAX_CATEGORY_NAME_LENGTH;
 				});
-				setting.addColorPicker((picker) => picker.setValue(newColor).onChange((value) => {
-					newColor = value;
-				}));
+				setting.addColorPicker((picker) =>
+					picker.setValue(newColor).onChange((value) => {
+						newColor = value;
+					})
+				);
 				setting.addButton((button) => {
 					button
 						.setButtonText(t("btnAdd", lang))

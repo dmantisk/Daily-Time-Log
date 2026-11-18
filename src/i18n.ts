@@ -19,14 +19,14 @@ export type UIStringKey =
 	| "ribbonOpenDashboard"
 	| "commandOpenSidebar"
 	| "commandOpenDashboard"
-		| "commandAddLogEntry"
+	| "commandAddLogEntry"
 	| "viewTitle"
 	| "modalAddTitle"
 	| "modalEditTitle"
 	| "lblTimeSet"
 	| "lblContent"
 	| "fieldCategory"
-		| "categoryNone"
+	| "categoryNone"
 	| "uncategorized"
 	| "descPlaceholder"
 	| "btnSave"
@@ -81,14 +81,14 @@ export type UIStringKey =
 	| "alertCatNameEmpty"
 	| "alertCatLimitMax"
 	| "alertCatNameExists"
-		| "settingCommandsSection"
-		| "settingCommandsDesc"
-		| "settingCommandOpenSidebarName"
-		| "settingCommandOpenSidebarDesc"
-		| "settingCommandOpenDashboardName"
-		| "settingCommandOpenDashboardDesc"
-		| "settingCommandAddLogEntryName"
-		| "settingCommandAddLogEntryDesc"
+	| "settingCommandsSection"
+	| "settingCommandsDesc"
+	| "settingCommandOpenSidebarName"
+	| "settingCommandOpenSidebarDesc"
+	| "settingCommandOpenDashboardName"
+	| "settingCommandOpenDashboardDesc"
+	| "settingCommandAddLogEntryName"
+	| "settingCommandAddLogEntryDesc"
 	| "window7Days"
 	| "window30Days"
 	| "window90Days"
@@ -111,7 +111,7 @@ export type UIStringKey =
 	| "noticeUpdateEventFailed"
 	| "noticeDeleteEventFailed"
 	| "noticeEventChangedReloaded"
-		| "noticeEventSaved"
+	| "noticeEventSaved"
 	| "languageAuto"
 	| "languageEnglish"
 	| "languageKorean"
@@ -131,7 +131,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		noticeUpdateEventFailed: "Failed to update event",
 		noticeDeleteEventFailed: "Failed to delete event",
 		noticeEventChangedReloaded: "Event changed in the note — reloaded",
-				noticeEventSaved: "Event saved",
+		noticeEventSaved: "Event saved",
 		languageAuto: "Auto",
 		languageEnglish: "English",
 		languageKorean: "한국어",
@@ -146,14 +146,14 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		ribbonOpenDashboard: "Open Work Insights",
 		commandOpenSidebar: "Open sidebar",
 		commandOpenDashboard: "Open Work Insights",
-				commandAddLogEntry: "Add log entry",
+		commandAddLogEntry: "Add log entry",
 		viewTitle: "Daily time log",
 		modalAddTitle: "What did you do?",
 		modalEditTitle: "Edit Daily Activity",
 		lblTimeSet: "Time Setting",
 		lblContent: "Content",
 		fieldCategory: "Category",
-				categoryNone: "No category",
+		categoryNone: "No category",
 		uncategorized: "Uncategorized",
 		descPlaceholder: "Enter detailed content.",
 		btnSave: "Save",
@@ -186,10 +186,11 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		dashboardFutureOnlyNotice:
 			"Only future-dated notes were found. They record no time yet, so nothing is counted until their date arrives.",
 		settingDayStartTimeName: "Day Start Time",
-				settingDayStartTimeDesc: "Set the start time to display on the timeline. Supports 10-minute increments.",
-				settingDayEndTimeName: "Day End Time",
-				settingDayEndTimeDesc: "Set the end time to display on the timeline. Supports 10-minute increments. An end time earlier than the start time means the timeline ends the following day. Equal start and end times represent a full 24-hour timeline.",
-				settingTabularTimeRangesName: "Tabular time numerals",
+		settingDayStartTimeDesc: "Set the start time to display on the timeline. Supports 10-minute increments.",
+		settingDayEndTimeName: "Day End Time",
+		settingDayEndTimeDesc:
+			"Set the end time to display on the timeline. Supports 10-minute increments. An end time earlier than the start time means the timeline ends the following day. Equal start and end times represent a full 24-hour timeline.",
+		settingTabularTimeRangesName: "Tabular time numerals",
 		settingTabularTimeRangesDesc:
 			"Align digits consistently in event times without changing the font. Requires a font that supports tabular numerals.",
 		settingLanguageName: "Language",
@@ -213,14 +214,14 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		alertCatNameEmpty: "Please enter a category name.",
 		alertCatLimitMax: "You cannot have more than 10 categories.",
 		alertCatNameExists: "This category name already exists.",
-				settingCommandsSection: "Commands",
-				settingCommandsDesc: "Enable or disable plugin commands.",
-				settingCommandOpenSidebarName: "Open sidebar command",
-				settingCommandOpenSidebarDesc: "Enable the command to open the Daily Time Log sidebar.",
-				settingCommandOpenDashboardName: "Open Work Insights command",
-				settingCommandOpenDashboardDesc: "Enable the command to open the Work Insights dashboard.",
-				settingCommandAddLogEntryName: "Add log entry command",
-				settingCommandAddLogEntryDesc: "Enable the command to add a new log entry.",
+		settingCommandsSection: "Commands",
+		settingCommandsDesc: "Enable or disable plugin commands.",
+		settingCommandOpenSidebarName: "Open sidebar command",
+		settingCommandOpenSidebarDesc: "Enable the command to open the Daily Time Log sidebar.",
+		settingCommandOpenDashboardName: "Open Work Insights command",
+		settingCommandOpenDashboardDesc: "Enable the command to open the Work Insights dashboard.",
+		settingCommandAddLogEntryName: "Add log entry command",
+		settingCommandAddLogEntryDesc: "Enable the command to add a new log entry.",
 		window7Days: "Last 7 Days",
 		window30Days: "Last 30 Days",
 		window90Days: "Last 90 Days",
@@ -230,7 +231,8 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		statTopCategoryPct: "%s% of recorded time",
 		tipStatTotalNotes:
 			"The number of daily notes in the vault, dated on or before today. Notes dated in the future are not counted.",
-		tipStatStreak: "The number of consecutive days with a daily note, counting back from today or yesterday if today's note is missing.",
+		tipStatStreak:
+			"The number of consecutive days with a daily note, counting back from today or yesterday if today's note is missing.",
 		tipStatDateRange: "The date of the oldest and the newest daily note in the vault.",
 		tipStatEventTime: "The total time recorded across all Events in the selected time window.",
 		tipStatAvgPerDay:
@@ -248,7 +250,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		noticeUpdateEventFailed: "일과 수정 실패",
 		noticeDeleteEventFailed: "일과 삭제 실패",
 		noticeEventChangedReloaded: "노트의 일과가 변경되어 다시 불러왔습니다",
-				noticeEventSaved: "일과 저장됨",
+		noticeEventSaved: "일과 저장됨",
 		languageAuto: "자동",
 		languageEnglish: "English",
 		languageKorean: "한국어",
@@ -263,14 +265,14 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		ribbonOpenDashboard: "Daily Time Log 일과 인사이트 열기",
 		commandOpenSidebar: "사이드바 열기",
 		commandOpenDashboard: "일과 인사이트 열기",
-				commandAddLogEntry: "일과 추가",
+		commandAddLogEntry: "일과 추가",
 		viewTitle: "일과 기록",
 		modalAddTitle: "무엇을 했나요?",
 		modalEditTitle: "일과 수정",
 		lblTimeSet: "시간 설정",
 		lblContent: "내용",
 		fieldCategory: "카테고리",
-				categoryNone: "카테고리 없음",
+		categoryNone: "카테고리 없음",
 		uncategorized: "미분류",
 		descPlaceholder: "상세 내용을 입력해 주세요.",
 		btnSave: "저장",
@@ -303,10 +305,11 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		dashboardFutureOnlyNotice:
 			"미래 날짜의 노트만 있습니다. 아직 기록된 시간이 없으므로 해당 날짜가 될 때까지 집계되지 않습니다.",
 		settingDayStartTimeName: "하루 시작 시간",
-				settingDayStartTimeDesc: "타임라인에 표시할 시작 시간을 설정합니다. 10분 단위로 설정 가능합니다.",
-				settingDayEndTimeName: "하루 종료 시간",
-				settingDayEndTimeDesc: "타임라인에 표시할 종료 시간을 설정합니다. 10분 단위로 설정 가능합니다. 종료 시간이 시작 시간보다 이르면 다음 날로 이어지는 타임라인이 됩니다. 시작과 종료 시간이 같으면 24시간 타임라인이 됩니다.",
-				settingTabularTimeRangesName: "시간 숫자를 고정폭으로 표시",
+		settingDayStartTimeDesc: "타임라인에 표시할 시작 시간을 설정합니다. 10분 단위로 설정 가능합니다.",
+		settingDayEndTimeName: "하루 종료 시간",
+		settingDayEndTimeDesc:
+			"타임라인에 표시할 종료 시간을 설정합니다. 10분 단위로 설정 가능합니다. 종료 시간이 시작 시간보다 이르면 다음 날로 이어지는 타임라인이 됩니다. 시작과 종료 시간이 같으면 24시간 타임라인이 됩니다.",
+		settingTabularTimeRangesName: "시간 숫자를 고정폭으로 표시",
 		settingTabularTimeRangesDesc:
 			"글꼴을 바꾸지 않고 이벤트 시간의 숫자 폭을 일정하게 맞춥니다. 고정폭 숫자를 지원하는 글꼴이 필요합니다.",
 		settingLanguageName: "언어",
@@ -330,14 +333,14 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		alertCatNameEmpty: "카테고리 이름을 입력해 주세요.",
 		alertCatLimitMax: "카테고리는 최대 10개까지 등록할 수 있습니다.",
 		alertCatNameExists: "이미 존재하는 카테고리 이름입니다.",
-				settingCommandsSection: "명령어",
-				settingCommandsDesc: "플러그인 명령어를 활성화 또는 비활성화합니다.",
-				settingCommandOpenSidebarName: "사이드바 열기 명령어",
-				settingCommandOpenSidebarDesc: "Daily Time Log 사이드바를 여는 명령어를 활성화합니다.",
-				settingCommandOpenDashboardName: "일과 인사이트 열기 명령어",
-				settingCommandOpenDashboardDesc: "일과 인사이트 대시보드를 여는 명령어를 활성화합니다.",
-				settingCommandAddLogEntryName: "일과 추가 명령어",
-				settingCommandAddLogEntryDesc: "새 일과를 추가하는 명령어를 활성화합니다.",
+		settingCommandsSection: "명령어",
+		settingCommandsDesc: "플러그인 명령어를 활성화 또는 비활성화합니다.",
+		settingCommandOpenSidebarName: "사이드바 열기 명령어",
+		settingCommandOpenSidebarDesc: "Daily Time Log 사이드바를 여는 명령어를 활성화합니다.",
+		settingCommandOpenDashboardName: "일과 인사이트 열기 명령어",
+		settingCommandOpenDashboardDesc: "일과 인사이트 대시보드를 여는 명령어를 활성화합니다.",
+		settingCommandAddLogEntryName: "일과 추가 명령어",
+		settingCommandAddLogEntryDesc: "새 일과를 추가하는 명령어를 활성화합니다.",
 		window7Days: "최근 7일",
 		window30Days: "최근 30일",
 		window90Days: "최근 90일",
@@ -363,10 +366,7 @@ export const WEEKDAYS: Record<MarkerLanguage, string[]> = {
 	ko: ["일", "월", "화", "수", "목", "금", "토"],
 };
 
-export function resolveLanguage(
-	preference: LanguagePreference,
-	obsidianLanguage: string
-): MarkerLanguage {
+export function resolveLanguage(preference: LanguagePreference, obsidianLanguage: string): MarkerLanguage {
 	if (preference === "en" || preference === "ko") return preference;
 	return obsidianLanguage === "ko" ? "ko" : "en";
 }

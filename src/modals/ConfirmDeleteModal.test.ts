@@ -21,14 +21,7 @@ import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 /** Opens the dialog and returns it together with the confirmation spy. */
 function openDialog(): { modal: ConfirmDeleteModal; confirmed: () => boolean } {
 	const onConfirm = vi.fn();
-	const modal = new ConfirmDeleteModal(
-		{} as never,
-		"Delete event",
-		"Delete this event?",
-		"Cancel",
-		"OK",
-		onConfirm
-	);
+	const modal = new ConfirmDeleteModal({} as never, "Delete event", "Delete this event?", "Cancel", "OK", onConfirm);
 	modal.open();
 	return { modal, confirmed: () => onConfirm.mock.calls.length > 0 };
 }

@@ -40,9 +40,7 @@ export function normalizeHeadingText(text: string): string {
 	// and non-code parts; only the non-code parts are transformed, and the
 	// code contents are put back as they are.
 	const parts = splitOnCodeSpans(withoutClosing);
-	const rendered = parts
-		.map((part) => (part.isCode ? part.text : stripInlineMarkup(part.text)))
-		.join("");
+	const rendered = parts.map((part) => (part.isCode ? part.text : stripInlineMarkup(part.text))).join("");
 
 	return decodeEntities(rendered).replace(/\s+/g, " ").trim();
 }
@@ -198,4 +196,3 @@ export interface HeadingInfo {
 	/** Heading text, whitespace-normalized. */
 	text: string;
 }
-

@@ -117,10 +117,10 @@ describe("TimelineModal", () => {
 		expect(inputs[0].type).toBe("text");
 		expect(textareaOf(modal).tagName).toBe("TEXTAREA");
 
-			// Category dropdown is a native <select>
-			const dropdown = categoryDropdownOf(modal);
-			expect(dropdown.tagName).toBe("SELECT");
-			expect(dropdown.getAttribute("aria-label")).toBe("Category");
+		// Category dropdown is a native <select>
+		const dropdown = categoryDropdownOf(modal);
+		expect(dropdown.tagName).toBe("SELECT");
+		expect(dropdown.getAttribute("aria-label")).toBe("Category");
 
 		// The action row is Obsidian's own `.modal-button-container`.
 		const buttons = buttonsOf(modal);
@@ -213,82 +213,82 @@ describe("TimelineModal", () => {
 	});
 
 	it("shows dropdown with 'No category' first, then settings categories", () => {
-			const { modal } = openModal(null);
-			const dropdown = categoryDropdownOf(modal);
+		const { modal } = openModal(null);
+		const dropdown = categoryDropdownOf(modal);
 
-			// First option is "No category" with empty value
-			expect(dropdown.options[0].text).toBe("No category");
-			expect(dropdown.options[0].value).toBe("");
+		// First option is "No category" with empty value
+		expect(dropdown.options[0].text).toBe("No category");
+		expect(dropdown.options[0].value).toBe("");
 
-			// Then settings categories in order
-			expect(dropdown.options[1].text).toBe("Work");
-			expect(dropdown.options[1].value).toBe("Work");
-			expect(dropdown.options[2].text).toBe("Study");
-			expect(dropdown.options[2].value).toBe("Study");
-		});
+		// Then settings categories in order
+		expect(dropdown.options[1].text).toBe("Work");
+		expect(dropdown.options[1].value).toBe("Work");
+		expect(dropdown.options[2].text).toBe("Study");
+		expect(dropdown.options[2].value).toBe("Study");
+	});
 
-		it("selecting a category changes the saved value", () => {
-			const { modal, saved } = openModal(null);
-			const dropdown = categoryDropdownOf(modal);
+	it("selecting a category changes the saved value", () => {
+		const { modal, saved } = openModal(null);
+		const dropdown = categoryDropdownOf(modal);
 
-			dropdown.value = "Work";
-			dropdown.dispatchEvent(new Event("change", { bubbles: true }));
+		dropdown.value = "Work";
+		dropdown.dispatchEvent(new Event("change", { bubbles: true }));
 
 		buttonLabelled(modal, "Save").click();
 		expect(saved[0].category).toBe("Work");
-		});
+	});
 
-		it("selecting 'No category' saves undefined", () => {
-			const { modal, saved } = openModal(null);
-			const dropdown = categoryDropdownOf(modal);
+	it("selecting 'No category' saves undefined", () => {
+		const { modal, saved } = openModal(null);
+		const dropdown = categoryDropdownOf(modal);
 
-			dropdown.value = "";
-			dropdown.dispatchEvent(new Event("change", { bubbles: true }));
+		dropdown.value = "";
+		dropdown.dispatchEvent(new Event("change", { bubbles: true }));
 
-			buttonLabelled(modal, "Save").click();
-			expect(saved[0].category).toBeUndefined();
-		});
+		buttonLabelled(modal, "Save").click();
+		expect(saved[0].category).toBeUndefined();
+	});
 
-		it("a category missing from settings still appears and can be cleared", () => {
-			const { modal, saved } = openModal(item({ category: "OldCategory" }));
-			const dropdown = categoryDropdownOf(modal);
+	it("a category missing from settings still appears and can be cleared", () => {
+		const { modal, saved } = openModal(item({ category: "OldCategory" }));
+		const dropdown = categoryDropdownOf(modal);
 
-			// OldCategory should appear as an extra option
-			const values = [...dropdown.options].map((o) => o.value);
-			expect(values).toContain("OldCategory");
+		// OldCategory should appear as an extra option
+		const values = [...dropdown.options].map((o) => o.value);
+		expect(values).toContain("OldCategory");
 
-			// Initially selected
-			expect(dropdown.value).toBe("OldCategory");
+		// Initially selected
+		expect(dropdown.value).toBe("OldCategory");
 
-			// Can be cleared by selecting "No category"
-			dropdown.value = "";
-			dropdown.dispatchEvent(new Event("change", { bubbles: true }));
+		// Can be cleared by selecting "No category"
+		dropdown.value = "";
+		dropdown.dispatchEvent(new Event("change", { bubbles: true }));
 
-			buttonLabelled(modal, "Save").click();
-			expect(saved[0].category).toBeUndefined();
-		});
+		buttonLabelled(modal, "Save").click();
+		expect(saved[0].category).toBeUndefined();
+	});
 
-		it("focus goes to the dropdown for a new entry", () => {
-			const { modal } = openModal(null);
-			const dropdown = categoryDropdownOf(modal);
-			// Use toStrictEqual because happy-dom may return different object references for the same element
-			expect(document.activeElement).toStrictEqual(dropdown);
-		});
+	it("focus goes to the dropdown for a new entry", () => {
+		const { modal } = openModal(null);
+		const dropdown = categoryDropdownOf(modal);
+		// Use toStrictEqual because happy-dom may return different object references for the same element
+		expect(document.activeElement).toStrictEqual(dropdown);
+	});
 
-		it("focus goes to the description when editing", () => {
-			const { modal } = openModal(item());
-			const textarea = textareaOf(modal);
-			expect(document.activeElement).toStrictEqual(textarea);
-		});
+	it("focus goes to the description when editing", () => {
+		const { modal } = openModal(item());
+		const textarea = textareaOf(modal);
+		expect(document.activeElement).toStrictEqual(textarea);
+	});
 
-		it("resolves stale category case-insensitively in dropdown", () => {
-			const { modal, saved } = openModal(item({ category: "work" }));
-			const dropdown = categoryDropdownOf(modal);
+	it("resolves stale category case-insensitively in dropdown", () => {
+		const { modal, saved } = openModal(item({ category: "work" }));
+		const dropdown = categoryDropdownOf(modal);
 
-			// A differently-cased old tag should resolve to the configured category
-			expect(dropdown.value).toBe("Work");
-			buttonLabelled(modal, "Save").click();
-			expect(saved[0].category).toBe("work");
+		// A differently-cased old tag should resolve to the configured category
+		expect(dropdown.value).toBe("Work");
+		buttonLabelled(modal, "Save").click();
+		expect(saved[0].category).toBe("work");
 	});
 
 	it("allows overnight ranges (end before start)", () => {

@@ -212,7 +212,10 @@ export function computeDashboardStats(
 				noteCategoryMinutesMap.set(cat.displayName, (noteCategoryMinutesMap.get(cat.displayName) ?? 0) + dur);
 			} else {
 				uncategorizedMinutes += dur;
-				noteCategoryMinutesMap.set(uncategorizedLabel, (noteCategoryMinutesMap.get(uncategorizedLabel) ?? 0) + dur);
+				noteCategoryMinutesMap.set(
+					uncategorizedLabel,
+					(noteCategoryMinutesMap.get(uncategorizedLabel) ?? 0) + dur
+				);
 			}
 		}
 

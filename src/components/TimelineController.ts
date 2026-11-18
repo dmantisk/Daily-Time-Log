@@ -1,9 +1,5 @@
 import { Notice, TFile } from "obsidian";
-import {
-	formatDateBasename,
-	isSameDate,
-	parseDateFromDailyNotePath,
-} from "../dailyNote";
+import { formatDateBasename, isSameDate, parseDateFromDailyNotePath } from "../dailyNote";
 import { t, WEEKDAYS } from "../i18n";
 import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
 import { TimelineModal, type EventEntryValues } from "../modals/TimelineModal";
@@ -173,11 +169,7 @@ export class TimelineController {
 	private async loadFile(file: TFile, token: number): Promise<void> {
 		try {
 			const content = await this.plugin.app.vault.cachedRead(file);
-			if (
-				this.destroyed ||
-				token !== this.loadToken ||
-				this.state.activeFile?.path !== file.path
-			) return;
+			if (this.destroyed || token !== this.loadToken || this.state.activeFile?.path !== file.path) return;
 
 			const parsed = parseDailyNote(content, this.plugin.getEventHeadingConfig());
 			this.state.timeline = parsed.timeline;
@@ -346,14 +338,7 @@ export class TimelineController {
 		if (!touch) return;
 
 		if (pending) {
-			if (
-				shouldCancelPendingTouchPress(
-					pending,
-					touch.identifier,
-					touch.clientX,
-					touch.clientY
-				)
-			) {
+			if (shouldCancelPendingTouchPress(pending, touch.identifier, touch.clientX, touch.clientY)) {
 				this.clearPendingTouchPress();
 			}
 			return;
@@ -373,18 +358,15 @@ export class TimelineController {
 		const pending = this.state.pendingTouch;
 		if (pending && changedTouches.some((touch) => touch.identifier === pending.pointerId)) {
 			this.clearPendingTouchPress();
-				const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
-				const range = touchTapRangeToTimes(pending.cellIndex, dayStartMinutes, dayEndMinutes);
+			const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
+			const range = touchTapRangeToTimes(pending.cellIndex, dayStartMinutes, dayEndMinutes);
 			this.openEventModal(null, range.start, range.end);
 			if (event.cancelable) event.preventDefault();
 			return;
 		}
 
 		const drag = this.state.drag;
-		if (
-			drag?.pointerType === "touch" &&
-			changedTouches.some((touch) => touch.identifier === drag.pointerId)
-		) {
+		if (drag?.pointerType === "touch" && changedTouches.some((touch) => touch.identifier === drag.pointerId)) {
 			this.finishDrag();
 		}
 	}
@@ -397,10 +379,7 @@ export class TimelineController {
 		}
 
 		const drag = this.state.drag;
-		if (
-			drag?.pointerType === "touch" &&
-			changedTouches.some((touch) => touch.identifier === drag.pointerId)
-		) {
+		if (drag?.pointerType === "touch" && changedTouches.some((touch) => touch.identifier === drag.pointerId)) {
 			this.clearDrag();
 		}
 	}
@@ -442,8 +421,8 @@ export class TimelineController {
 		if (!drag) return;
 		this.state.drag = null;
 		this.updateSelectionClasses(drag, null);
-			const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
-			const range = dragRangeToTimes(drag.start, drag.end, dayStartMinutes, dayEndMinutes);
+		const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
+		const range = dragRangeToTimes(drag.start, drag.end, dayStartMinutes, dayEndMinutes);
 		this.openEventModal(null, range.start, range.end);
 	}
 
@@ -538,7 +517,7 @@ export class TimelineController {
 	}
 
 	private renderGrid(root: HTMLElement, language: MarkerLanguage): void {
-			const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
+		const { dayStartMinutes, dayEndMinutes } = this.plugin.settings;
 		const wrap = root.createDiv({ cls: "dwl-grid-wrap" });
 
 		const grid = wrap.createDiv({ cls: "dwl-grid" });
@@ -549,12 +528,16 @@ export class TimelineController {
 			const index = Number(cell.dataset.cellIndex);
 			if (!isNaN(index)) this.startPointer(index, event);
 		});
-		grid.addEventListener("touchstart", (event) => {
-			const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
-			if (!cell) return;
-			const index = Number(cell.dataset.cellIndex);
-			if (!isNaN(index)) this.handleTouchStart(index, event);
-		}, { passive: true });
+		grid.addEventListener(
+			"touchstart",
+			(event) => {
+				const cell = (event.target as HTMLElement).closest<HTMLElement>(".dwl-grid-cell");
+				if (!cell) return;
+				const index = Number(cell.dataset.cellIndex);
+				if (!isNaN(index)) this.handleTouchStart(index, event);
+			},
+			{ passive: true }
+		);
 		grid.addEventListener("pointerover", (event) => {
 			const pointerEvent = event;
 			if (pointerEvent.pointerType !== "touch") {
@@ -569,42 +552,42 @@ export class TimelineController {
 		wrap.addEventListener("pointerleave", (event) => this.handlePointerLeave(event));
 		wrap.addEventListener("pointercancel", (event) => this.cancelPointer(event));
 
-			const cellCount = getTimelineCellCount(dayStartMinutes, dayEndMinutes);
-			let cellIndex = 0;
+		const cellCount = getTimelineCellCount(dayStartMinutes, dayEndMinutes);
+		let cellIndex = 0;
 
-			// Iterate through each hour that the timeline covers
-			let currentMinutes = dayStartMinutes;
-			while (cellIndex < cellCount) {
-				const hour = Math.floor(currentMinutes / 60) % 24;
+		// Iterate through each hour that the timeline covers
+		let currentMinutes = dayStartMinutes;
+		while (cellIndex < cellCount) {
+			const hour = Math.floor(currentMinutes / 60) % 24;
 			const hourStartMin = hour * 60;
 			const hourEndMin = (hour + 1) * 60;
 
-				// Calculate how many cells in this hour belong to our timeline
-				const cellsInThisHour = Math.min(CELLS_PER_HOUR, cellCount - cellIndex);
+			// Calculate how many cells in this hour belong to our timeline
+			const cellsInThisHour = Math.min(CELLS_PER_HOUR, cellCount - cellIndex);
 
 			const row = grid.createDiv({ cls: "dwl-grid-row" });
 			const hourLabel = row.createDiv({ cls: "dwl-grid-hour-label" });
 			const isPm = hour >= 12;
-				const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-				const ampm = t(!isPm ? "hourMarkerAm" : "hourMarkerPm", language);
+			const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+			const ampm = t(!isPm ? "hourMarkerAm" : "hourMarkerPm", language);
 			hourLabel.createSpan({ cls: "dwl-grid-hour-num", text: String(displayHour) });
 			hourLabel.createSpan({ cls: "dwl-grid-hour-ampm", text: ampm });
 
 			const cells = row.createDiv({ cls: "dwl-grid-cells" });
-				for (let column = 0; column < cellsInThisHour; column++) {
+			for (let column = 0; column < cellsInThisHour; column++) {
 				const selected = this.isSelected(cellIndex);
 				const cell = cells.createDiv({
 					cls: `dwl-grid-cell${selected ? " is-selecting" : ""}`,
 					attr: { "data-cell-index": String(cellIndex) },
 				});
 				this.gridCells[cellIndex] = cell;
-					cellIndex++;
+				cellIndex++;
 			}
 
 			this.renderBlocks(cells, hourStartMin, hourEndMin, language);
 
-				// Move to next hour
-				currentMinutes = (currentMinutes + 60) % 1440;
+			// Move to next hour
+			currentMinutes = (currentMinutes + 60) % 1440;
 		}
 	}
 
@@ -623,12 +606,7 @@ export class TimelineController {
 		const categories = this.plugin.settings.categories;
 		this.state.timeline.forEach((item) => {
 			timelineDaySegments(item).forEach((segment) => {
-				const geometry = timelineBlockGeometry(
-					segment.start,
-					segment.end,
-					hourStartMin,
-					hourEndMin
-				);
+				const geometry = timelineBlockGeometry(segment.start, segment.end, hourStartMin, hourEndMin);
 				if (!geometry) return;
 
 				const category = findCategoryByDisplayName(categories, item.category);

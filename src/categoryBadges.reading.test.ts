@@ -99,16 +99,10 @@ function badgeTexts(el: HTMLElement): string[] {
 describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 	it("keeps Event scope across Obsidian preview sections", () => {
 		const firstSection = renderEl(
-			"<h1>Event</h1><ul>" +
-				"<li>09:00 - 12:20 [Study]</li>" +
-				"<li>12:20 - 14:30 [Exercise]</li>" +
-				"</ul>"
+			"<h1>Event</h1><ul>" + "<li>09:00 - 12:20 [Study]</li>" + "<li>12:20 - 14:30 [Exercise]</li>" + "</ul>"
 		);
 		const nextSection = renderEl(
-			"<ul>" +
-				"<li>14:30 - 17:40 [Work]</li>" +
-				"<li>17:40 - 19:50 [Study]</li>" +
-				"</ul>"
+			"<ul>" + "<li>14:30 - 17:40 [Work]</li>" + "<li>17:40 - 19:50 [Study]</li>" + "</ul>"
 		);
 
 		processSection(firstSection, "sectioned-note", 6, 8);
@@ -118,10 +112,7 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		expect(badgeTexts(nextSection)).toEqual(["Work", "Study"]);
 
 		const editedSection = renderEl(
-			"<ul>" +
-				"<li>14:30 - 17:40 [Work]</li>" +
-				"<li>17:40 - 19:50 [Work]</li>" +
-				"</ul>"
+			"<ul>" + "<li>14:30 - 17:40 [Work]</li>" + "<li>17:40 - 19:50 [Work]</li>" + "</ul>"
 		);
 		processSection(editedSection, "edited-note-render", 9, 10);
 
@@ -129,12 +120,8 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 	});
 
 	it("stops rendering after a same-level heading in a later section", () => {
-		const eventSection = renderEl(
-			"<h1>Event</h1><p>09:00 - 12:20 [Study]</p>"
-		);
-		const otherSection = renderEl(
-			"<h1>Other</h1><p>12:20 - 14:30 [Exercise]</p>"
-		);
+		const eventSection = renderEl("<h1>Event</h1><p>09:00 - 12:20 [Study]</p>");
+		const otherSection = renderEl("<h1>Other</h1><p>12:20 - 14:30 [Exercise]</p>");
 
 		processSection(eventSection, "scoped-section-note", 6, 7, "Log/2026/10/23.md");
 		processSection(otherSection, "scoped-section-note", 8, 9, "Log/2026/10/23.md");
@@ -159,9 +146,7 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 	});
 
 	it("renders a badge for a category token under the configured heading", () => {
-		const el = renderEl(
-			"<h1>Event</h1><p>- 9:00 - 10:00 [Work] Team meeting</p>"
-		);
+		const el = renderEl("<h1>Event</h1><p>- 9:00 - 10:00 [Work] Team meeting</p>");
 		process(el);
 
 		expect(badgeCount(el)).toBe(1);
@@ -176,9 +161,7 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 	});
 
 	it("renders a badge for a token under a deeper (sub)heading of the Event section", () => {
-		const el = renderEl(
-			"<h1>Event</h1><h2>Detail</h2><p>- 9:00 - 10:00 [Work] nested</p>"
-		);
+		const el = renderEl("<h1>Event</h1><h2>Detail</h2><p>- 9:00 - 10:00 [Work] nested</p>");
 		process(el);
 
 		expect(badgeCount(el)).toBe(1);
@@ -189,8 +172,7 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		// The Event section ends at the next heading of the same level, so
 		// the second paragraph is outside it.
 		const el = renderEl(
-			"<h1>Event</h1><p>- 9:00 - 10:00 [Work] inside</p>" +
-				"<h1>Other</h1><p>- 11:00 - 12:00 [Rest] outside</p>"
+			"<h1>Event</h1><p>- 9:00 - 10:00 [Work] inside</p>" + "<h1>Other</h1><p>- 11:00 - 12:00 [Rest] outside</p>"
 		);
 		process(el);
 
@@ -280,8 +262,7 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 		// against the whole document, a trailing "# Event" heading makes
 		// every token in the note look like it is inside the section.
 		const el = renderEl(
-			"<h1>Other</h1><p>- 9:00 - 10:00 [Work] before</p>" +
-				"<h1>Event</h1><p>- 11:00 - 12:00 [Rest] after</p>"
+			"<h1>Other</h1><p>- 9:00 - 10:00 [Work] before</p>" + "<h1>Event</h1><p>- 11:00 - 12:00 [Rest] after</p>"
 		);
 		process(el);
 
@@ -301,9 +282,7 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 	});
 
 	it("does NOT render a badge for a token that is not in event-line position", () => {
-		const el = renderEl(
-			"<h1>Event</h1><p>Met with [John] for lunch</p><p>- [ ] [Work] a checkbox</p>"
-		);
+		const el = renderEl("<h1>Event</h1><p>Met with [John] for lunch</p><p>- [ ] [Work] a checkbox</p>");
 		process(el);
 
 		expect(badgeCount(el)).toBe(0);
@@ -353,9 +332,7 @@ describe("processCategoryBadgesInReadingView — Event section scoping", () => {
 	});
 
 	it("uses one DOM traversal for category badges and tabular timestamps", () => {
-		const el = renderEl(
-			"<h1>Event</h1><ul><li>09:00-10:00 [Work] event</li></ul>"
-		);
+		const el = renderEl("<h1>Event</h1><ul><li>09:00-10:00 [Work] event</li></ul>");
 		const createTreeWalker = vi.spyOn(document, "createTreeWalker");
 
 		try {
@@ -450,9 +427,7 @@ describe("parser / DOM agreement", () => {
 		// `<pre><code>` content is never a heading element, so the section
 		// stays open — mirroring the parser's fence-aware boundary.
 		const el = renderEl(
-			"<h1>Event</h1>" +
-				"<pre><code># Other</code></pre>" +
-				"<p>- 10:00 - 11:00 [Rest] still inside</p>"
+			"<h1>Event</h1>" + "<pre><code># Other</code></pre>" + "<p>- 10:00 - 11:00 [Rest] still inside</p>"
 		);
 		process(el);
 

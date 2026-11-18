@@ -83,18 +83,23 @@ export function cellIndexForHour(hour: number, columnIndex: number): number {
 function cellBoundaryToTimeString(cellIndex: number, dayStartMinutes: number, dayEndMinutes: number): string {
 	const boundaryMinutes = dayStartMinutes + cellIndex * CELL_MINUTES;
 	const timelineEndMinutes = dayEndMinutes === 0 ? 1440 : dayEndMinutes;
-	
+
 	// If this boundary is exactly at the timeline end AND the timeline ends at midnight,
 	// return "24:00" instead of "00:00"
 	if (boundaryMinutes === timelineEndMinutes && dayEndMinutes === 0) {
 		return "24:00";
 	}
-	
+
 	// Otherwise use normal modulo wrapping
 	return minutesToTime(boundaryMinutes % 1440);
 }
 
-export function dragRangeToTimes(startIndex: number, endIndex: number, dayStartMinutes: number, dayEndMinutes: number): { start: string; end: string } {
+export function dragRangeToTimes(
+	startIndex: number,
+	endIndex: number,
+	dayStartMinutes: number,
+	dayEndMinutes: number
+): { start: string; end: string } {
 	const firstCell = Math.min(startIndex, endIndex);
 	const lastCell = Math.max(startIndex, endIndex);
 	return {
@@ -103,7 +108,11 @@ export function dragRangeToTimes(startIndex: number, endIndex: number, dayStartM
 	};
 }
 
-export function touchTapRangeToTimes(cellIndex: number, dayStartMinutes: number, dayEndMinutes: number): { start: string; end: string } {
+export function touchTapRangeToTimes(
+	cellIndex: number,
+	dayStartMinutes: number,
+	dayEndMinutes: number
+): { start: string; end: string } {
 	const cellCount = getTimelineCellCount(dayStartMinutes, dayEndMinutes);
 	const startIndex = Math.min(Math.max(0, cellIndex), Math.max(0, cellCount - 3));
 	const endIndex = Math.min(startIndex + 2, cellCount - 1);

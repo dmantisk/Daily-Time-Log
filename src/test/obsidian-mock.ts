@@ -13,7 +13,7 @@
  * `obsidian` package via its `obsidian.d.ts` types entry.
  *
  * Keep this in sync with the `from "obsidian"` imports listed in
-  * AGENTS-reference.md (test coverage) — every symbol added to a
+ * AGENTS-reference.md (test coverage) — every symbol added to a
  * production import from "obsidian" needs a runtime counterpart here.
  */
 
@@ -292,7 +292,10 @@ export class ConfirmationModal extends Modal {
 
 export class PluginSettingTab {
 	containerEl: HTMLElement = document.createElement("div");
-	constructor(public app?: unknown, public plugin?: unknown) {}
+	constructor(
+		public app?: unknown,
+		public plugin?: unknown
+	) {}
 	display(): void {}
 	update(): void {}
 }
@@ -501,10 +504,10 @@ export class DropdownComponent {
 			containerEl.appendChild(this.selectEl);
 			containerEl.appendChild(this.measureEl);
 		}
-			// Fire change handler when select value changes (mimics real component)
-			this.selectEl.addEventListener("change", () => {
-				this.changeHandler?.(this.selectEl.value);
-			});
+		// Fire change handler when select value changes (mimics real component)
+		this.selectEl.addEventListener("change", () => {
+			this.changeHandler?.(this.selectEl.value);
+		});
 	}
 
 	addOption(value: string, label: string): this {
@@ -766,7 +769,10 @@ export class ConfirmationButton extends ButtonComponent {
 }
 
 export class AbstractInputSuggest<T> {
-	constructor(public app?: unknown, public inputEl?: HTMLInputElement) {}
+	constructor(
+		public app?: unknown,
+		public inputEl?: HTMLInputElement
+	) {}
 	getSuggestions(_query: string): T[] {
 		return [];
 	}

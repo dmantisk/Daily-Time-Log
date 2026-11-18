@@ -28,10 +28,7 @@ export const NUMERIC_ENTITY_REGEX = /&#(x[0-9a-fA-F]+|\d+);/g;
 export function stripHtml(text: string): string {
 	const withoutTags = text.replace(/<[^>]*>/g, "");
 
-	const withNamedEntities = withoutTags.replace(
-		/&[a-zA-Z]+;/g,
-		(entity) => HTML_ENTITIES[entity] ?? entity
-	);
+	const withNamedEntities = withoutTags.replace(/&[a-zA-Z]+;/g, (entity) => HTML_ENTITIES[entity] ?? entity);
 
 	return withNamedEntities.replace(NUMERIC_ENTITY_REGEX, (entity, code: string) => {
 		const isHex = code.startsWith("x") || code.startsWith("X");
@@ -44,4 +41,3 @@ export function stripHtml(text: string): string {
 		}
 	});
 }
-
