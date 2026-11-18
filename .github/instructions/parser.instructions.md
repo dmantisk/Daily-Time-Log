@@ -8,4 +8,4 @@ applyTo: "src/parser.ts,src/parser/**,src/dailyNote.ts,src/dashboardCollector.ts
 - Never absorb unrelated note content into a writable Event.
 - Keep parser.ts and the category-badge rendering in categoryBadges.ts in agreement.
 - Every behavior change needs a test in the matching *.test.ts.
-- Detailed rules: .agents/AGENTS-reference.md, section 1.
+- Detailed rules (read only the file you need): `.agents/ref/parser-format.md` (format, frontmatter, CRLF, dashboard stats), `.agents/ref/parser-marker.md` (Event heading marker), `.agents/ref/parser-event.md` (event lines, category, continuation lines).
