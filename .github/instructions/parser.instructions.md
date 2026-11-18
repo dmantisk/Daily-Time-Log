@@ -1,6 +1,6 @@
 ---
 description: Rules for the pure parsing, date and statistics modules
-applyTo: "src/parser.ts,src/dailyNote.ts,src/dashboardCollector.ts"
+applyTo: "src/parser.ts,src/parser/**,src/dailyNote.ts,src/dashboardCollector.ts"
 ---
 - These modules are pure. Never import from "obsidian".
 - Only the configured Event heading opens the Event section.

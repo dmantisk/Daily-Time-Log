@@ -6,7 +6,7 @@ Keep this file short: it is the always-on project context. Load detailed referen
 
 - Daily Time Log is an Obsidian plugin that reads/edits Events in daily-note Markdown bodies; no frontmatter, no duplicate Daily Notes folder/format settings.
 - Daily-note identity from Obsidian's core Daily Notes `folder`/`format`; preserve `YYYY-MM-DD` fallback.
-- `src/parser.ts`, `src/dailyNote.ts`: pure, independently testable logic. Keep Obsidian APIs in view/plugin layer.
+- `src/parser.ts`, `src/parser/`, `src/dailyNote.ts`: pure, independently testable logic. Keep Obsidian APIs in view/plugin layer.
 - Only the configured heading opens the Event section. Parser and category-badge rendering must agree; preserve source line indices/endings; never absorb unrelated note content into a writable Event.
 - Read via Vault API; write via `plugin.processWrite()` (atomic `vault.process()` with returned string captured in callback) to keep Obsidian sync and self-write guard intact.
 - Prefer Obsidian native UI. Sidebar timeline (`src/components/TimelineController.ts`) uses plain DOM (no React); dashboard/modals use Obsidian components/DOM.
@@ -14,7 +14,7 @@ Keep this file short: it is the always-on project context. Load detailed referen
 ## Architecture
 
 - `src/main.ts`: plugin lifecycle, settings, refresh, vault-event coordination.
-- `src/parser.ts`, `src/dailyNote.ts`, `src/dashboardCollector.ts`: pure parsing/date/statistics logic.
+- `src/parser.ts`, `src/parser/`, `src/dailyNote.ts`, `src/dashboardCollector.ts`: pure parsing/date/statistics logic. `src/parser.ts` is a barrel that re-exports the modules in `src/parser/` (heading-normalization, event-block, timeline-parsing, time-math, html). Outside `src/parser/`, import from `./parser`, not from the submodules.
 - `src/components/TimelineController.ts`: plain-DOM sidebar timeline — ItemView lifecycle, grid rendering, drag/pointer handling (no React).
 - `src/DashboardView.ts`: vault-wide dashboard.
 - `src/categoryBadges.ts`: live-editor and reading-view category badges.
