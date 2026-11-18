@@ -66,8 +66,9 @@ describe("CRLF line endings", () => {
 
 	it("reports the same dashboard minutes for a CRLF note as for the LF note", () => {
 		const date = new Date(2026, 6, 14);
-		const crlfStats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(CRLF_NOTE) }], date);
-		const lfStats = computeDashboardStats([date], [{ date, parsed: parseDailyNote(LF_NOTE) }], date);
+		const path = `Log/${date.toISOString().split("T")[0]}.md`;
+		const crlfStats = computeDashboardStats([date], [{ date, path, parsed: parseDailyNote(CRLF_NOTE) }], date);
+		const lfStats = computeDashboardStats([date], [{ date, path, parsed: parseDailyNote(LF_NOTE) }], date);
 		expect(crlfStats.recentEventMinutes).toBe(lfStats.recentEventMinutes);
 		expect(crlfStats.recentEventMinutes).toBe(120);
 	});

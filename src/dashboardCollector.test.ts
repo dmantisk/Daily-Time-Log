@@ -95,7 +95,7 @@ describe("computeDashboardStats — future-dated notes", () => {
 		// dashboard could report "Total Notes: 2" with a date range
 		// ending 2026-07-31 while its own time figures ignored that note.
 		const dates = [new Date(2026, 6, 14), new Date(2026, 6, 31)];
-		const stats = computeDashboardStats(dates, [{ date: dates[0], parsed: EMPTY_NOTE }], today);
+		const stats = computeDashboardStats(dates, [{ date: dates[0], path: `Log/${dates[0].toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }], today);
 		expect(stats.totalNotes).toBe(1);
 		expect(stats.oldestDate).toEqual(new Date(2026, 6, 14));
 		expect(stats.newestDate).toEqual(new Date(2026, 6, 14));
@@ -116,6 +116,7 @@ describe("computeDashboardStats — future-dated notes", () => {
 			[
 				{
 					date: today,
+					path: `Log/${today.toISOString().split("T")[0]}.md`,
 					parsed: {
 						timeline: [
 							{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" },
@@ -124,6 +125,7 @@ describe("computeDashboardStats — future-dated notes", () => {
 				},
 				{
 					date: future,
+					path: `Log/${future.toISOString().split("T")[0]}.md`,
 					parsed: {
 						timeline: [
 							{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "b" },
@@ -152,8 +154,9 @@ describe("computeDashboardStats — future-dated notes", () => {
 describe("computeDashboardStats — daily average denominator", () => {
 	const today = new Date(2026, 6, 14); // 2026-07-14
 
-	const oneHour = (date: Date): { date: Date; parsed: ParsedDailyNote } => ({
+	const oneHour = (date: Date): { date: Date; path: string; parsed: ParsedDailyNote } => ({
 		date,
+		path: `Log/${date.toISOString().split("T")[0]}.md`,
 		parsed: {
 			timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" }],
 		} satisfies ParsedDailyNote,
@@ -176,7 +179,7 @@ describe("computeDashboardStats — daily average denominator", () => {
 		const dates = [new Date(2026, 6, 13), new Date(2026, 6, 14)];
 		const stats = computeDashboardStats(
 			dates,
-			[oneHour(dates[0]), { date: dates[1], parsed: EMPTY_NOTE }],
+			[oneHour(dates[0]), { date: dates[1], path: `Log/${dates[1].toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }],
 			today,
 			undefined,
 			"Uncategorized"
@@ -186,7 +189,7 @@ describe("computeDashboardStats — daily average denominator", () => {
 	});
 
 	it("reports 0 when nothing in the window recorded time", () => {
-		const stats = computeDashboardStats([today], [{ date: today, parsed: EMPTY_NOTE }], today);
+		const stats = computeDashboardStats([today], [{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }], today);
 		expect(stats.recentEventMinutes).toBe(0);
 		expect(stats.avgEventMinutesPerDay).toBe(0);
 	});
@@ -254,6 +257,7 @@ describe("computeDashboardStats", () => {
 		const recentParsed = [
 			{
 				date: new Date(2026, 6, 14),
+				path: `Log/${today.toISOString().split("T")[0]}.md`,
 				parsed: {
 					timeline: [
 						{
@@ -315,6 +319,7 @@ describe("computeDashboardStats", () => {
 		const recentParsed = [
 			{
 				date: today,
+				path: `Log/${today.toISOString().split("T")[0]}.md`,
 				parsed: {
 					timeline: [
 						{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" },
@@ -352,6 +357,7 @@ describe("computeDashboardStats", () => {
 		const recentParsed = [
 			{
 				date: today,
+				path: `Log/${today.toISOString().split("T")[0]}.md`,
 				parsed: {
 					timeline: [
 						{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "work", description: "a" },
@@ -376,6 +382,7 @@ describe("computeDashboardStats", () => {
 		const recentParsed = [
 			{
 				date: today,
+				path: `Log/${today.toISOString().split("T")[0]}.md`,
 				parsed: {
 					timeline: [
 						{ line: 0, lineCount: 1, start: "09:00", end: "10:00", category: "Work", description: "a" },
@@ -396,7 +403,7 @@ describe("computeDashboardStats", () => {
 
 	it("ignores empty parsed notes without error", () => {
 		const today = new Date(2026, 6, 14);
-		const stats = computeDashboardStats([today], [{ date: today, parsed: EMPTY_NOTE }], today);
+		const stats = computeDashboardStats([today], [{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }], today);
 		expect(stats.recentEventMinutes).toBe(0);
 	});
 
@@ -407,7 +414,7 @@ describe("computeDashboardStats", () => {
 		const parsed: ParsedDailyNote = {
 			timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "99:99", category: "Work", description: "typo" }],
 		};
-		const stats = computeDashboardStats([today], [{ date: today, parsed }], today);
+		const stats = computeDashboardStats([today], [{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed }], today);
 
 		expect(stats.recentEventMinutes).toBe(900);
 		expect(stats.recentEventMinutes).toBeLessThanOrEqual(24 * 60);
