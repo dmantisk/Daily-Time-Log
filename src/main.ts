@@ -164,7 +164,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		const loadedData = await this.loadData();
+		const loadedData: unknown = await this.loadData();
 		const { settings, shouldSave } = migrateLoadedSettings(loadedData);
 		this.settings = settings;
 		if (shouldSave) await this.saveSettings();
@@ -379,8 +379,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 			null, // initial item (null = new entry)
 			defaultStart,
 			defaultEnd,
-			async (values) => {
-				await this.addEventToFile(activeFile, values);
+			(values) => {
+				void this.addEventToFile(activeFile, values);
 			},
 			null // no delete callback for new entries
 		).open();

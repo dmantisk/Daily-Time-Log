@@ -102,8 +102,9 @@ export class TimelineModal extends Modal {
 				}
 
 				// If the current category is not in settings, add it so it can be seen/cleared
-								if (this.selectedCategory && !this.categories.some((c) => c.displayName.trim().toLowerCase() === this.selectedCategory!.trim().toLowerCase())) {
-					this.categoryDropdown.addOption(this.selectedCategory, this.selectedCategory);
+								const currentCategory = this.selectedCategory;
+								if (currentCategory && !this.categories.some((c) => c.displayName.trim().toLowerCase() === currentCategory.trim().toLowerCase())) {
+									this.categoryDropdown.addOption(currentCategory, currentCategory);
 				}
 
 				// Set initial value using case-insensitive, trimmed matching
