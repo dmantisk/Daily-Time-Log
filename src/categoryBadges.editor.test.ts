@@ -10,6 +10,8 @@ import { buildCategoryBadgeEditorPlugin, buildTimeRangeEditorPlugin } from "./ca
 import type { CustomCategory } from "./settings";
 import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 
+const fakeFile = (path: string) => ({ app: {}, file: { path }, editor: undefined, hoverPopover: undefined }) as any;
+
 installObsidianDomHelpers();
 
 const CATEGORIES: CustomCategory[] = [{ name: "Work", displayName: "Work", color: "#d0e1fd" }];
@@ -25,9 +27,7 @@ describe("category badge editor plugin", () => {
 		const state = EditorState.create({
 			doc,
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Log/2026/10/22.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
 				buildCategoryBadgeEditorPlugin(CATEGORIES, "Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
@@ -46,9 +46,7 @@ describe("category badge editor plugin", () => {
 		const state = EditorState.create({
 			doc,
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Log/2026/10/22.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
 				buildCategoryBadgeEditorPlugin(CATEGORIES, "Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
@@ -68,9 +66,7 @@ describe("category badge editor plugin", () => {
 		const state = EditorState.create({
 			doc: "## Time Sheet\n- 09:00 - 12:20 [Work]\n- 12:20 - 14:30 [Work]",
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Log/2026/10/22.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
 				buildCategoryBadgeEditorPlugin(CATEGORIES, "Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
@@ -98,9 +94,7 @@ describe("time range editor plugin", () => {
 		const state = EditorState.create({
 			doc: "## Time Sheet\n- 09:00 - 12:20 [Work] Task A\n- 12:20 - 14:30 Lunch without category",
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Log/2026/10/22.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
 				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
@@ -120,9 +114,7 @@ describe("time range editor plugin", () => {
 		const state = EditorState.create({
 			doc: "## Time Sheet\n- 09:00 - 10:30 [Work] Review call held from 11:00 - 12:00",
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Log/2026/10/22.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
 				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
@@ -141,9 +133,7 @@ describe("time range editor plugin", () => {
 		const stateOutsideSection = EditorState.create({
 			doc: "## Notes\n- 09:00 - 10:30 [Work] Task\n## Time Sheet\n- 10:30 - 11:30 [Work] In section",
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Log/2026/10/22.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
 				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
@@ -152,9 +142,7 @@ describe("time range editor plugin", () => {
 		const stateNonDailyNote = EditorState.create({
 			doc: "## Time Sheet\n- 09:00 - 10:30 [Work] Task",
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Other/RegularNote.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Other/RegularNote.md")),
 				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
 			],
 		});
@@ -174,9 +162,7 @@ describe("time range editor plugin", () => {
 		const state = EditorState.create({
 			doc: "## Time Sheet\n- 09:00 - 10:30 [Work] Task",
 			extensions: [
-				editorInfoField.init(() => ({
-					file: { path: "Log/2026/10/22.md" },
-				})),
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
 				buildTimeRangeEditorPlugin("Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD", false),
 			],
 		});

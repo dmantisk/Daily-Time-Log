@@ -32,9 +32,12 @@ export { moment };
  * `StateField`; tests only need a stable identity to key off.
  */
 export const editorInfoField = StateField.define<{
+	app: any;
 	file: { path: string } | null;
+	editor?: any;
+	hoverPopover?: any;
 }>({
-	create: () => ({ file: null }),
+	create: () => ({ app: {}, file: null, editor: undefined, hoverPopover: undefined }),
 	update: (value) => value,
 });
 

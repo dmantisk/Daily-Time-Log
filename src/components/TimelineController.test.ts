@@ -49,8 +49,8 @@ interface PluginStub {
 	};
 	settings: {
 		categories: Array<{ name: string; displayName: string; color: string }>;
-		startHour: number;
-		endHour: number;
+		dayStartMinutes: number;
+		dayEndMinutes: number;
 	};
 	getUiLanguage: () => "en";
 	getEventHeadingConfig: () => { text: string; level: number };
