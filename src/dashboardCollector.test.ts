@@ -95,7 +95,11 @@ describe("computeDashboardStats — future-dated notes", () => {
 		// dashboard could report "Total Notes: 2" with a date range
 		// ending 2026-07-31 while its own time figures ignored that note.
 		const dates = [new Date(2026, 6, 14), new Date(2026, 6, 31)];
-		const stats = computeDashboardStats(dates, [{ date: dates[0], path: `Log/${dates[0].toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }], today);
+		const stats = computeDashboardStats(
+			dates,
+			[{ date: dates[0], path: `Log/${dates[0].toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }],
+			today
+		);
 		expect(stats.totalNotes).toBe(1);
 		expect(stats.oldestDate).toEqual(new Date(2026, 6, 14));
 		expect(stats.newestDate).toEqual(new Date(2026, 6, 14));
@@ -179,7 +183,10 @@ describe("computeDashboardStats — daily average denominator", () => {
 		const dates = [new Date(2026, 6, 13), new Date(2026, 6, 14)];
 		const stats = computeDashboardStats(
 			dates,
-			[oneHour(dates[0]), { date: dates[1], path: `Log/${dates[1].toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }],
+			[
+				oneHour(dates[0]),
+				{ date: dates[1], path: `Log/${dates[1].toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE },
+			],
 			today,
 			undefined,
 			"Uncategorized"
@@ -189,7 +196,11 @@ describe("computeDashboardStats — daily average denominator", () => {
 	});
 
 	it("reports 0 when nothing in the window recorded time", () => {
-		const stats = computeDashboardStats([today], [{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }], today);
+		const stats = computeDashboardStats(
+			[today],
+			[{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }],
+			today
+		);
 		expect(stats.recentEventMinutes).toBe(0);
 		expect(stats.avgEventMinutesPerDay).toBe(0);
 	});
@@ -403,7 +414,11 @@ describe("computeDashboardStats", () => {
 
 	it("ignores empty parsed notes without error", () => {
 		const today = new Date(2026, 6, 14);
-		const stats = computeDashboardStats([today], [{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }], today);
+		const stats = computeDashboardStats(
+			[today],
+			[{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed: EMPTY_NOTE }],
+			today
+		);
 		expect(stats.recentEventMinutes).toBe(0);
 	});
 
@@ -414,7 +429,11 @@ describe("computeDashboardStats", () => {
 		const parsed: ParsedDailyNote = {
 			timeline: [{ line: 0, lineCount: 1, start: "09:00", end: "99:99", category: "Work", description: "typo" }],
 		};
-		const stats = computeDashboardStats([today], [{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed }], today);
+		const stats = computeDashboardStats(
+			[today],
+			[{ date: today, path: `Log/${today.toISOString().split("T")[0]}.md`, parsed }],
+			today
+		);
 
 		expect(stats.recentEventMinutes).toBe(900);
 		expect(stats.recentEventMinutes).toBeLessThanOrEqual(24 * 60);
