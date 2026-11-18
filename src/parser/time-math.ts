@@ -1,4 +1,6 @@
-import type { TimelineItem, LineRange } from "../parser";
+import type { TimelineItem } from "./timeline-parsing";
+
+import type { LineRange } from "./event-block";
 
 const MINUTES_PER_DAY = 24 * 60;
 const MAX_HOUR = 24;
