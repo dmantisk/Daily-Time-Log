@@ -25,7 +25,8 @@ vi.mock("../modals/ConfirmDeleteModal", () => ({
 	},
 }));
 
-import { Notice, TFile } from "obsidian";
+import { Notice } from "../test/obsidian-mock";
+import { TFile } from "obsidian";
 import type DailyWorkLogPlugin from "../main";
 import type { EventEntryValues } from "../modals/TimelineModal";
 import { installObsidianDomHelpers } from "../test/obsidian-dom-mock";

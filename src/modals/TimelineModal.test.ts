@@ -19,7 +19,7 @@ import { installObsidianDomHelpers } from "../test/obsidian-dom-mock";
 
 installObsidianDomHelpers();
 
-import { Notice } from "obsidian";
+import { Notice } from "../test/obsidian-mock";
 import { TimelineModal, type EventEntryValues } from "./TimelineModal";
 import type { TimelineItem } from "../parser";
 import type { CustomCategory } from "../settings";

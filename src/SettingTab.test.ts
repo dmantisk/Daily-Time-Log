@@ -13,7 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
-import { Setting } from "obsidian";
+import { Setting } from "./test/obsidian-mock";
 
 installObsidianDomHelpers();
 
