@@ -748,3 +748,14 @@
 .dwl-time-range {
 	font-variant-numeric: tabular-nums;
 }
+
+/* Respect OS "reduce motion" setting */
+@media (prefers-reduced-motion: reduce) {
+	.dwl-grid-cell,
+	.dwl-grid-block,
+	.dwl-dashboard-kpi-card,
+	.dwl-dashboard-progress-segment,
+	.dwl-dashboard-activity-row {
+		transition: none;
+	}
+}
