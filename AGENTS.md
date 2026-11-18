@@ -10,6 +10,7 @@ Keep this file short: it is the always-on project context. Load detailed referen
 - Only the configured heading opens the Event section. Parser and category-badge rendering must agree; preserve source line indices/endings; never absorb unrelated note content into a writable Event.
 - Read via Vault API; write via `plugin.processWrite()` (atomic `vault.process()` with returned string captured in callback) to keep Obsidian sync and self-write guard intact.
 - Prefer Obsidian native UI. Sidebar timeline (`src/components/TimelineController.ts`) uses plain DOM (no React); dashboard/modals use Obsidian components/DOM.
+- The sidebar timeline is intentionally pointer-only: entries are plain text in the daily note, so keyboard and screen-reader users edit the note directly. Do not add keyboard handlers, ARIA roles or tabindex to timeline blocks unless asked.
 
 ## Architecture
 
