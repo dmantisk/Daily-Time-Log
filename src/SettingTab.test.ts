@@ -19,6 +19,19 @@ installObsidianDomHelpers();
 
 import { DailyWorkLogSettingTab } from "./SettingTab";
 
+/** Loose view of Obsidian's SettingDefinitionItem union; the tests probe both variants. */
+interface TestDefinition {
+	type?: string;
+	name?: string;
+	desc?: string;
+	items?: TestDefinition[];
+	render?: (setting: Setting, context: never) => void;
+}
+
+function definitionsOf(tab: DailyWorkLogSettingTab): TestDefinition[] {
+	return tab.getSettingDefinitions() as unknown as TestDefinition[];
+}
+
 /** A plugin stub recording the settings mutations it is asked to make. */
 function createPluginStub() {
 	const settings = {
@@ -42,7 +55,7 @@ function createPluginStub() {
 		refreshViews,
 		saveSettings,
 		getUiLanguage: () => "en",
-	} as never;
+	};
 }
 
 /** The setting whose text input has no placeholder (the Event heading field). */
@@ -71,14 +84,14 @@ describe("DailyWorkLogSettingTab", () => {
 	 */
 	function renderTab(): ReturnType<typeof createPluginStub> {
 		const plugin = createPluginStub();
-		const tab = new DailyWorkLogSettingTab({} as never, plugin);
+		const tab = new DailyWorkLogSettingTab({} as never, plugin as never);
 		const container = document.createElement("div");
-		for (const definition of tab.getSettingDefinitions()) {
+		for (const definition of definitionsOf(tab)) {
 			const items = definition.type === "group" ? (definition.items ?? []) : [definition];
 			for (const item of items) {
 				if ("render" in item && item.render) {
 					const setting = new Setting(container);
-					setting.setName(item.name);
+					setting.setName(item.name ?? "");
 					if (item.desc) setting.setDesc(item.desc);
 					item.render(setting, {} as never);
 				}
@@ -89,8 +102,8 @@ describe("DailyWorkLogSettingTab", () => {
 
 	it("keeps searchable setting definitions inline without a page entry", () => {
 		const plugin = createPluginStub();
-		const tab = new DailyWorkLogSettingTab({} as never, plugin);
-		const definitions = tab.getSettingDefinitions();
+		const tab = new DailyWorkLogSettingTab({} as never, plugin as never);
+		const definitions = definitionsOf(tab);
 
 		expect(definitions.some((definition) => definition.type === "page")).toBe(false);
 		expect(definitions.some((definition) => definition.name === "Day Start Time")).toBe(true);
@@ -114,9 +127,9 @@ describe("DailyWorkLogSettingTab", () => {
 		).settings;
 		const getUiLanguage = () => (settings.language === "ko" ? "ko" : "en");
 		(plugin as unknown as { getUiLanguage: () => string }).getUiLanguage = getUiLanguage;
-		const tab = new DailyWorkLogSettingTab({} as never, plugin);
+		const tab = new DailyWorkLogSettingTab({} as never, plugin as never);
 		const update = vi.spyOn(tab, "update");
-		const languageDefinition = tab.getSettingDefinitions().find((definition) => definition.name === "Language");
+		const languageDefinition = definitionsOf(tab).find((definition) => definition.name === "Language");
 		if (!languageDefinition || !("render" in languageDefinition) || !languageDefinition.render) {
 			throw new Error("Language setting definition is missing its renderer");
 		}
@@ -141,7 +154,7 @@ describe("DailyWorkLogSettingTab", () => {
 		await onChange("ko");
 
 		expect(update).toHaveBeenCalledOnce();
-		expect(tab.getSettingDefinitions().find((definition) => definition.name === "언어")).toBeDefined();
+		expect(definitionsOf(tab).find((definition) => definition.name === "언어")).toBeDefined();
 	});
 
 	it("refreshes the views when the Event heading text changes", async () => {
