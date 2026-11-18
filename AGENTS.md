@@ -47,3 +47,4 @@ Keep this file short: it is the always-on project context. Load detailed referen
 - User-visible strings go through `t()` in `src/i18n.ts` with English/Korean entries.
 - After code changes run `npm test` then `npm run build`. Do not tick a TODO until both pass.
 - No new dependencies unless asked.
+- Never retype or rewrite text containing HTML entities (&amp; &lt; &gt; &quot; &#39;). The editor tools can decode them. Move such code by cut/paste, or edit around it.
