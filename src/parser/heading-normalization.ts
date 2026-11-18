@@ -189,3 +189,13 @@ interface HeadingPart {
 	isCode: boolean;
 }
 
+/**
+ * A heading in document order, as seen by the category-badge renderer.
+ */
+export interface HeadingInfo {
+	/** Heading depth, 1-6. */
+	level: number;
+	/** Heading text, whitespace-normalized. */
+	text: string;
+}
+
