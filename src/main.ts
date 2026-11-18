@@ -13,6 +13,7 @@ import type { EventHeadingConfig, MarkerLanguage } from "./parser";
 import { parseDailyNote, appendLineToBlock } from "./parser";
 import { buildTimelineLine, getDefaultEntryTimes } from "./timelineLogic";
 import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
+import { SelfWriteGuard } from "./selfWriteGuard";
 
 interface CoreDailyNotesOptions {
 	format?: unknown;
@@ -31,7 +32,7 @@ interface InternalPluginRegistry {
 
 export default class DailyWorkLogPlugin extends Plugin {
 	settings: DailyWorkLogSettings = DEFAULT_SETTINGS;
-	private lastSelfWrite: { path: string; content: string } | null = null;
+	private readonly selfWriteGuard = new SelfWriteGuard();
 	private sidebarRibbonEl!: HTMLElement;
 	private dashboardRibbonEl!: HTMLElement;
 	private refreshTimer: number | null = null;
@@ -199,9 +200,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 	async processWrite(file: TFile, fn: (data: string) => string): Promise<void> {
 		await this.app.vault.process(file, (data) => {
 			const content = fn(data);
-			if (content !== data) {
-				this.lastSelfWrite = { path: file.path, content };
-			}
+			this.selfWriteGuard.record(file.path, data, content);
 			return content;
 		});
 	}
@@ -218,13 +217,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 	}
 
 	private async isSelfTriggeredWrite(file: TFile): Promise<boolean> {
-		if (!this.lastSelfWrite || this.lastSelfWrite.path !== file.path) return false;
+		if (!this.selfWriteGuard.hasPath(file.path)) return false;
 		const content = await this.app.vault.read(file);
-		if (content === this.lastSelfWrite.content) {
-			this.lastSelfWrite = null;
-			return true;
-		}
-		return false;
+		return this.selfWriteGuard.consume(file.path, content);
 	}
 
 	/** Public so SettingTab can force a re-render (e.g. after a language/theme change). */

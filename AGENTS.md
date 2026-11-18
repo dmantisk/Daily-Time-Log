@@ -49,3 +49,4 @@ Keep this file short: it is the always-on project context. Load detailed referen
 - After code changes run `npm test` then `npm run build`. Do not tick a TODO until both pass.
 - No new dependencies unless asked.
 - Never retype or rewrite text containing HTML entities (&amp; &lt; &gt; &quot; &#39;). The editor tools can decode them. Move such code by cut/paste, or edit around it.
+- `allowScripts` in package.json is a real npm feature (npm 11.16+, enforced in npm 12). Do not remove it. After an esbuild version change, run `npm approve-scripts esbuild` to refresh the pin.
