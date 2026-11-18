@@ -38,8 +38,6 @@
 	color: var(--text-normal);
 }
 
-
-
 /* Banner shown when the note has no Event section under the configured heading. */
 .dwl-missing-heading-banner {
 	display: flex;
@@ -188,7 +186,9 @@
 	box-sizing: border-box;
 	box-shadow: var(--shadow-s);
 	cursor: pointer;
-	transition: transform 0.1s ease, filter 0.1s ease;
+	transition:
+		transform 0.1s ease,
+		filter 0.1s ease;
 	background-clip: border-box;
 }
 
@@ -406,7 +406,9 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	transition: transform 0.15s ease, box-shadow 0.15s ease;
+	transition:
+		transform 0.15s ease,
+		box-shadow 0.15s ease;
 }
 
 .dwl-dashboard-kpi-card:hover {
@@ -439,7 +441,6 @@
 	background: var(--background-modifier-border);
 	color: var(--text-normal);
 }
-
 
 .dwl-kpi-value {
 	font-size: 1.6rem;
@@ -596,7 +597,9 @@
 	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
 	cursor: pointer;
-	transition: background 0.15s ease, border-color 0.15s ease;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease;
 }
 
 .dwl-dashboard-activity-row:hover {

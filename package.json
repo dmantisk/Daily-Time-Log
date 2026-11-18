@@ -9,9 +9,9 @@
 		"test": "vitest run",
 		"lint": "eslint . --ext .ts,.tsx",
 		"lint:fix": "eslint . --ext .ts,.tsx --fix",
-			"format": "prettier --write .",
-			"format:check": "prettier --check .",
-			"typecheck:tests": "tsc -p tsconfig.test.json --noEmit",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"typecheck:tests": "tsc -p tsconfig.test.json --noEmit",
 		"version": "node update-version.mjs && git add manifest.json versions.json"
 	},
 	"type": "module",

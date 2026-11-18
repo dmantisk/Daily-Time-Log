@@ -167,9 +167,7 @@ describe("TimelineController", () => {
 		for (const container of containers) container.remove();
 	});
 
-	async function renderController(
-		fixture = createPluginStub()
-	): Promise<{
+	async function renderController(fixture = createPluginStub()): Promise<{
 		fixture: ReturnType<typeof createPluginStub>;
 		container: HTMLDivElement;
 		controller: TimelineController;
