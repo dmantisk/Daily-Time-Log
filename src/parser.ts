@@ -776,12 +776,5 @@ function appendAtEndOfFile(lines: string[], newLine: string, content: string): s
 }
 
 
-export const HTML_ENTITIES: Record<string, string> = {
-	"&nbsp;": " ",
-	"&amp;": "&",
-	"&lt;": "<",
-	"&gt;": ">",
-	"&quot;": '"',
-	"&#39;": "'",
-};
+
 

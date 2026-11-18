@@ -1,4 +1,11 @@
-﻿import { HTML_ENTITIES } from "../parser";
+﻿export const HTML_ENTITIES: Record<string, string> = {
+	"&nbsp;": " ",
+	"&amp;": "&",
+	"&lt;": "<",
+	"&gt;": ">",
+	"&quot;": '"',
+	"&#39;": "'",
+};
 
 /**
  * Numeric HTML entities, e.g. `&#39;` or `&#x27;`.
