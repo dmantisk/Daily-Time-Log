@@ -336,4 +336,56 @@ describe("TimelineModal", () => {
 
 		expect(deleted).toHaveBeenCalledTimes(1);
 	});
+
+	describe("fenced code block regression (P2-2)", () => {
+		it("rejects a description with a closed backtick fenced code block", () => {
+			const { modal, saved } = openModal(null);
+			textareaOf(modal).value = "first\n```\ncode block\n```\nsecond";
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(0);
+			expect(Notice.shown).toHaveLength(1);
+		});
+
+		it("rejects a description with a closed tilde fenced code block", () => {
+			const { modal, saved } = openModal(null);
+			textareaOf(modal).value = "first\n~~~\ncode block\n~~~\nsecond";
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(0);
+			expect(Notice.shown).toHaveLength(1);
+		});
+
+		it("rejects a description with an unclosed backtick fenced code block", () => {
+			const { modal, saved } = openModal(null);
+			textareaOf(modal).value = "first\n```\ncode block without closing";
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(0);
+			expect(Notice.shown).toHaveLength(1);
+		});
+
+		it("rejects a description with an unclosed tilde fenced code block", () => {
+			const { modal, saved } = openModal(null);
+			textareaOf(modal).value = "first\n~~~\ncode block without closing";
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(0);
+			expect(Notice.shown).toHaveLength(1);
+		});
+
+		it("accepts ordinary inline Markdown code", () => {
+			const { modal, saved } = openModal(null);
+			textareaOf(modal).value = "Use `npm test` to run the tests";
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(1);
+			expect(saved[0].description).toBe("Use `npm test` to run the tests");
+		});
+	});
 });
