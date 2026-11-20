@@ -171,7 +171,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		invalidTimeFormat: "Invalid time format. (e.g. 09:00)",
 		endNotAfterStart: "End time must be after start time.",
 		multilineContinuationError:
-			"Line 2 onward can't start like a time range (e.g. 09:00 - 10:00), checkbox, or heading — please rephrase.",
+			"Line 2 onward can't start like a time range (e.g. 09:00 - 10:00), checkbox, heading, or fenced code block — please rephrase.",
 		dashboardTitle: "Work Insights",
 
 		btnRefresh: "Refresh",
@@ -290,7 +290,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		invalidTimeFormat: "시간 형식이 올바르지 않습니다. (예: 09:00)",
 		endNotAfterStart: "종료 시간은 시작 시간보다 늦어야 합니다.",
 		multilineContinuationError:
-			"2번째 줄부터는 시간 범위(예: 09:00 - 10:00), 체크박스 또는 제목 형식으로 시작할 수 없습니다. 문구를 조금 바꿔주세요.",
+			"2번째 줄부터는 시간 범위(예: 09:00 - 10:00), 체크박스, 제목 또는 펜스 코드 블록 형식으로 시작할 수 없습니다. 문구를 조금 바꿔주세요.",
 		dashboardTitle: "일과 인사이트",
 
 		btnRefresh: "새로고침",

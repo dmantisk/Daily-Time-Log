@@ -2,6 +2,7 @@ import { App, ButtonComponent, DropdownComponent, Modal, Notice, TextAreaCompone
 import { t } from "../i18n";
 import { findCategoryByDisplayName } from "../settings";
 import {
+	FenceTracker,
 	isTopLevelOrMarker,
 	stripHtml,
 	TIME_END_VALUE_REGEX,
@@ -248,6 +249,18 @@ export class TimelineModal extends Modal {
 		if (continuationLines.some((line) => isTopLevelOrMarker(line))) {
 			new Notice(t("multilineContinuationError", this.language));
 			return;
+		}
+
+		// Reject fenced code blocks in continuation lines (line 2 onward).
+		// parseTimeline() treats fences as boundaries and detaches them from
+		// the preceding event description, so accepting them here would cause
+		// silent data loss on the next parse.
+		const fence = new FenceTracker();
+		for (const line of continuationLines) {
+			if (fence.consume(line)) {
+				new Notice(t("multilineContinuationError", this.language));
+				return;
+			}
 		}
 
 		this.onSave({
