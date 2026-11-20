@@ -15,7 +15,7 @@ import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 installObsidianDomHelpers();
 
 import { Notice } from "./test/obsidian-mock";
-import { MarkdownView, TFile, Plugin, WorkspaceLeaf, ItemView } from "obsidian";
+import { TFile, Plugin, WorkspaceLeaf, ItemView } from "obsidian";
 import DailyWorkLogPlugin from "./main";
 import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { TimelineController } from "./components/TimelineController";
@@ -24,8 +24,66 @@ import { parseDailyNote } from "./parser";
 import { appendLineToBlock } from "./parser";
 import { buildTimelineLine, getDefaultEntryTimes } from "./timelineLogic";
 import { DEFAULT_SETTINGS, migrateLoadedSettings, type DailyWorkLogSettings } from "./settings";
+import { MarkdownView } from "obsidian";
 
 const DAILY_NOTE_CONTENT = "# Event\n- 09:00 - 10:00 [Work] Existing\n";
+
+/**
+ * Creates a mock MarkdownView that passes `instanceof MarkdownView` check
+ * without invoking the real constructor (which requires a WorkspaceLeaf).
+ * The editor content is kept in a mutable variable so tests can simulate
+ * Obsidian updating its buffer after a vault write.
+ */
+function createMockMarkdownView(initialLines: string[] = [""]): {
+	view: MarkdownView;
+	editor: {
+		getValue: () => string;
+		lineCount: () => number;
+		getLine: (line: number) => string;
+		setCursor: ReturnType<typeof vi.fn>;
+		scrollIntoView: ReturnType<typeof vi.fn>;
+		focus: ReturnType<typeof vi.fn>;
+	};
+	setLines: (lines: string[]) => void;
+} {
+	let lines = [...initialLines];
+	let cursor: { line: number; ch: number } | null = null;
+	let focused = false;
+	let mode: "source" | "preview" = "source";
+
+	const editor = {
+		getValue: () => lines.join("\n"),
+		lineCount: () => lines.length,
+		getLine: (line: number) => lines[line] ?? "",
+		setCursor: vi.fn((position: { line: number; ch: number }) => {
+			cursor = position;
+		}),
+		scrollIntoView: vi.fn(),
+		focus: vi.fn(() => {
+			focused = true;
+		}),
+	};
+
+	const view = Object.create(MarkdownView.prototype) as MarkdownView;
+	view.file = null;
+	// Use type assertion to satisfy TypeScript since we only implement
+	// the subset of Editor methods that focusEditorAtPosition actually uses.
+	view.editor = editor as any;
+	view.getMode = () => mode;
+	view.getState = () => ({ mode, source: mode === "source" });
+	view.setState = async (state: { mode: "source" | "preview"; source?: boolean }, _options?: { history?: boolean }) => {
+		mode = state.mode;
+	};
+	view.getViewType = () => "markdown";
+
+	return {
+		view,
+		editor,
+		setLines: (newLines: string[]) => {
+			lines = [...newLines];
+		},
+	};
+}
 
 // Minimal PluginManifest for test
 const TEST_MANIFEST = {
@@ -355,10 +413,10 @@ describe("focusEditorAtPosition", () => {
 	});
 
 	it("reveals the matching note and focuses the editor at a clamped position", async () => {
-		const markdownView = new MarkdownView();
+		const { view: markdownView, editor } = createMockMarkdownView(["# Event", "- 09:00 - 10:00 [Work] Task"]);
 		markdownView.file = fixture.activeFile;
-		markdownView.state = { mode: "preview", source: false };
-		markdownView.lines = ["# Event", "- 09:00 - 10:00 [Work] Task"];
+		// Start in preview mode to test the mode switch
+		await markdownView.setState({ mode: "preview", source: false }, { history: false });
 		const leaf = new MockWorkspaceLeaf(markdownView as never);
 		leaf.viewType = "markdown";
 		fixture.workspace.addLeaf(leaf);
@@ -368,14 +426,18 @@ describe("focusEditorAtPosition", () => {
 
 		expect(fixture.workspace.revealedLeaf).toBe(leaf);
 		expect(markdownView.getMode()).toBe("source");
-		expect(markdownView.cursor).toEqual({ line: 1, ch: markdownView.lines[1].length });
-		expect(markdownView.focused).toBe(true);
+		// Cursor should be clamped to line 1, end of line
+		expect(editor.setCursor).toHaveBeenCalledWith({ line: 1, ch: "- 09:00 - 10:00 [Work] Task".length });
+		expect(editor.focus).toHaveBeenCalled();
 	});
 
 	it("waits for the Markdown editor buffer to receive the vault write before placing the cursor", async () => {
-		const markdownView = new MarkdownView();
+		const { view: markdownView, editor, setLines } = createMockMarkdownView([
+			"# Event",
+			"- 09:00 - 10:00 [Work] Existing",
+			"### Notes",
+		]);
 		markdownView.file = fixture.activeFile;
-		markdownView.lines = ["# Event", "- 09:00 - 10:00 [Work] Existing", "### Notes"];
 		const leaf = new MockWorkspaceLeaf(markdownView as never);
 		leaf.viewType = "markdown";
 		fixture.workspace.addLeaf(leaf);
@@ -391,16 +453,16 @@ describe("focusEditorAtPosition", () => {
 
 		// Simulate Obsidian applying the vault modify event after the write call.
 		window.setTimeout(() => {
-			markdownView.lines = updatedContent.split("\n");
+			setLines(updatedContent.split("\n"));
 		}, 24);
 		await focusPromise;
 
-		expect(markdownView.cursor).toEqual({ line: 2, ch: "- 10:00 - 11:00 [Work] New entry".length });
-		expect(markdownView.focused).toBe(true);
+		expect(editor.setCursor).toHaveBeenCalledWith({ line: 2, ch: "- 10:00 - 11:00 [Work] New entry".length });
+		expect(editor.focus).toHaveBeenCalled();
 	});
 
 	it("does not reveal or focus an editor when the preference is disabled", async () => {
-		const markdownView = new MarkdownView();
+		const { view: markdownView, editor } = createMockMarkdownView(["# Event"]);
 		markdownView.file = fixture.activeFile;
 		const leaf = new MockWorkspaceLeaf(markdownView as never);
 		leaf.viewType = "markdown";
@@ -409,8 +471,8 @@ describe("focusEditorAtPosition", () => {
 		await fixture.plugin.focusEditorAtPosition(fixture.activeFile, { line: 0, ch: 0 });
 
 		expect(fixture.workspace.revealedLeaf).toBeNull();
-		expect(markdownView.cursor).toBeNull();
-		expect(markdownView.focused).toBe(false);
+		expect(editor.setCursor).not.toHaveBeenCalled();
+		expect(editor.focus).not.toHaveBeenCalled();
 	});
 });
 

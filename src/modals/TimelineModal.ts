@@ -450,7 +450,7 @@ export class TimelineModal extends Modal {
 		if (!textarea) return;
 
 		// Reset first so deleting text also lets the textarea shrink again.
-		textarea.style.height = "auto";
+		textarea.setCssProps({ height: "auto" });
 		const computedStyle = window.getComputedStyle(textarea);
 		const minHeight = Number.parseFloat(computedStyle.minHeight) || 80;
 		const maxHeight = Number.parseFloat(computedStyle.maxHeight) || 192;
@@ -460,8 +460,10 @@ export class TimelineModal extends Modal {
 		const contentHeight = textarea.scrollHeight + borderHeight;
 		const nextHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
 
-		textarea.style.height = `${nextHeight}px`;
-		textarea.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+		textarea.setCssProps({
+			height: `${nextHeight}px`,
+			overflowY: contentHeight > maxHeight ? "auto" : "hidden",
+		});
 	}
 
 	onClose(): void {

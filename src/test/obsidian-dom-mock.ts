@@ -118,6 +118,14 @@ export function installObsidianDomHelpers(): void {
 		}
 	};
 
+	proto.setCssProps = function (this: HTMLElement, props: Record<string, string>): void {
+		for (const [name, value] of Object.entries(props)) {
+			// Convert camelCase to kebab-case for CSS property names
+			const cssName = name.replace(/([A-Z])/g, "-$1").toLowerCase();
+			this.style.setProperty(cssName, value);
+		}
+	};
+
 	proto.setAttr = function (this: HTMLElement, name: string, value: string | number | boolean): void {
 		this.setAttribute(name, String(value));
 	};
@@ -157,6 +165,7 @@ interface ObsidianElementProto {
 	hasClass(cls: string): boolean;
 	setText(text: string): void;
 	setCssStyles(styles: Record<string, string>): void;
+	setCssProps(props: Record<string, string>): void;
 	setAttr(name: string, value: string | number | boolean): void;
 }
 
