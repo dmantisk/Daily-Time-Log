@@ -390,6 +390,7 @@ export default class DailyWorkLogPlugin extends Plugin {
 				return appendLineToBlock(content, newLine, this.getEventHeadingConfig());
 			});
 
+			this.refreshTimelineView();
 			new Notice(t("noticeEventSaved", this.getUiLanguage()));
 		} catch (error) {
 			new Notice(

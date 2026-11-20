@@ -134,6 +134,8 @@ export class Plugin {
 	registerEvent(_ref: unknown): void {}
 	registerMarkdownPostProcessor(_processor: unknown): void {}
 	registerEditorExtension(_extension: unknown): void {}
+	registerInterval(_id: number): void {}
+	register(_cleanup: () => void): void {}
 }
 
 // ---------------------------------------------------------------------------
@@ -163,6 +165,14 @@ export class TFile extends TAbstractFile {
 export class Vault {
 	/** Recursively walks a folder's children. */
 	static recurseChildren(_folder: TFolder, _cb: (file: TAbstractFile) => void): void {}
+}
+
+/** A vault instance with process method. */
+export class VaultInstance {
+	async process(_file: TFile, fn: (content: string) => string): Promise<void> {
+		// This is a stub - the actual implementation is provided by the test
+		await fn("");
+	}
 }
 
 // ---------------------------------------------------------------------------
