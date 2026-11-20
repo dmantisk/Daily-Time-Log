@@ -244,14 +244,62 @@
 	flex-direction: column;
 }
 
-.dwl-category-dropdown-row {
+/* Metadata row: Start Time | End Time | Category — single horizontal row that wraps on narrow modals */
+.dwl-modal-metadata-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
+	margin-bottom: 0.6rem;
+}
+
+/* Time group: label inline with HH:MM inputs — fixed width, no growing */
+.dwl-modal-time-group {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
+	gap: 0.35rem;
+	flex: 0 0 auto; /* Don't grow or shrink; keep natural width */
+}
+
+.dwl-modal-time-label {
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	color: var(--text-muted);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.dwl-modal-time-parts {
+	display: flex;
+	align-items: center;
+	gap: 0.1rem;
+	flex-shrink: 0;
+}
+
+.dwl-modal-time-separator {
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+/* Category group: label inline with dropdown — flexible, takes remaining space */
+.dwl-modal-category-group {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	min-width: 140px; /* Minimum before wrapping */
+	flex: 1 1 auto; /* Grow to fill remaining space */
+}
+
+.dwl-modal-category-label {
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	color: var(--text-muted);
+	white-space: nowrap;
+	flex-shrink: 0;
 }
 
 .dwl-category-dropdown {
-	flex: 1;
+	flex: 1 1 auto;
 	min-width: 0;
 }
 
@@ -262,6 +310,15 @@
 	border-radius: 50%;
 	background-color: #95a5a6;
 	flex-shrink: 0;
+}
+
+/* Time inputs: fixed 40px width for two digits, centered */
+.dwl-modal-time-input {
+	width: 40px !important;
+	min-width: 40px;
+	max-width: 40px;
+	flex-shrink: 0;
+	text-align: center;
 }
 
 .dwl-modal-text {
@@ -284,27 +341,6 @@
 	color: var(--text-muted);
 }
 
-.dwl-modal-time-row {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 0.4rem;
-}
-
-.dwl-modal-time-group {
-	min-width: 0;
-}
-
-.dwl-modal-time-parts {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-	align-items: center;
-	gap: 0.25rem;
-}
-
-.dwl-modal-time-separator {
-	color: var(--text-muted);
-}
-
 /* The time inputs and the textarea are Obsidian's own components, so their
    colours, borders and focus ring come from the theme. Only the sizing the
    app does not provide is set here: neither `input[type="text"]` nor
@@ -316,10 +352,17 @@
 	min-width: 0;
 }
 
+/* Time inputs: compact width for two digits */
+.dwl-modal-time-input {
+	width: 2.25ch !important; /* ~2 digits + a tiny bit of breathing room */
+	min-width: 2.25ch;
+	max-width: 2.25ch;
+}
+
 .dwl-modal-textarea {
 	resize: vertical;
-	min-height: 48px;
-	max-height: 90px;
+	min-height: 64px; /* Increased from 48px to use gained vertical space */
+	max-height: 120px; /* Increased from 90px */
 }
 
 .dwl-modal-shortcut-hint {
@@ -779,4 +822,75 @@
 	.dwl-dashboard-activity-row {
 		transition: none;
 	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Timeline modal — fixed-size time controls, flexible category dropdown
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.dwl-modal-time-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5rem 0.85rem;
+	width: 100%;
+	min-width: 0;
+}
+
+.dwl-modal-time-group {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	gap: 0.35rem;
+	min-width: max-content;
+}
+
+.dwl-modal-time-group > .dwl-modal-label {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.dwl-modal-time-parts {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	gap: 0.2rem;
+	min-width: max-content;
+}
+
+.dwl-modal-time-separator {
+	flex: 0 0 auto;
+}
+
+.dwl-modal-time-input.dwl-modal-time-input {
+	box-sizing: border-box;
+	width: 2.5rem !important;
+	min-width: 2.5rem !important;
+	max-width: 2.5rem !important;
+	flex: 0 0 2.5rem !important;
+	padding-inline: 0.2rem;
+	text-align: center;
+}
+
+.dwl-category-dropdown-row {
+	display: flex;
+	align-items: center;
+	flex: 1 1 12rem;
+	gap: 0.5rem;
+	min-width: 12rem;
+}
+
+.dwl-category-dropdown-row > .dwl-modal-label {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.dwl-category-dropdown {
+	width: 100%;
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.dwl-category-dot {
+	flex: 0 0 10px;
 }

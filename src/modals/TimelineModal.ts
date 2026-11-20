@@ -74,17 +74,15 @@ export class TimelineModal extends Modal {
 
 		const body = this.contentEl.createDiv({ cls: "dwl-modal-body" });
 
-		// --- Time setting ---
-		const timeField = body.createDiv({ cls: "dwl-modal-field" });
-		timeField.createEl("label", { cls: "dwl-modal-label", text: t("lblTimeSet", this.language) });
+		// --- Metadata row: Start Time | End Time | Category ---
+		const metadataRow = body.createDiv({ cls: "dwl-modal-metadata-row" });
 
-		const timeRow = timeField.createDiv({ cls: "dwl-modal-time-row" });
-		const [startHour = "", startMinute = ""] = (this.initial?.start ?? this.defaultStart).split(":");
-		const [endHour = "", endMinute = ""] = (this.initial?.end ?? this.defaultEnd).split(":");
-
-		const startGroup = timeRow.createDiv({ cls: "dwl-modal-time-group" });
-		startGroup.createDiv({ cls: "dwl-modal-label", text: t("lblStartTime", this.language) });
+		// Start Time group
+		const startGroup = metadataRow.createDiv({ cls: "dwl-modal-time-group" });
+		const startLabel = startGroup.createSpan({ cls: "dwl-modal-time-label", text: t("lblStartTime", this.language) });
+		startLabel.setAttribute("aria-hidden", "true"); // Inputs have their own aria-labels
 		const startParts = startGroup.createDiv({ cls: "dwl-modal-time-parts" });
+		const [startHour = "", startMinute = ""] = (this.initial?.start ?? this.defaultStart).split(":");
 		this.startHourComponent = this.createTimeInput(
 			startParts,
 			`${t("lblStartTime", this.language)} ${t("lblHour", this.language)}`,
@@ -100,12 +98,14 @@ export class TimelineModal extends Modal {
 			59,
 			false
 		);
-		// Link hour to minute for auto-advance and paste distribution
 		this.linkTimeInputs(this.startHourComponent, this.startMinuteComponent);
 
-		const endGroup = timeRow.createDiv({ cls: "dwl-modal-time-group" });
-		endGroup.createDiv({ cls: "dwl-modal-label", text: t("lblEndTime", this.language) });
+		// End Time group
+		const endGroup = metadataRow.createDiv({ cls: "dwl-modal-time-group" });
+		const endLabel = endGroup.createSpan({ cls: "dwl-modal-time-label", text: t("lblEndTime", this.language) });
+		endLabel.setAttribute("aria-hidden", "true");
 		const endParts = endGroup.createDiv({ cls: "dwl-modal-time-parts" });
+		const [endHour = "", endMinute = ""] = (this.initial?.end ?? this.defaultEnd).split(":");
 		this.endHourComponent = this.createTimeInput(
 			endParts,
 			`${t("lblEndTime", this.language)} ${t("lblHour", this.language)}`,
@@ -121,15 +121,14 @@ export class TimelineModal extends Modal {
 			59,
 			false
 		);
-		// Link hour to minute for auto-advance and paste distribution
 		this.linkTimeInputs(this.endHourComponent, this.endMinuteComponent);
 
-		// --- Category ---
-		const categoryField = body.createDiv({ cls: "dwl-modal-field" });
-		const labelRow = categoryField.createDiv({ cls: "dwl-category-dropdown-row" });
-		labelRow.createEl("label", { cls: "dwl-modal-label", text: t("fieldCategory", this.language) });
+		// Category group
+		const categoryGroup = metadataRow.createDiv({ cls: "dwl-modal-category-group" });
+		const categoryLabel = categoryGroup.createSpan({ cls: "dwl-modal-category-label", text: t("fieldCategory", this.language) });
+		categoryLabel.setAttribute("aria-hidden", "true"); // Dropdown has its own aria-label
 
-		this.categoryDropdown = new DropdownComponent(labelRow);
+		this.categoryDropdown = new DropdownComponent(categoryGroup);
 		this.categoryDropdown.selectEl.addClass("dwl-category-dropdown");
 		this.categoryDropdown.selectEl.setAttribute("aria-label", t("fieldCategory", this.language));
 
@@ -156,7 +155,7 @@ export class TimelineModal extends Modal {
 		this.categoryDropdown.setValue(initialValue);
 
 		// Colored dot next to dropdown
-		this.categoryDot = labelRow.createSpan({ cls: "dwl-category-dot" });
+		this.categoryDot = categoryGroup.createSpan({ cls: "dwl-category-dot" });
 		this.updateCategoryDot();
 
 		this.categoryDropdown.onChange((value) => {
@@ -178,7 +177,7 @@ export class TimelineModal extends Modal {
 			// editing the text.
 			.setValue(this.initial ? stripHtml(this.originalDescription) : "");
 		this.descriptionComponent.inputEl.addClass("dwl-modal-textarea");
-		this.descriptionComponent.inputEl.rows = 3;
+		this.descriptionComponent.inputEl.rows = 4; // Increased from 3 to use the gained vertical space
 		// Obsidian's input components turn the spellchecker off, which is
 		// right for a time field but wrong for free prose.
 		this.descriptionComponent.inputEl.setAttribute("spellcheck", "true");

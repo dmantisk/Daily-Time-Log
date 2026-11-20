@@ -23,7 +23,6 @@ export type UIStringKey =
 	| "viewTitle"
 	| "modalAddTitle"
 	| "modalEditTitle"
-	| "lblTimeSet"
 	| "lblStartTime"
 	| "lblEndTime"
 	| "lblHour"
@@ -158,7 +157,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		viewTitle: "Daily time log",
 		modalAddTitle: "What did you do?",
 		modalEditTitle: "Edit Daily Activity",
-		lblTimeSet: "Time Setting",
 		lblStartTime: "Start",
 		lblEndTime: "End",
 		lblHour: "hour",
@@ -286,7 +284,6 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		viewTitle: "일과 기록",
 		modalAddTitle: "무엇을 했나요?",
 		modalEditTitle: "일과 수정",
-		lblTimeSet: "시간 설정",
 		lblStartTime: "시작",
 		lblEndTime: "종료",
 		lblHour: "시",
