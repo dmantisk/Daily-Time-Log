@@ -71,13 +71,16 @@ export function normalizeRenderedHeadingText(text: string): string {
  * fallback list of historical spellings — if the user changes the Event
  * heading in Settings, notes using the old heading stop being treated as
  * an Event block and yield no events at all.
+ *
+ * Per CommonMark, ATX headings may have 0-3 leading spaces. Four or more
+ * spaces, or a leading tab, indicate indented code and are NOT headings.
  */
 export function matchMarker(line: string, config: EventHeadingConfig): boolean {
-	const trimmed = line.trim();
 	if (!Number.isInteger(config.level) || config.level < 1 || config.level > 6 || !config.text.trim()) return false;
 
-	const headingRegex = new RegExp(`^#{${config.level}}\\s+(.*?)\\s*$`, "i");
-	const match = headingRegex.exec(trimmed);
+	// CommonMark: 0-3 leading spaces allowed before ATX heading
+	const headingRegex = new RegExp(`^ {0,3}#{${config.level}}\\s+(.*?)\\s*$`, "i");
+	const match = headingRegex.exec(line);
 	if (!match) return false;
 
 	const headingText = normalizeHeadingText(match[1]);
@@ -87,9 +90,12 @@ export function matchMarker(line: string, config: EventHeadingConfig): boolean {
 
 /**
  * Returns the heading level (1-6) of `line`, or null if it isn't a heading.
+ *
+ * Per CommonMark, ATX headings may have 0-3 leading spaces. Four or more
+ * spaces, or a leading tab, indicate indented code and are NOT headings.
  */
 export function headingLevel(line: string): number | null {
-	const match = /^(#{1,6})\s/.exec(line.trim());
+	const match = /^ {0,3}(#{1,6})\s/.exec(line);
 	return match ? match[1].length : null;
 }
 
