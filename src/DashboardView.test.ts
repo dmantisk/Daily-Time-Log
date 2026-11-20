@@ -24,10 +24,12 @@ import type { MarkerLanguage } from "./parser";
 import { formatDateBasename } from "./dailyNote";
 
 /** A plugin stub good enough for the dashboard to render. */
-function createPluginStub(overrides: Partial<{
-	dailyNoteFormat: string;
-	dailyNoteFolder: string;
-}> = {}): never {
+function createPluginStub(
+	overrides: Partial<{
+		dailyNoteFormat: string;
+		dailyNoteFolder: string;
+	}> = {}
+): never {
 	return {
 		settings: {
 			categories: [
@@ -43,11 +45,7 @@ function createPluginStub(overrides: Partial<{
 }
 
 /** A vault holding one daily note, dated today. */
-function createAppStub(
-	noteContent: string,
-	cachedRead = async () => noteContent,
-	dateFormat = "YYYY-MM-DD"
-): never {
+function createAppStub(noteContent: string, cachedRead = async () => noteContent, dateFormat = "YYYY-MM-DD"): never {
 	const file = new TFile();
 	const today = new Date();
 	const datePath = `${formatDateBasename(today, dateFormat)}.md`;
