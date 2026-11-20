@@ -97,6 +97,22 @@ function badgeTexts(el: HTMLElement): string[] {
 }
 
 describe("processCategoryBadgesInReadingView — Event section scoping", () => {
+	it("renders category badges in continuation prose without creating another timeline item", () => {
+		const note = [
+			"# Event",
+			"- 09:00 - 10:00 [Work] Team meeting",
+			"  Follow-up: discussion ran 11:00 - 12:00 [Work].",
+		].join("\n");
+		const el = renderEl(
+			"<h1>Event</h1><ul><li>09:00 - 10:00 [Work] Team meeting<br>" +
+				"Follow-up: discussion ran 11:00 - 12:00 [Work].</li></ul>"
+		);
+		process(el);
+
+		expect(badgeTexts(el)).toEqual(["Work", "Work"]);
+		expect(parseDailyNote(note).timeline).toHaveLength(1);
+	});
+
 	it("keeps Event scope across Obsidian preview sections", () => {
 		const firstSection = renderEl(
 			"<h1>Event</h1><ul>" + "<li>09:00 - 12:20 [Study]</li>" + "<li>12:20 - 14:30 [Exercise]</li>" + "</ul>"

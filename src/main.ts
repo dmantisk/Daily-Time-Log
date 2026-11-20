@@ -43,6 +43,8 @@ export default class DailyWorkLogPlugin extends Plugin {
 	 *  Stored as a mutable array so its contents can be replaced in-place and
 	 *  the change applied to open editors via updateOptions() without a reload. */
 	private readonly categoryBadgeExtensions: import("@codemirror/state").Extension[] = [];
+	/** Tracks which configurable commands are currently registered. */
+	private readonly registeredCommands = new Set<string>();
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -63,36 +65,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 			}
 		);
 
-		// Command names, unlike the ribbon tooltips above, have no supported
-		// live-update API (no setTooltip equivalent) — they're set once here
-		// at startup language and won't change until Obsidian restarts, even
-		// if the user flips the language setting mid-session.
-		// Command: Open sidebar
-		if (this.settings.commandOpenSidebarEnabled) {
-			this.addCommand({
-				id: "open-sidebar",
-				name: t("commandOpenSidebar", this.getUiLanguage()),
-				callback: () => void this.activateView(),
-			});
-		}
-
-		// Command: Open dashboard
-		if (this.settings.commandOpenDashboardEnabled) {
-			this.addCommand({
-				id: "open-dashboard",
-				name: t("commandOpenDashboard", this.getUiLanguage()),
-				callback: () => void this.activateDashboard(),
-			});
-		}
-
-		// Command: Add log entry
-		if (this.settings.commandAddLogEntryEnabled) {
-			this.addCommand({
-				id: "add-log-entry",
-				name: t("commandAddLogEntry", this.getUiLanguage()),
-				callback: () => void this.addLogEntry(),
-			});
-		}
+		// Synchronize configurable command registration with settings.
+		// This is called during onload() and whenever settings change.
+		this.syncCommandRegistration();
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", (leaf) => {
@@ -171,6 +146,49 @@ export default class DailyWorkLogPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	/**
+	 * Synchronizes the registration state of the three configurable commands
+	 * with the current settings. This method is idempotent and only registers
+	 * or unregisters commands whose enabled state has changed.
+	 */
+	private syncCommandRegistration(): void {
+		const commands = [
+			{
+				id: "open-sidebar",
+				enabled: this.settings.commandOpenSidebarEnabled,
+				name: t("commandOpenSidebar", this.getUiLanguage()),
+				callback: () => void this.activateView(),
+			},
+			{
+				id: "open-dashboard",
+				enabled: this.settings.commandOpenDashboardEnabled,
+				name: t("commandOpenDashboard", this.getUiLanguage()),
+				callback: () => void this.activateDashboard(),
+			},
+			{
+				id: "add-log-entry",
+				enabled: this.settings.commandAddLogEntryEnabled,
+				name: t("commandAddLogEntry", this.getUiLanguage()),
+				callback: () => void this.addLogEntry(),
+			},
+		];
+
+		for (const cmd of commands) {
+			const isRegistered = this.registeredCommands.has(cmd.id);
+			if (cmd.enabled && !isRegistered) {
+				this.addCommand({
+					id: cmd.id,
+					name: cmd.name,
+					callback: cmd.callback,
+				});
+				this.registeredCommands.add(cmd.id);
+			} else if (!cmd.enabled && isRegistered) {
+				this.removeCommand(cmd.id);
+				this.registeredCommands.delete(cmd.id);
+			}
+		}
+	}
+
 	getDailyNoteFolder(): string {
 		const folder = this.getCoreDailyNotesOptions()?.folder;
 		return typeof folder === "string" ? folder : "";
@@ -226,6 +244,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 	refreshViews(): void {
 		setTooltip(this.sidebarRibbonEl, t("ribbonOpenSidebar", this.getUiLanguage()));
 		setTooltip(this.dashboardRibbonEl, t("ribbonOpenDashboard", this.getUiLanguage()));
+
+		// Synchronize configurable command registration with settings.
+		this.syncCommandRegistration();
 
 		// Rebuild the category badge editor extension with the latest settings
 		// so colour/folder changes take effect in open editors immediately.

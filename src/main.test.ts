@@ -3,6 +3,10 @@
  *
  * Regression tests for P2-3: command-palette "Add log entry" workflow
  * should refresh an already-open DailyWorkLogView after a successful write.
+ *
+ * Regression tests for P2-4: configurable commands should be registered/
+ * unregistered immediately when their settings change, without requiring
+ * a plugin reload.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -65,6 +69,8 @@ class MockWorkspace {
 	getActiveFile(): TFile | null {
 		return this.activeFile;
 	}
+
+	updateOptions(): void {}
 
 	getLeavesOfType(type: string): MockWorkspaceLeaf[] {
 		return this.leaves.filter((leaf) => leaf.viewType === type);
@@ -235,6 +241,15 @@ async function createTestFixture(
 			callback: command.callback,
 		});
 		return originalAddCommand(command);
+	};
+
+	const originalRemoveCommand = plugin.removeCommand.bind(plugin);
+	plugin.removeCommand = (commandId: string) => {
+		const index = commands.findIndex((c) => c.id === commandId);
+		if (index !== -1) {
+			commands.splice(index, 1);
+		}
+		return originalRemoveCommand(commandId);
 	};
 
 	// Call onload to register commands
@@ -454,5 +469,248 @@ describe("P2-3: Add log entry command refreshes open DailyWorkLogView", () => {
 
 		// Restore
 		fixture.plugin.processWrite = originalProcessWrite;
+	});
+});
+
+describe("P2-4: Configurable commands register/unregister on settings change", () => {
+	let fixture: TestFixture;
+
+	beforeEach(async () => {
+		Notice.reset();
+		saveCallbackHolder.current = null;
+		fixture = await createTestFixture();
+	});
+
+	afterEach(() => {
+		if (fixture?.view) {
+			fixture.view.onClose();
+		}
+		if (fixture?.viewContainer) {
+			fixture.viewContainer.remove();
+		}
+	});
+
+	/**
+	 * Helper to find a command by ID in the captured commands array.
+	 */
+	function findCommand(id: string) {
+		return fixture.commands.find((c) => c.id === id);
+	}
+
+	/**
+	 * Helper to check if a command is currently registered.
+	 * We check the plugin's internal command registry via the mock.
+	 */
+	function isCommandRegistered(id: string): boolean {
+		return findCommand(id) !== undefined;
+	}
+
+	it("initial registration: commands enabled in settings are registered on plugin load", () => {
+		// All three commands should be registered by default (DEFAULT_SETTINGS has all enabled)
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+	});
+
+	it("disable commands: turning a setting OFF unregisters the command immediately", async () => {
+		// Verify all commands are initially registered
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		// Disable open-sidebar
+		fixture.plugin.settings.commandOpenSidebarEnabled = false;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+
+		expect(isCommandRegistered("open-sidebar")).toBe(false);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		// Disable open-dashboard
+		fixture.plugin.settings.commandOpenDashboardEnabled = false;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+
+		expect(isCommandRegistered("open-sidebar")).toBe(false);
+		expect(isCommandRegistered("open-dashboard")).toBe(false);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		// Disable add-log-entry
+		fixture.plugin.settings.commandAddLogEntryEnabled = false;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+
+		expect(isCommandRegistered("open-sidebar")).toBe(false);
+		expect(isCommandRegistered("open-dashboard")).toBe(false);
+		expect(isCommandRegistered("add-log-entry")).toBe(false);
+	});
+
+	it("enable commands: turning a setting ON registers the command immediately", async () => {
+		// Start with all disabled
+		fixture.plugin.settings.commandOpenSidebarEnabled = false;
+		fixture.plugin.settings.commandOpenDashboardEnabled = false;
+		fixture.plugin.settings.commandAddLogEntryEnabled = false;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+
+		expect(isCommandRegistered("open-sidebar")).toBe(false);
+		expect(isCommandRegistered("open-dashboard")).toBe(false);
+		expect(isCommandRegistered("add-log-entry")).toBe(false);
+
+		// Enable open-sidebar
+		fixture.plugin.settings.commandOpenSidebarEnabled = true;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(false);
+		expect(isCommandRegistered("add-log-entry")).toBe(false);
+
+		// Enable open-dashboard
+		fixture.plugin.settings.commandOpenDashboardEnabled = true;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(false);
+
+		// Enable add-log-entry
+		fixture.plugin.settings.commandAddLogEntryEnabled = true;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+	});
+
+	it("independence: changing one command setting does not affect the other two", async () => {
+		// All enabled initially
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		// Toggle open-sidebar off and on multiple times
+		fixture.plugin.settings.commandOpenSidebarEnabled = false;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+		expect(isCommandRegistered("open-sidebar")).toBe(false);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		fixture.plugin.settings.commandOpenSidebarEnabled = true;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		// Toggle open-dashboard off and on
+		fixture.plugin.settings.commandOpenDashboardEnabled = false;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(false);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		fixture.plugin.settings.commandOpenDashboardEnabled = true;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+
+		// Toggle add-log-entry off and on
+		fixture.plugin.settings.commandAddLogEntryEnabled = false;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(false);
+
+		fixture.plugin.settings.commandAddLogEntryEnabled = true;
+		await fixture.plugin.saveSettings();
+		fixture.plugin.refreshViews();
+		expect(isCommandRegistered("open-sidebar")).toBe(true);
+		expect(isCommandRegistered("open-dashboard")).toBe(true);
+		expect(isCommandRegistered("add-log-entry")).toBe(true);
+	});
+
+	it("repeated changes: toggling repeatedly produces no duplicate registrations and safe removal", async () => {
+		// Toggle each command 5 times
+		for (let i = 0; i < 5; i++) {
+			// Toggle open-sidebar
+			fixture.plugin.settings.commandOpenSidebarEnabled = false;
+			await fixture.plugin.saveSettings();
+			fixture.plugin.refreshViews();
+			expect(isCommandRegistered("open-sidebar")).toBe(false);
+
+			fixture.plugin.settings.commandOpenSidebarEnabled = true;
+			await fixture.plugin.saveSettings();
+			fixture.plugin.refreshViews();
+			expect(isCommandRegistered("open-sidebar")).toBe(true);
+
+			// Toggle open-dashboard
+			fixture.plugin.settings.commandOpenDashboardEnabled = false;
+			await fixture.plugin.saveSettings();
+			fixture.plugin.refreshViews();
+			expect(isCommandRegistered("open-dashboard")).toBe(false);
+
+			fixture.plugin.settings.commandOpenDashboardEnabled = true;
+			await fixture.plugin.saveSettings();
+			fixture.plugin.refreshViews();
+			expect(isCommandRegistered("open-dashboard")).toBe(true);
+
+			// Toggle add-log-entry
+			fixture.plugin.settings.commandAddLogEntryEnabled = false;
+			await fixture.plugin.saveSettings();
+			fixture.plugin.refreshViews();
+			expect(isCommandRegistered("add-log-entry")).toBe(false);
+
+			fixture.plugin.settings.commandAddLogEntryEnabled = true;
+			await fixture.plugin.saveSettings();
+			fixture.plugin.refreshViews();
+			expect(isCommandRegistered("add-log-entry")).toBe(true);
+		}
+
+		// Verify no duplicate commands (each ID appears exactly once)
+		const openSidebarCount = fixture.commands.filter((c) => c.id === "open-sidebar").length;
+		const openDashboardCount = fixture.commands.filter((c) => c.id === "open-dashboard").length;
+		const addLogEntryCount = fixture.commands.filter((c) => c.id === "add-log-entry").length;
+
+		expect(openSidebarCount).toBe(1);
+		expect(openDashboardCount).toBe(1);
+		expect(addLogEntryCount).toBe(1);
+	});
+
+	it("persistence: settings remain correctly saved after toggling", async () => {
+		// Toggle all off
+		fixture.plugin.settings.commandOpenSidebarEnabled = false;
+		fixture.plugin.settings.commandOpenDashboardEnabled = false;
+		fixture.plugin.settings.commandAddLogEntryEnabled = false;
+		await fixture.plugin.saveSettings();
+
+		// Create a new plugin instance with the saved settings to verify persistence
+		const loadedData = await fixture.plugin.loadData();
+		const { settings: loadedSettings } = migrateLoadedSettings(loadedData);
+
+		expect(loadedSettings.commandOpenSidebarEnabled).toBe(false);
+		expect(loadedSettings.commandOpenDashboardEnabled).toBe(false);
+		expect(loadedSettings.commandAddLogEntryEnabled).toBe(false);
+
+		// Toggle all on
+		fixture.plugin.settings.commandOpenSidebarEnabled = true;
+		fixture.plugin.settings.commandOpenDashboardEnabled = true;
+		fixture.plugin.settings.commandAddLogEntryEnabled = true;
+		await fixture.plugin.saveSettings();
+
+		const loadedData2 = await fixture.plugin.loadData();
+		const { settings: loadedSettings2 } = migrateLoadedSettings(loadedData2);
+
+		expect(loadedSettings2.commandOpenSidebarEnabled).toBe(true);
+		expect(loadedSettings2.commandOpenDashboardEnabled).toBe(true);
+		expect(loadedSettings2.commandAddLogEntryEnabled).toBe(true);
 	});
 });

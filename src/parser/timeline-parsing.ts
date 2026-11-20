@@ -35,10 +35,16 @@ export const TIME_RANGE_REGEX = /^[-*]\s*(\d{1,2}:\d{2})\s*[-~]\s*(\d{1,2}:\d{2}
 const CHECKBOX_REGEX = /^[-*]\s*\[([ xX])\]\s*(.*)$/;
 
 /**
- * Matches `[Category]` only when it sits directly after a time range
- * (`- HH:mm - HH:mm [Category]`), i.e. in exact event-line position. This
- * prevents brackets typed anywhere else in a note (diary prose, headings,
- * checkboxes, wikilinks) from being rendered as category badges.
+ * Finds `[Category]` tokens that follow a time-range-shaped sequence.
+ *
+ * This expression is deliberately not anchored to the beginning of a line:
+ * category badges are visual decoration, not event parsing. This allows
+ * category references in continuation prose inside the configured Event
+ * section to receive the same styling as event-line categories. It does not
+ * create additional timeline items: `parseTimeline()` independently starts
+ * items only from complete lines matching `TIME_RANGE_REGEX` at line start.
+ * The badge renderers separately limit decoration to configured daily notes
+ * and the configured Event section.
  *
  * Matches the time range as part of the pattern instead of using lookbehind,
  * so it works on older iOS JavaScript engines. Group 1 = the category text
