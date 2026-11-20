@@ -458,7 +458,7 @@ export class DashboardView extends ItemView {
 
 		const dateRangeText =
 			stats.oldestDate && stats.newestDate
-				? `${formatDateBasename(stats.oldestDate)} ~ ${formatDateBasename(stats.newestDate)}`
+				? `${formatDateBasename(stats.oldestDate, this.plugin.getDailyNoteFormat())} ~ ${formatDateBasename(stats.newestDate, this.plugin.getDailyNoteFormat())}`
 				: "-";
 
 		this.renderSummaryRow(summaryBox, t("statDateRange", language), dateRangeText, t("tipStatDateRange", language));
