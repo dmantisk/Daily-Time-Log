@@ -6,6 +6,7 @@ import {
 	findEventBlock,
 	findEventBlockInContent,
 	hasEventBlock,
+	headingLevel,
 	isTopLevelOrMarker,
 	isWithinEventHeading,
 	matchMarker,
@@ -185,6 +186,223 @@ describe("Event heading matching", () => {
 		// CommonMark's intraword rule: `_` inside a word is literal.
 		expect(matchMarker("# foo_bar_baz", { text: "foo_bar_baz", level: 1 })).toBe(true);
 		expect(matchMarker("# foo_bar_baz", { text: "foobarbaz", level: 1 })).toBe(false);
+	});
+});
+
+describe("indented heading regression (CommonMark 0-3 spaces)", () => {
+	describe("matchMarker()", () => {
+		const config = { text: "Event", level: 1 };
+
+		it("matches with zero leading spaces", () => {
+			expect(matchMarker("# Event", config)).toBe(true);
+		});
+
+		it("matches with one leading space", () => {
+			expect(matchMarker(" # Event", config)).toBe(true);
+		});
+
+		it("matches with two leading spaces", () => {
+			expect(matchMarker("  # Event", config)).toBe(true);
+		});
+
+		it("matches with three leading spaces", () => {
+			expect(matchMarker("   # Event", config)).toBe(true);
+		});
+
+		it("does NOT match with four leading spaces (indented code)", () => {
+			expect(matchMarker("    # Event", config)).toBe(false);
+		});
+
+		it("does NOT match with five leading spaces", () => {
+			expect(matchMarker("     # Event", config)).toBe(false);
+		});
+
+		it("does NOT match with a leading tab (indented code)", () => {
+			expect(matchMarker("\t# Event", config)).toBe(false);
+		});
+
+		it("does NOT match with tab + spaces", () => {
+			expect(matchMarker("\t # Event", config)).toBe(false);
+		});
+
+		it("existing configured heading levels still work (level 2)", () => {
+			expect(matchMarker("## Event", { text: "Event", level: 2 })).toBe(true);
+			expect(matchMarker(" ## Event", { text: "Event", level: 2 })).toBe(true);
+			expect(matchMarker("  ## Event", { text: "Event", level: 2 })).toBe(true);
+			expect(matchMarker("   ## Event", { text: "Event", level: 2 })).toBe(true);
+			expect(matchMarker("    ## Event", { text: "Event", level: 2 })).toBe(false);
+			expect(matchMarker("\t## Event", { text: "Event", level: 2 })).toBe(false);
+		});
+
+		it("existing configured heading levels still work (level 3)", () => {
+			expect(matchMarker("### Event", { text: "Event", level: 3 })).toBe(true);
+			expect(matchMarker(" ### Event", { text: "Event", level: 3 })).toBe(true);
+			expect(matchMarker("  ### Event", { text: "Event", level: 3 })).toBe(true);
+			expect(matchMarker("   ### Event", { text: "Event", level: 3 })).toBe(true);
+			expect(matchMarker("    ### Event", { text: "Event", level: 3 })).toBe(false);
+			expect(matchMarker("\t### Event", { text: "Event", level: 3 })).toBe(false);
+		});
+	});
+
+	describe("headingLevel()", () => {
+		it("returns level 1 for zero leading spaces", () => {
+			expect(headingLevel("# Event")).toBe(1);
+		});
+
+		it("returns level 1 for one leading space", () => {
+			expect(headingLevel(" # Event")).toBe(1);
+		});
+
+		it("returns level 1 for two leading spaces", () => {
+			expect(headingLevel("  # Event")).toBe(1);
+		});
+
+		it("returns level 1 for three leading spaces", () => {
+			expect(headingLevel("   # Event")).toBe(1);
+		});
+
+		it("returns null for four leading spaces (indented code)", () => {
+			expect(headingLevel("    # Event")).toBeNull();
+		});
+
+		it("returns null for five leading spaces", () => {
+			expect(headingLevel("     # Event")).toBeNull();
+		});
+
+		it("returns null for a leading tab (indented code)", () => {
+			expect(headingLevel("\t# Event")).toBeNull();
+		});
+
+		it("returns null for tab + spaces", () => {
+			expect(headingLevel("\t # Event")).toBeNull();
+		});
+
+		it("existing heading levels 1 through 6 still work", () => {
+			expect(headingLevel("# H1")).toBe(1);
+			expect(headingLevel("## H2")).toBe(2);
+			expect(headingLevel("### H3")).toBe(3);
+			expect(headingLevel("#### H4")).toBe(4);
+			expect(headingLevel("##### H5")).toBe(5);
+			expect(headingLevel("###### H6")).toBe(6);
+		});
+
+		it("heading levels 1-6 work with 1-3 leading spaces", () => {
+			expect(headingLevel(" # H1")).toBe(1);
+			expect(headingLevel(" ## H2")).toBe(2);
+			expect(headingLevel(" ### H3")).toBe(3);
+			expect(headingLevel(" #### H4")).toBe(4);
+			expect(headingLevel(" ##### H5")).toBe(5);
+			expect(headingLevel(" ###### H6")).toBe(6);
+			expect(headingLevel("  # H1")).toBe(1);
+			expect(headingLevel("  ## H2")).toBe(2);
+			expect(headingLevel("   ### H3")).toBe(3);
+		});
+
+		it("heading levels 1-6 return null with 4+ leading spaces", () => {
+			expect(headingLevel("    # H1")).toBeNull();
+			expect(headingLevel("    ## H2")).toBeNull();
+			expect(headingLevel("    ### H3")).toBeNull();
+			expect(headingLevel("    #### H4")).toBeNull();
+			expect(headingLevel("    ##### H5")).toBeNull();
+			expect(headingLevel("    ###### H6")).toBeNull();
+		});
+
+		it("heading levels 1-6 return null with leading tab", () => {
+			expect(headingLevel("\t# H1")).toBeNull();
+			expect(headingLevel("\t## H2")).toBeNull();
+			expect(headingLevel("\t### H3")).toBeNull();
+		});
+	});
+
+	describe("Event block detection with indented headings", () => {
+		it("indented '## Fake Notes' does not close the Event section", () => {
+			const content = [
+				"# Event",
+				"- 09:00 - 10:00 work",
+				"    ## Fake Notes",
+				"- 10:00 - 11:00 more work",
+				"# Real Notes",
+			].join("\n");
+
+			const block = findEventBlockInContent(content, DEFAULT_EVENT_HEADING);
+			// The block should extend to the line before "# Real Notes"
+			expect(block).toEqual({ start: 0, end: 3 });
+
+			const parsed = parseDailyNote(content);
+			// Both actual event lines should be inside the Event block
+			// The indented heading is absorbed as continuation text of the first event
+			expect(parsed.timeline).toHaveLength(2);
+			expect(parsed.timeline[0]).toMatchObject({
+				start: "09:00",
+				end: "10:00",
+				description: "work\n    ## Fake Notes",
+				lineCount: 2,
+			});
+			expect(parsed.timeline[1]).toMatchObject({ start: "10:00", end: "11:00", description: "more work" });
+		});
+
+		it("indented '# Event' cannot open the configured Event section", () => {
+			const content = ["    # Event", "- 09:00 - 10:00 work", "# Real Notes"].join("\n");
+
+			const block = findEventBlockInContent(content, DEFAULT_EVENT_HEADING);
+			// The indented heading should not open the block
+			expect(block).toBeNull();
+
+			const parsed = parseDailyNote(content);
+			// No events should be parsed
+			expect(parsed.timeline).toHaveLength(0);
+		});
+
+		it("indented '# Event' with 3 spaces still opens the section", () => {
+			const content = ["   # Event", "- 09:00 - 10:00 work", "# Real Notes"].join("\n");
+
+			const block = findEventBlockInContent(content, DEFAULT_EVENT_HEADING);
+			// 3 spaces is allowed, so it should open the block
+			expect(block).toEqual({ start: 0, end: 1 });
+
+			const parsed = parseDailyNote(content);
+			expect(parsed.timeline).toHaveLength(1);
+			expect(parsed.timeline[0]).toMatchObject({ start: "09:00", end: "10:00", description: "work" });
+		});
+	});
+
+	describe("Timeline parsing with indented headings", () => {
+		it("indented heading-shaped line is absorbed as continuation text (not a heading or top-level marker)", () => {
+			const lines = ["# Event", "- 09:00 - 10:00 work", "    ## Fake Notes", "- 10:00 - 11:00 more work"];
+
+			const items = parseTimeline(lines, { start: 0, end: 3 });
+			// The indented heading is NOT a heading (4 spaces = indented code),
+			// so it gets absorbed as continuation text of the first event.
+			// The second event line still starts a new event.
+			expect(items).toHaveLength(2);
+			expect(items[0]).toMatchObject({
+				start: "09:00",
+				end: "10:00",
+				description: "work\n    ## Fake Notes",
+				lineCount: 2,
+			});
+			expect(items[1]).toMatchObject({ start: "10:00", end: "11:00", description: "more work" });
+		});
+
+		it("indented heading does not stop continuation absorption", () => {
+			const lines = ["- 09:00 - 10:00 work", "    ## Fake Notes", "continuation detail"];
+
+			const items = parseTimeline(lines, { start: 0, end: 2 });
+			// The indented heading should be absorbed as continuation text
+			expect(items).toHaveLength(1);
+			expect(items[0].lineCount).toBe(3);
+			expect(items[0].description).toBe("work\n    ## Fake Notes\ncontinuation detail");
+		});
+
+		it("real heading at same level stops continuation absorption", () => {
+			const lines = ["- 09:00 - 10:00 work", "## Real Notes", "continuation detail"];
+
+			const items = parseTimeline(lines, { start: 0, end: 2 });
+			// The real heading should stop absorption
+			expect(items).toHaveLength(1);
+			expect(items[0].lineCount).toBe(1);
+			expect(items[0].description).toBe("work");
+		});
 	});
 
 	it("ends the block at the next heading of the same level or above", () => {

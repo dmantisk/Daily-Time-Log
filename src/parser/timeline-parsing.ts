@@ -111,7 +111,7 @@ export function parseTimeline(lines: string[], range: LineRange): TimelineItem[]
 			continue;
 		}
 
-		if (/^#{1,6}\s/.test(trimmed)) {
+		if (headingLevel(text) !== null) {
 			current = null;
 			continue;
 		}
@@ -181,7 +181,10 @@ export function isTopLevelOrMarker(line: string): boolean {
 	// The time-range test stays on the RAW line, because that is exactly
 	// what `parseTimeline()` does - the two must agree, or the guard would
 	// reject a description the parser handles without trouble.
-	return TIME_RANGE_REGEX.test(line) || CHECKBOX_REGEX.test(line.trim()) || /^#{1,6}\s/.test(line.trim());
+	//
+	// Heading detection uses the shared headingLevel() which implements
+	// CommonMark's 0-3 leading spaces rule.
+	return TIME_RANGE_REGEX.test(line) || CHECKBOX_REGEX.test(line.trim()) || headingLevel(line) !== null;
 }
 
 /**
