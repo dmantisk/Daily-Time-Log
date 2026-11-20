@@ -113,7 +113,7 @@ describe("TimelineModal", () => {
 		// Obsidian's `TextComponent` / `TextAreaComponent`.
 		const inputs = timeInputsOf(modal);
 		expect(inputs).toHaveLength(4);
-		expect(inputs.map((input) => input.type)).toEqual(["number", "number", "number", "number"]);
+		expect(inputs.map((input) => input.type)).toEqual(["text", "text", "text", "text"]);
 		expect(inputs.map((input) => input.value)).toEqual(["09", "00", "10", "00"]);
 		expect(inputs.map((input) => input.getAttribute("aria-label"))).toEqual([
 			"Start hour",
@@ -121,8 +121,7 @@ describe("TimelineModal", () => {
 			"End hour",
 			"End minute",
 		]);
-		expect(inputs.map((input) => input.max)).toEqual(["23", "59", "24", "59"]);
-		expect(inputs.every((input) => input.min === "0" && input.step === "1")).toBe(true);
+		// Text inputs don't use min/max/step attributes; validation is handled in JS
 		expect(textareaOf(modal).tagName).toBe("TEXTAREA");
 
 		// Category dropdown is a native <select>
@@ -458,6 +457,260 @@ describe("TimelineModal", () => {
 
 			expect(saved).toHaveLength(1);
 			expect(saved[0].description).toBe("Use `npm test` to run the tests");
+		});
+	});
+
+	describe("digit rollover between hour and minute inputs", () => {
+		it("typing four digits into start hour auto-advances to start minute and produces correct time", () => {
+			const { modal, saved } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+
+			// Simulate typing "0930" into start hour
+			startHour.value = "09";
+			startHour.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Focus should have moved to start minute
+			expect(document.activeElement).toStrictEqual(startMinute);
+
+			// Type the remaining digits
+			startMinute.value = "30";
+			startMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Fill end time
+			endHour.value = "10";
+			endHour.dispatchEvent(new Event("input", { bubbles: true }));
+			endMinute.value = "00";
+			endMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(1);
+			expect(saved[0].start).toBe("09:30");
+			expect(saved[0].end).toBe("10:00");
+		});
+
+		it("typing four digits into end hour auto-advances to end minute and produces correct time", () => {
+			const { modal, saved } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+
+			// Fill start time first
+			startHour.value = "09";
+			startHour.dispatchEvent(new Event("input", { bubbles: true }));
+			startMinute.value = "00";
+			startMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Simulate typing "1245" into end hour
+			endHour.value = "12";
+			endHour.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Focus should have moved to end minute
+			expect(document.activeElement).toStrictEqual(endMinute);
+
+			// Type the remaining digits
+			endMinute.value = "45";
+			endMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(1);
+			expect(saved[0].start).toBe("09:00");
+			expect(saved[0].end).toBe("12:45");
+		});
+
+		it("pasting 0930 into start hour distributes digits correctly", () => {
+			const { modal, saved } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+
+			// Paste "0930" into start hour
+			const pasteEvent = new ClipboardEvent("paste", {
+				clipboardData: new DataTransfer(),
+				bubbles: true,
+				cancelable: true,
+			});
+			pasteEvent.clipboardData?.setData("text/plain", "0930");
+			startHour.dispatchEvent(pasteEvent);
+
+			// Values should be distributed
+			expect(startHour.value).toBe("09");
+			expect(startMinute.value).toBe("30");
+
+			// Focus should be on minute with selection
+			expect(document.activeElement).toStrictEqual(startMinute);
+
+			// Fill end time
+			endHour.value = "10";
+			endHour.dispatchEvent(new Event("input", { bubbles: true }));
+			endMinute.value = "00";
+			endMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(1);
+			expect(saved[0].start).toBe("09:30");
+			expect(saved[0].end).toBe("10:00");
+		});
+
+		it("pasting 2400 into end hour produces valid end time", () => {
+			const { modal, saved } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+
+			// Fill start time
+			startHour.value = "23";
+			startHour.dispatchEvent(new Event("input", { bubbles: true }));
+			startMinute.value = "00";
+			startMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Paste "2400" into end hour
+			const pasteEvent = new ClipboardEvent("paste", {
+				clipboardData: new DataTransfer(),
+				bubbles: true,
+				cancelable: true,
+			});
+			pasteEvent.clipboardData?.setData("text/plain", "2400");
+			endHour.dispatchEvent(pasteEvent);
+
+			// Values should be distributed
+			expect(endHour.value).toBe("24");
+			expect(endMinute.value).toBe("00");
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(1);
+			expect(saved[0].start).toBe("23:00");
+			expect(saved[0].end).toBe("24:00");
+		});
+
+		it("24:00 remains invalid as a start time - pasting 2400 clamps to 23:00", () => {
+			const { modal, saved } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+
+			// Try to paste "2400" into start hour
+			const pasteEvent = new ClipboardEvent("paste", {
+				clipboardData: new DataTransfer(),
+				bubbles: true,
+				cancelable: true,
+			});
+			pasteEvent.clipboardData?.setData("text/plain", "2400");
+			startHour.dispatchEvent(pasteEvent);
+
+			// Hour should be clamped to 23 (max for start time)
+			expect(startHour.value).toBe("23");
+			expect(startMinute.value).toBe("00");
+
+			// Fill end time with a different time
+			endHour.value = "23";
+			endHour.dispatchEvent(new Event("input", { bubbles: true }));
+			endMinute.value = "30";
+			endMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+
+			// Should succeed with clamped start time 23:00 and end time 23:30
+			expect(saved).toHaveLength(1);
+			expect(saved[0].start).toBe("23:00");
+			expect(saved[0].end).toBe("23:30");
+		});
+
+		it("start hour input clamps to 23, preventing 24:00 as start time", () => {
+			const { modal, saved } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+
+			// Try to type "24" into start hour - should be clamped to 23
+			startHour.value = "24";
+			startHour.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Value should be clamped to 23
+			expect(startHour.value).toBe("23");
+
+			startMinute.value = "00";
+			startMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Fill end time
+			endHour.value = "24";
+			endHour.dispatchEvent(new Event("input", { bubbles: true }));
+			endMinute.value = "00";
+			endMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+
+			// Should succeed with clamped start time 23:00 and end time 24:00
+			expect(saved).toHaveLength(1);
+			expect(saved[0].start).toBe("23:00");
+			expect(saved[0].end).toBe("24:00");
+		});
+
+		it("typing two digits in a minute field does not unexpectedly move focus", () => {
+			const { modal } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+
+			// Fill start hour
+			startHour.value = "09";
+			startHour.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Now type two digits in start minute
+			startMinute.value = "30";
+			startMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Focus should remain on start minute (not move to end hour)
+			expect(document.activeElement).toStrictEqual(startMinute);
+
+			// Fill the rest
+			endHour.value = "10";
+			endHour.dispatchEvent(new Event("input", { bubbles: true }));
+			endMinute.value = "00";
+			endMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			buttonLabelled(modal, "Save").click();
+		});
+
+		it("existing single-digit padding and time validation still work", () => {
+			const { modal } = openModal(null);
+			const [startHour, startMinute] = timeInputsOf(modal);
+
+			// Type single digits
+			startHour.value = "9";
+			startHour.dispatchEvent(new Event("input", { bubbles: true }));
+			startMinute.value = "5";
+			startMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Blur should pad them
+			startHour.dispatchEvent(new Event("blur"));
+			startMinute.dispatchEvent(new Event("blur"));
+
+			expect(startHour.value).toBe("09");
+			expect(startMinute.value).toBe("05");
+		});
+
+		it("modal's existing description, category and save tests remain unaffected", () => {
+			const { modal, saved } = openModal(null);
+			const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+			const dropdown = categoryDropdownOf(modal);
+			const textarea = textareaOf(modal);
+
+			// Set time using new input method
+			startHour.value = "09";
+			startHour.dispatchEvent(new Event("input", { bubbles: true }));
+			startMinute.value = "30";
+			startMinute.dispatchEvent(new Event("input", { bubbles: true }));
+			endHour.value = "10";
+			endHour.dispatchEvent(new Event("input", { bubbles: true }));
+			endMinute.value = "00";
+			endMinute.dispatchEvent(new Event("input", { bubbles: true }));
+
+			// Set category
+			dropdown.value = "Work";
+			dropdown.dispatchEvent(new Event("change", { bubbles: true }));
+
+			// Set description
+			textarea.value = "Test description";
+
+			buttonLabelled(modal, "Save").click();
+
+			expect(saved).toHaveLength(1);
+			expect(saved[0].start).toBe("09:30");
+			expect(saved[0].end).toBe("10:00");
+			expect(saved[0].category).toBe("Work");
+			expect(saved[0].description).toBe("Test description");
 		});
 	});
 });

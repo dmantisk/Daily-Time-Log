@@ -89,15 +89,19 @@ export class TimelineModal extends Modal {
 			startParts,
 			`${t("lblStartTime", this.language)} ${t("lblHour", this.language)}`,
 			startHour,
-			23
+			23,
+			true
 		);
 		startParts.createSpan({ cls: "dwl-modal-time-separator", text: ":" });
 		this.startMinuteComponent = this.createTimeInput(
 			startParts,
 			`${t("lblStartTime", this.language)} ${t("lblMinute", this.language)}`,
 			startMinute,
-			59
+			59,
+			false
 		);
+		// Link hour to minute for auto-advance and paste distribution
+		this.linkTimeInputs(this.startHourComponent, this.startMinuteComponent);
 
 		const endGroup = timeRow.createDiv({ cls: "dwl-modal-time-group" });
 		endGroup.createDiv({ cls: "dwl-modal-label", text: t("lblEndTime", this.language) });
@@ -106,15 +110,19 @@ export class TimelineModal extends Modal {
 			endParts,
 			`${t("lblEndTime", this.language)} ${t("lblHour", this.language)}`,
 			endHour,
-			24
+			24,
+			true
 		);
 		endParts.createSpan({ cls: "dwl-modal-time-separator", text: ":" });
 		this.endMinuteComponent = this.createTimeInput(
 			endParts,
 			`${t("lblEndTime", this.language)} ${t("lblMinute", this.language)}`,
 			endMinute,
-			59
+			59,
+			false
 		);
+		// Link hour to minute for auto-advance and paste distribution
+		this.linkTimeInputs(this.endHourComponent, this.endMinuteComponent);
 
 		// --- Category ---
 		const categoryField = body.createDiv({ cls: "dwl-modal-field" });
@@ -220,26 +228,106 @@ export class TimelineModal extends Modal {
 			.onClick(() => this.handleSave());
 	}
 
-	/** Creates one native numeric input for an hour or minute segment. */
+	/** Creates one native text input for an hour or minute segment with digit rollover. */
 	private createTimeInput(
 		containerEl: HTMLElement,
 		ariaLabel: string,
 		value: string,
-		max: number
+		max: number,
+		isHour: boolean
 	): TextComponent {
 		const component = new TextComponent(containerEl);
-		component.inputEl.type = "number";
-		component.inputEl.min = "0";
-		component.inputEl.max = String(max);
-		component.inputEl.step = "1";
+		component.inputEl.type = "text";
 		component.inputEl.inputMode = "numeric";
 		component.inputEl.setAttribute("aria-label", ariaLabel);
 		component.inputEl.addClass("dwl-modal-time-input");
+		component.inputEl.maxLength = 2;
 		component.setValue(value.padStart(2, "0"));
+
+		// Track if this is an hour input for rollover logic
+		const isHourInput = isHour;
+		const maxValue = max;
+
+		// Handle input event for digit rollover and validation
+		component.inputEl.addEventListener("input", (event) => {
+			const input = event.target as HTMLInputElement;
+			let value = input.value;
+
+			// Strip non-numeric characters
+			value = value.replace(/\D/g, "");
+
+			// For hour inputs, enforce max (23 for start, 24 for end)
+			if (isHourInput) {
+				if (value.length === 2) {
+					const hourVal = parseInt(value, 10);
+					if (hourVal > maxValue) {
+						value = String(maxValue);
+					}
+				}
+			} else {
+				// For minute inputs, enforce max 59
+				if (value.length === 2) {
+					const minuteVal = parseInt(value, 10);
+					if (minuteVal > 59) {
+						value = "59";
+					}
+				}
+			}
+
+			// Limit to 2 digits
+			if (value.length > 2) {
+				value = value.slice(0, 2);
+			}
+
+			// Update the input value if it changed
+			if (input.value !== value) {
+				input.value = value;
+				component.setValue(value);
+			}
+		});
+
+		// Handle paste event for 4-digit time distribution (only on hour inputs)
+		if (isHourInput) {
+			component.inputEl.addEventListener("paste", (event) => {
+				const pasteData = event.clipboardData?.getData("text") ?? "";
+				const digits = pasteData.replace(/\D/g, "");
+
+				if (digits.length >= 4) {
+					event.preventDefault();
+
+					const hourPart = digits.slice(0, 2);
+					const minutePart = digits.slice(2, 4);
+
+					// Validate hour part
+					const hourVal = parseInt(hourPart, 10);
+					const validHour = hourVal <= maxValue ? hourPart : String(maxValue).padStart(2, "0");
+
+					// Validate minute part
+					const minuteVal = parseInt(minutePart, 10);
+					const validMinute = minuteVal <= 59 ? minutePart : "59";
+
+					component.setValue(validHour);
+					component.inputEl.value = validHour;
+
+					// The minute component will be set via a property we attach
+					const pairMinute = (component.inputEl as HTMLInputElement & { pairMinute?: TextComponent }).pairMinute;
+					if (pairMinute) {
+						pairMinute.setValue(validMinute);
+						pairMinute.inputEl.value = validMinute;
+						pairMinute.inputEl.focus();
+						pairMinute.inputEl.select();
+					}
+				}
+			});
+		}
+
+		// Preserve existing blur behavior: pad single-digit values
 		component.inputEl.addEventListener("blur", () => {
 			const current = component.getValue();
 			if (/^\d{1,2}$/.test(current)) component.setValue(current.padStart(2, "0"));
 		});
+
+		// Handle Enter key to save
 		component.inputEl.addEventListener("keydown", (event) => {
 			if (event.key === "Enter" && !event.ctrlKey && !event.metaKey) {
 				this.handleSave();
@@ -247,7 +335,27 @@ export class TimelineModal extends Modal {
 				event.stopPropagation();
 			}
 		});
+
+		// Select all text on focus for easy replacement
+		component.inputEl.addEventListener("focus", () => {
+			component.inputEl.select();
+		});
+
 		return component;
+	}
+
+	/** Links an hour input to its minute counterpart for auto-advance and paste distribution. */
+	private linkTimeInputs(hourComponent: TextComponent, minuteComponent: TextComponent): void {
+		// Store reference on the hour input for paste handling
+		(hourComponent.inputEl as HTMLInputElement & { pairMinute?: TextComponent }).pairMinute = minuteComponent;
+
+		// Auto-advance from hour to minute when 2 digits entered
+		hourComponent.inputEl.addEventListener("input", () => {
+			if (hourComponent.inputEl.value.length === 2) {
+				minuteComponent.inputEl.focus();
+				minuteComponent.inputEl.select();
+			}
+		});
 	}
 
 	/**
