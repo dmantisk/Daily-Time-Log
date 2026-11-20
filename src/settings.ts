@@ -27,8 +27,13 @@ export interface CustomCategory {
  *   dashboard keys its per-category totals by display name, so two
  *   categories sharing one name would each be credited with the same
  *   minutes and the totals would be doubled.
+ * - `brackets`: the name contains square brackets. Square brackets are
+ *   reserved delimiters in the Markdown Event format (`[Category]`),
+ *   so a name like `QA[UX]` would be written as
+ *   `- 09:00 - 10:00 [QA[UX]] Testing`, which the parser cannot
+ *   reliably recover.
  */
-export type CategoryNameProblem = "empty" | "duplicate";
+export type CategoryNameProblem = "empty" | "duplicate" | "brackets";
 
 /**
  * Finds the configured category whose display name matches the given text.
@@ -71,6 +76,14 @@ export function validateCategoryName(
 ): CategoryNameProblem | null {
 	const trimmed = name.trim();
 	if (!trimmed) return "empty";
+
+	// Square brackets are reserved delimiters in the Markdown Event format.
+	// A category named "QA[UX]" would be written as
+	// "- 09:00 - 10:00 [QA[UX]] Testing" which the parser cannot
+	// reliably recover.
+	if (trimmed.includes("[") || trimmed.includes("]")) {
+		return "brackets";
+	}
 
 	const lower = trimmed.toLowerCase();
 	const duplicate = categories.some(

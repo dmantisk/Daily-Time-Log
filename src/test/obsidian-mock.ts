@@ -401,7 +401,7 @@ export class Setting {
 	}
 
 	addColorPicker(cb: (picker: ColorComponent) => void): this {
-		const component = new ColorComponent();
+		const component = new ColorComponent(this.controlEl);
 		this.components.colorPickers.push(component);
 		cb(component);
 		return this;
@@ -558,9 +558,16 @@ export class DropdownComponent {
 
 /** A colour picker component. */
 export class ColorComponent {
+	inputEl: HTMLInputElement = document.createElement("input");
 	private changeHandler: ((value: string) => void) | null = null;
 
-	setValue(_value: string): this {
+	constructor(containerEl?: HTMLElement) {
+		this.inputEl.type = "color";
+		if (containerEl) containerEl.appendChild(this.inputEl);
+	}
+
+	setValue(value: string): this {
+		this.inputEl.value = value;
 		return this;
 	}
 	onChange(cb: (value: string) => void): this {
@@ -569,6 +576,7 @@ export class ColorComponent {
 	}
 	/** Simulates the user picking a different colour. */
 	async pickColor(value: string): Promise<void> {
+		this.inputEl.value = value;
 		await this.changeHandler?.(value);
 	}
 }

@@ -13,7 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
-import { Setting } from "./test/obsidian-mock";
+import { Setting, Notice, TextComponent, ColorComponent } from "./test/obsidian-mock";
 
 installObsidianDomHelpers();
 
@@ -70,6 +70,27 @@ function settingWithoutPlaceholder(): Setting {
 	return match;
 }
 
+/**
+ * Renders the tab and returns the plugin stub it was rendered with.
+ */
+function renderTab(): ReturnType<typeof createPluginStub> {
+	const plugin = createPluginStub();
+	const tab = new DailyWorkLogSettingTab({} as never, plugin as never);
+	const container = document.createElement("div");
+	for (const definition of definitionsOf(tab)) {
+		const items = definition.type === "group" ? (definition.items ?? []) : [definition];
+		for (const item of items) {
+			if ("render" in item && item.render) {
+				const setting = new Setting(container);
+				setting.setName(item.name ?? "");
+				if (item.desc) setting.setDesc(item.desc);
+				item.render(setting, {} as never);
+			}
+		}
+	}
+	return plugin;
+}
+
 describe("DailyWorkLogSettingTab", () => {
 	beforeEach(() => {
 		Setting.reset();
@@ -78,27 +99,6 @@ describe("DailyWorkLogSettingTab", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
-
-	/**
-	 * Renders the tab and returns the plugin stub it was rendered with.
-	 */
-	function renderTab(): ReturnType<typeof createPluginStub> {
-		const plugin = createPluginStub();
-		const tab = new DailyWorkLogSettingTab({} as never, plugin as never);
-		const container = document.createElement("div");
-		for (const definition of definitionsOf(tab)) {
-			const items = definition.type === "group" ? (definition.items ?? []) : [definition];
-			for (const item of items) {
-				if ("render" in item && item.render) {
-					const setting = new Setting(container);
-					setting.setName(item.name ?? "");
-					if (item.desc) setting.setDesc(item.desc);
-					item.render(setting, {} as never);
-				}
-			}
-		}
-		return plugin;
-	}
 
 	it("keeps searchable setting definitions inline without a page entry", () => {
 		const plugin = createPluginStub();
@@ -225,5 +225,311 @@ describe("DailyWorkLogSettingTab", () => {
 		);
 		expect(heading).toBeDefined();
 		expect(heading?.descEl.textContent).toBe("Customize the categories and colors used in your daily logs.");
+	});
+});
+
+describe("Category bracket validation", () => {
+	beforeEach(() => {
+		Setting.reset();
+		Notice.reset();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	/**
+	 * Renders the tab and returns the plugin stub and the "Add New Category" button.
+	 */
+	function renderTabWithAddCategory(): { plugin: ReturnType<typeof createPluginStub>; addButton: HTMLButtonElement } {
+		const plugin = renderTab();
+		// Find the "Add" button in the "Add New Category" row
+		const addSetting = Setting.created.find((setting) => setting.nameEl.textContent === "Add New Category");
+		if (!addSetting) throw new Error("Add New Category setting not found");
+		const addButton = addSetting.components.buttons[0].buttonEl;
+		if (!addButton) throw new Error("Add button not found");
+		return { plugin, addButton };
+	}
+
+	/**
+	 * Finds the text input component in the "Add New Category" row.
+	 */
+	function getAddCategoryTextInput(): TextComponent {
+		const addSetting = Setting.created.find((setting) => setting.nameEl.textContent === "Add New Category");
+		if (!addSetting) throw new Error("Add New Category setting not found");
+		const textInput = addSetting.components.texts[0];
+		if (!textInput) throw new Error("Add category text input not found");
+		return textInput;
+	}
+
+	/**
+	 * Finds the color picker component in the "Add New Category" row.
+	 */
+	function getAddCategoryColorPicker(): ColorComponent {
+		const addSetting = Setting.created.find((setting) => setting.nameEl.textContent === "Add New Category");
+		if (!addSetting) throw new Error("Add New Category setting not found");
+		const colorPicker = addSetting.components.colorPickers[0];
+		if (!colorPicker) throw new Error("Add category color picker not found");
+		return colorPicker;
+	}
+
+	/**
+	 * Finds the text input component for an existing category row by its display name.
+	 */
+	function getCategoryTextInput(displayName: string): TextComponent {
+		const categorySetting = Setting.created.find(
+			(setting) =>
+				setting.settingEl.classList.contains("dwl-category-setting-item") &&
+				setting.components.texts[0].getValue() === displayName
+		);
+		if (!categorySetting) throw new Error(`Category setting for "${displayName}" not found`);
+		return categorySetting.components.texts[0];
+	}
+
+	it("rejects adding a new category with brackets in the name", async () => {
+		const { plugin, addButton } = renderTabWithAddCategory();
+		const textInput = getAddCategoryTextInput();
+		const colorPicker = getAddCategoryColorPicker();
+
+		// Set a name with brackets using the proper method
+		await textInput.setValueFromUser("QA[UX]");
+		await colorPicker.pickColor("#ff0000");
+
+		// Click the Add button
+		addButton.click();
+
+		// Wait for async operations
+		await vi.waitFor(() => {});
+
+		// Assert: category was not added
+		expect(plugin.settings.categories.length).toBe(2);
+		expect(plugin.settings.categories.map((c) => c.displayName)).toEqual(["Work", "Study"]);
+
+		// Assert: saveSettings was not called
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+
+		// Assert: refreshViews was not called
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		// Assert: Notice was shown with the bracket restriction message
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("rejects adding a new category with opening bracket only", async () => {
+		const { plugin, addButton } = renderTabWithAddCategory();
+		const textInput = getAddCategoryTextInput();
+		const colorPicker = getAddCategoryColorPicker();
+
+		await textInput.setValueFromUser("QA[UX");
+		await colorPicker.pickColor("#ff0000");
+
+		addButton.click();
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories.length).toBe(2);
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("rejects adding a new category with closing bracket only", async () => {
+		const { plugin, addButton } = renderTabWithAddCategory();
+		const textInput = getAddCategoryTextInput();
+		const colorPicker = getAddCategoryColorPicker();
+
+		await textInput.setValueFromUser("QAUX]");
+		await colorPicker.pickColor("#ff0000");
+
+		addButton.click();
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories.length).toBe(2);
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("rejects adding a new category with just an opening bracket", async () => {
+		const { plugin, addButton } = renderTabWithAddCategory();
+		const textInput = getAddCategoryTextInput();
+		const colorPicker = getAddCategoryColorPicker();
+
+		await textInput.setValueFromUser("[");
+		await colorPicker.pickColor("#ff0000");
+
+		addButton.click();
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories.length).toBe(2);
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("rejects adding a new category with just a closing bracket", async () => {
+		const { plugin, addButton } = renderTabWithAddCategory();
+		const textInput = getAddCategoryTextInput();
+		const colorPicker = getAddCategoryColorPicker();
+
+		await textInput.setValueFromUser("]");
+		await colorPicker.pickColor("#ff0000");
+
+		addButton.click();
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories.length).toBe(2);
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("accepts adding a new category with a valid name (no brackets)", async () => {
+		const { plugin, addButton } = renderTabWithAddCategory();
+		const textInput = getAddCategoryTextInput();
+		const colorPicker = getAddCategoryColorPicker();
+
+		await textInput.setValueFromUser("QA-UX");
+		await colorPicker.pickColor("#ff0000");
+
+		addButton.click();
+		await vi.waitFor(() => {});
+
+		// Assert: category was added
+		expect(plugin.settings.categories.length).toBe(3);
+		expect(plugin.settings.categories[2].displayName).toBe("QA-UX");
+		expect(plugin.settings.categories[2].color).toBe("#ff0000");
+
+		// Assert: saveSettings was called
+		expect(plugin.saveSettings).toHaveBeenCalledOnce();
+
+		// Assert: refreshViews was called
+		expect(plugin.refreshViews).toHaveBeenCalledOnce();
+
+		// Assert: No error notice
+		expect(Notice.shown.length).toBe(0);
+	});
+
+	it("accepts adding a new category with a valid Korean name", async () => {
+		const { plugin, addButton } = renderTabWithAddCategory();
+		const textInput = getAddCategoryTextInput();
+		const colorPicker = getAddCategoryColorPicker();
+
+		await textInput.setValueFromUser("업무");
+		await colorPicker.pickColor("#ff0000");
+
+		addButton.click();
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories.length).toBe(3);
+		expect(plugin.settings.categories[2].displayName).toBe("업무");
+		expect(plugin.saveSettings).toHaveBeenCalledOnce();
+		expect(plugin.refreshViews).toHaveBeenCalledOnce();
+
+		expect(Notice.shown.length).toBe(0);
+	});
+
+	it("rejects renaming an existing category to a name with brackets", async () => {
+		const plugin = renderTab();
+		const textInput = getCategoryTextInput("Work");
+
+		// Change the name to one with brackets
+		await textInput.setValueFromUser("QA[UX]");
+		textInput.inputEl.dispatchEvent(new Event("blur"));
+
+		await vi.waitFor(() => {});
+
+		// Assert: category was not renamed
+		expect(plugin.settings.categories[0].displayName).toBe("Work");
+
+		// Assert: saveSettings was not called
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+
+		// Assert: refreshViews was not called
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		// Assert: Notice was shown
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("rejects renaming an existing category to a name with opening bracket only", async () => {
+		const plugin = renderTab();
+		const textInput = getCategoryTextInput("Work");
+
+		await textInput.setValueFromUser("QA[UX");
+		textInput.inputEl.dispatchEvent(new Event("blur"));
+
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories[0].displayName).toBe("Work");
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("rejects renaming an existing category to a name with closing bracket only", async () => {
+		const plugin = renderTab();
+		const textInput = getCategoryTextInput("Work");
+
+		await textInput.setValueFromUser("QAUX]");
+		textInput.inputEl.dispatchEvent(new Event("blur"));
+
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories[0].displayName).toBe("Work");
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+		expect(plugin.refreshViews).not.toHaveBeenCalled();
+
+		expect(Notice.shown.length).toBeGreaterThan(0);
+		expect(Notice.shown[0]).toContain("[");
+	});
+
+	it("accepts renaming an existing category to a valid name", async () => {
+		const plugin = renderTab();
+		const textInput = getCategoryTextInput("Work");
+
+		await textInput.setValueFromUser("Deep Work");
+		textInput.inputEl.dispatchEvent(new Event("blur"));
+
+		await vi.waitFor(() => {});
+
+		// Assert: category was renamed
+		expect(plugin.settings.categories[0].displayName).toBe("Deep Work");
+
+		// Assert: saveSettings was called
+		expect(plugin.saveSettings).toHaveBeenCalledOnce();
+
+		// Assert: refreshViews was called
+		expect(plugin.refreshViews).toHaveBeenCalledOnce();
+
+		// Assert: No error notice
+		expect(Notice.shown.length).toBe(0);
+	});
+
+	it("accepts renaming an existing category to a valid Korean name", async () => {
+		const plugin = renderTab();
+		const textInput = getCategoryTextInput("Work");
+
+		await textInput.setValueFromUser("개인 프로젝트");
+		textInput.inputEl.dispatchEvent(new Event("blur"));
+
+		await vi.waitFor(() => {});
+
+		expect(plugin.settings.categories[0].displayName).toBe("개인 프로젝트");
+		expect(plugin.saveSettings).toHaveBeenCalledOnce();
+		expect(plugin.refreshViews).toHaveBeenCalledOnce();
+
+		expect(Notice.shown.length).toBe(0);
 	});
 });
