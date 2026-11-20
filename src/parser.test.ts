@@ -555,6 +555,106 @@ describe("appendLineToBlock", () => {
 			"# Event\n- 9:00 - 10:00 work"
 		);
 	});
+
+	describe("regression: fenced code blocks inside Event section", () => {
+		const baseNote = `# Event
+- 09:00 - 10:00 existing
+
+\`\`\`md
+## Example
+This is a code sample.
+\`\`\`
+
+### **Real subsection**
+Other content`;
+
+		it("backtick fence: inserts new Event after closing fence, before real subheading", () => {
+			const edited = appendLineToBlock(baseNote, "- 11:00 - 12:00 new event");
+			// The new event should be after the closing ``` fence
+			expect(edited).toContain("```\n\n- 11:00 - 12:00 new event\n### **Real subsection**");
+			// It should NOT be inside the code block
+			expect(edited).not.toContain("```\n## Example\nThis is a code sample.\n- 11:00 - 12:00 new event");
+			// parseDailyNote should recognise the new event
+			const parsed = parseDailyNote(edited);
+			expect(parsed.timeline).toHaveLength(2);
+			expect(parsed.timeline[1].start).toBe("11:00");
+			expect(parsed.timeline[1].end).toBe("12:00");
+		});
+
+		it("tilde fence: inserts new Event after closing fence, before real subheading", () => {
+			const tildeNote = `# Event
+- 09:00 - 10:00 existing
+
+~~~md
+## Example
+This is a code sample.
+~~~
+
+### **Real subsection**
+Other content`;
+
+			const edited = appendLineToBlock(tildeNote, "- 11:00 - 12:00 new event");
+			// The new event should be after the closing ~~~ fence
+			expect(edited).toContain("~~~\n\n- 11:00 - 12:00 new event\n### **Real subsection**");
+			// It should NOT be inside the code block
+			expect(edited).not.toContain("~~~\n## Example\nThis is a code sample.\n- 11:00 - 12:00 new event");
+			// parseDailyNote should recognise the new event
+			const parsed = parseDailyNote(edited);
+			expect(parsed.timeline).toHaveLength(2);
+			expect(parsed.timeline[1].start).toBe("11:00");
+			expect(parsed.timeline[1].end).toBe("12:00");
+		});
+
+		it("backtick fence with multiple events: appends after closing fence, before real subheading", () => {
+			const multiEventNote = `# Event
+- 09:00 - 10:00 first
+- 10:00 - 11:00 second
+
+\`\`\`md
+## Example
+This is a code sample.
+\`\`\`
+
+### **Real subsection**
+Other content`;
+
+			const edited = appendLineToBlock(multiEventNote, "- 11:00 - 12:00 third");
+			// The new event should be after the closing ``` fence
+			expect(edited).toContain("```\n\n- 11:00 - 12:00 third\n### **Real subsection**");
+			// It should NOT be inside the code block
+			expect(edited).not.toContain("```\n## Example\nThis is a code sample.\n- 11:00 - 12:00 third");
+			// parseDailyNote should recognise all three events
+			const parsed = parseDailyNote(edited);
+			expect(parsed.timeline).toHaveLength(3);
+			expect(parsed.timeline[2].start).toBe("11:00");
+			expect(parsed.timeline[2].end).toBe("12:00");
+		});
+
+		it("tilde fence with multiple events: appends after closing fence, before real subheading", () => {
+			const multiEventNote = `# Event
+- 09:00 - 10:00 first
+- 10:00 - 11:00 second
+
+~~~md
+## Example
+This is a code sample.
+~~~
+
+### **Real subsection**
+Other content`;
+
+			const edited = appendLineToBlock(multiEventNote, "- 11:00 - 12:00 third");
+			// The new event should be after the closing ~~~ fence
+			expect(edited).toContain("~~~\n\n- 11:00 - 12:00 third\n### **Real subsection**");
+			// It should NOT be inside the code block
+			expect(edited).not.toContain("~~~\n## Example\nThis is a code sample.\n- 11:00 - 12:00 third");
+			// parseDailyNote should recognise all three events
+			const parsed = parseDailyNote(edited);
+			expect(parsed.timeline).toHaveLength(3);
+			expect(parsed.timeline[2].start).toBe("11:00");
+			expect(parsed.timeline[2].end).toBe("12:00");
+		});
+	});
 });
 
 describe("line mutation and stale-item guards", () => {

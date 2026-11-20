@@ -273,9 +273,19 @@ export function appendLineToBlock(
  * Index at which the configured heading's own content ends: the line
  * before the first deeper (sub)heading inside the block, or the end of the
  * block when the section has no subheadings.
+ *
+ * Fenced code blocks are skipped: a heading inside a fence is CODE, not a
+ * heading, so it must not be treated as an insertion boundary.
  */
 function endOfOwnContent(lines: string[], block: LineRange, level: number): number {
+	const fence = new FenceTracker();
 	for (let i = block.start + 1; i <= block.end && i < lines.length; i++) {
+		// Feed every line to the fence tracker. If the line is part of a
+		// fenced code block (opening fence, content, or closing fence),
+		// skip heading detection for that line.
+		if (fence.consume(lines[i])) {
+			continue;
+		}
 		const heading = headingLevel(lines[i]);
 		if (heading !== null && heading > level) return i;
 	}
