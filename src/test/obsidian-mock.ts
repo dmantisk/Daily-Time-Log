@@ -116,13 +116,16 @@ export function debounce<T extends unknown[], V>(
 /** Base class for plugin entry points. */
 export class Plugin {
 	app: unknown;
+	private savedData: unknown = null;
 	constructor(app?: unknown) {
 		this.app = app;
 	}
 	async loadData(): Promise<unknown> {
-		return null;
+		return this.savedData;
 	}
-	async saveData(_data: unknown): Promise<void> {}
+	async saveData(data: unknown): Promise<void> {
+		this.savedData = data;
+	}
 	addSettingTab(_tab: unknown): void {}
 	registerView(_type: string, _factory: unknown): void {}
 	addRibbonIcon(_icon: string, _title: string, _callback: unknown): HTMLElement {
@@ -131,6 +134,7 @@ export class Plugin {
 	addCommand(_command: unknown): unknown {
 		return {};
 	}
+	removeCommand(_commandId: string): void {}
 	registerEvent(_ref: unknown): void {}
 	registerMarkdownPostProcessor(_processor: unknown): void {}
 	registerEditorExtension(_extension: unknown): void {}
