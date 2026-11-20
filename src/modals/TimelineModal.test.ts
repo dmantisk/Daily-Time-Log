@@ -106,6 +106,35 @@ function openModal(
 }
 
 describe("TimelineModal", () => {
+	it("auto-expands the description, then scrolls at its maximum height", () => {
+		const { modal } = openModal(null);
+		const textarea = textareaOf(modal);
+		let scrollHeight = 120;
+		Object.defineProperty(textarea, "scrollHeight", {
+			configurable: true,
+			get: () => scrollHeight,
+		});
+		const style = window.getComputedStyle(textarea);
+		const borderHeight =
+			(Number.parseFloat(style.borderTopWidth) || 0) +
+			(Number.parseFloat(style.borderBottomWidth) || 0);
+
+		textarea.dispatchEvent(new Event("input", { bubbles: true }));
+		expect(textarea.style.height).toBe(`${120 + borderHeight}px`);
+		expect(textarea.style.overflowY).toBe("hidden");
+
+		scrollHeight = 240;
+		textarea.dispatchEvent(new Event("input", { bubbles: true }));
+		expect(textarea.style.height).toBe("192px");
+		expect(textarea.style.overflowY).toBe("auto");
+
+		// Removing content shrinks the textarea and removes the scrollbar.
+		scrollHeight = 96;
+		textarea.dispatchEvent(new Event("input", { bubbles: true }));
+		expect(textarea.style.height).toBe(`${96 + borderHeight}px`);
+		expect(textarea.style.overflowY).toBe("hidden");
+	});
+
 	it("builds its body from Obsidian's own components", () => {
 		const { modal } = openModal(null);
 

@@ -371,6 +371,23 @@
 	color: var(--text-muted);
 }
 
+/* Timeline modal description: auto-grow while keeping the action row close. */
+.dwl-modal-textarea.dwl-modal-textarea {
+	box-sizing: border-box;
+	resize: none;
+	min-height: 5rem;
+	max-height: 12rem;
+	overflow-y: hidden;
+}
+
+.dwl-modal-body > .dwl-modal-field:last-child {
+	margin-bottom: 0;
+}
+
+.dwl-modal-body + .modal-button-container {
+	margin-top: 0.35rem;
+}
+
 /* Dashboard uses Obsidian's theme variables directly. */
 
 .dwl-dashboard-view {

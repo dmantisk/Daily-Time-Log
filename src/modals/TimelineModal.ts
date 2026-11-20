@@ -181,6 +181,8 @@ export class TimelineModal extends Modal {
 		// Obsidian's input components turn the spellchecker off, which is
 		// right for a time field but wrong for free prose.
 		this.descriptionComponent.inputEl.setAttribute("spellcheck", "true");
+		this.descriptionComponent.inputEl.addEventListener("input", () => this.resizeDescription());
+		this.resizeDescription();
 		descriptionField.createDiv({
 			cls: "dwl-modal-shortcut-hint",
 			text: t("modalSaveShortcutHint", this.language),
@@ -440,6 +442,26 @@ export class TimelineModal extends Modal {
 		const minuteValue = minute?.getValue() ?? "";
 		if (!/^\d{1,2}$/.test(hourValue) || !/^\d{1,2}$/.test(minuteValue)) return "";
 		return `${hourValue.padStart(2, "0")}:${minuteValue.padStart(2, "0")}`;
+	}
+
+	/** Grows the description textarea with its content, up to a readable maximum. */
+	private resizeDescription(): void {
+		const textarea = this.descriptionComponent?.inputEl;
+		if (!textarea) return;
+
+		// Reset first so deleting text also lets the textarea shrink again.
+		textarea.style.height = "auto";
+		const computedStyle = window.getComputedStyle(textarea);
+		const minHeight = Number.parseFloat(computedStyle.minHeight) || 80;
+		const maxHeight = Number.parseFloat(computedStyle.maxHeight) || 192;
+		const borderHeight =
+			(Number.parseFloat(computedStyle.borderTopWidth) || 0) +
+			(Number.parseFloat(computedStyle.borderBottomWidth) || 0);
+		const contentHeight = textarea.scrollHeight + borderHeight;
+		const nextHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
+
+		textarea.style.height = `${nextHeight}px`;
+		textarea.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
 	}
 
 	onClose(): void {
