@@ -21,9 +21,15 @@ installObsidianDomHelpers();
 import { DashboardView } from "./DashboardView";
 import { TFile, TFolder } from "obsidian";
 import type { MarkerLanguage } from "./parser";
+import { formatDateBasename } from "./dailyNote";
 
 /** A plugin stub good enough for the dashboard to render. */
-function createPluginStub(): never {
+function createPluginStub(
+	overrides: Partial<{
+		dailyNoteFormat: string;
+		dailyNoteFolder: string;
+	}> = {}
+): never {
 	return {
 		settings: {
 			categories: [
@@ -31,18 +37,18 @@ function createPluginStub(): never {
 				{ name: "Study", displayName: "Study", color: "#ebd3f8" },
 			],
 		},
-		getDailyNoteFolder: () => "",
-		getDailyNoteFormat: () => "YYYY-MM-DD",
+		getDailyNoteFolder: () => overrides.dailyNoteFolder ?? "",
+		getDailyNoteFormat: () => overrides.dailyNoteFormat ?? "YYYY-MM-DD",
 		getUiLanguage: (): MarkerLanguage => "en",
 		getEventHeadingConfig: () => ({ text: "Event", level: 1 }),
 	} as never;
 }
 
 /** A vault holding one daily note, dated today. */
-function createAppStub(noteContent: string, cachedRead = async () => noteContent): never {
+function createAppStub(noteContent: string, cachedRead = async () => noteContent, dateFormat = "YYYY-MM-DD"): never {
 	const file = new TFile();
 	const today = new Date();
-	const datePath = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}.md`;
+	const datePath = `${formatDateBasename(today, dateFormat)}.md`;
 	file.path = datePath;
 	file.name = datePath;
 	file.basename = datePath.slice(0, -3);
@@ -80,9 +86,12 @@ function createNoteFile(path: string): TFile {
  * The view reads "today" from the real clock, so the note is dated today
  * to keep it inside the default 30-day window.
  */
-async function renderDashboard(noteContent = "# Event\n- 09:00 - 10:00 [Work] a\n"): Promise<HTMLElement> {
-	const view = new DashboardView({} as never, createPluginStub());
-	(view as unknown as { app: unknown }).app = createAppStub(noteContent);
+async function renderDashboard(
+	noteContent = "# Event\n- 09:00 - 10:00 [Work] a\n",
+	dateFormat = "YYYY-MM-DD"
+): Promise<HTMLElement> {
+	const view = new DashboardView({} as never, createPluginStub({ dailyNoteFormat: dateFormat }));
+	(view as unknown as { app: unknown }).app = createAppStub(noteContent, async () => noteContent, dateFormat);
 
 	// The view renders into `ItemView.contentEl` — Obsidian's own content
 	// area for a view — rather than a hand-picked child of `containerEl`.
@@ -316,5 +325,73 @@ describe("DashboardView metric tooltips", () => {
 		expect(contentEl.querySelector(".dwl-dashboard-empty")?.textContent).toBe(
 			"Daily Notes folder not found: Renamed"
 		);
+	});
+
+	describe("non-default Daily Notes date format", () => {
+		const nonDefaultFormat = "DD.MM.YYYY";
+
+		it("uses the configured format in Recent Activity and Period Summary", async () => {
+			// Create notes for multiple dates to test oldest/newest in Period Summary
+			const today = new Date();
+			const yesterday = new Date(today);
+			yesterday.setDate(yesterday.getDate() - 1);
+			const twoDaysAgo = new Date(today);
+			twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+			const noteContent = "# Event\n- 09:00 - 10:00 [Work] a\n";
+
+			// Create a vault with multiple daily notes
+			const files = [
+				createNoteFile(`${formatDateBasename(twoDaysAgo, nonDefaultFormat)}.md`),
+				createNoteFile(`${formatDateBasename(yesterday, nonDefaultFormat)}.md`),
+				createNoteFile(`${formatDateBasename(today, nonDefaultFormat)}.md`),
+			];
+
+			const app = {
+				workspace: { openLinkText: () => {} },
+				vault: {
+					getMarkdownFiles: () => files,
+					getRoot: () => {
+						const root = new TFolder();
+						root.children = files;
+						return root;
+					},
+					getFolderByPath: () => null,
+					cachedRead: async () => noteContent,
+				},
+			} as never;
+
+			const view = new DashboardView({} as never, createPluginStub({ dailyNoteFormat: nonDefaultFormat }));
+			(view as unknown as { app: unknown }).app = app;
+			const contentEl = document.createElement("div");
+			(view as unknown as { contentEl: HTMLElement }).contentEl = contentEl;
+
+			await view.refresh();
+
+			// Recent Activity dates should use the configured format
+			const activityDates = [...contentEl.querySelectorAll(".dwl-activity-date")];
+			expect(activityDates.length).toBeGreaterThan(0);
+			for (const dateEl of activityDates) {
+				expect(dateEl.textContent).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
+			}
+
+			// Period Summary Date Range should use the configured format
+			const dateRangeRow = [...contentEl.querySelectorAll(".dwl-summary-row")].find((row) =>
+				row.querySelector(".dwl-summary-label")?.textContent?.includes("Date Range")
+			);
+			expect(dateRangeRow).toBeDefined();
+
+			const dateRangeValue = dateRangeRow!.querySelector(".dwl-summary-val");
+			expect(dateRangeValue).toBeDefined();
+
+			// The date range should be in DD.MM.YYYY format (e.g., "01.01.2026 ~ 03.01.2026")
+			const dateRangeText = dateRangeValue!.textContent ?? "";
+			expect(dateRangeText).toMatch(/^\d{2}\.\d{2}\.\d{4} ~ \d{2}\.\d{2}\.\d{4}$/);
+
+			// Both oldest and newest dates should use the same format as Recent Activity
+			const [oldestStr, newestStr] = dateRangeText.split(" ~ ");
+			expect(oldestStr).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
+			expect(newestStr).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
+		});
 	});
 });
