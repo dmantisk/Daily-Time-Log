@@ -1,4 +1,4 @@
-import { getLanguage, Plugin, setTooltip, TFile, Notice } from "obsidian";
+import { getLanguage, MarkdownView, Plugin, setTooltip, TFile, Notice } from "obsidian";
 import {
 	buildCategoryBadgeEditorPlugin,
 	buildTimeRangeEditorPlugin,
@@ -10,7 +10,7 @@ import { resolveLanguage, t } from "./i18n";
 import { DailyWorkLogSettingTab } from "./SettingTab";
 import { DEFAULT_SETTINGS, migrateLoadedSettings, type DailyWorkLogSettings } from "./settings";
 import type { EventHeadingConfig, MarkerLanguage } from "./parser";
-import { parseDailyNote, appendLineToBlock } from "./parser";
+import { parseDailyNote, appendLineToBlockWithPosition } from "./parser";
 import { buildTimelineLine, getDefaultEntryTimes } from "./timelineLogic";
 import { DEFAULT_DAILY_NOTE_FORMAT, parseDateFromDailyNotePath } from "./dailyNote";
 import { SelfWriteGuard } from "./selfWriteGuard";
@@ -28,6 +28,11 @@ interface CoreDailyNotesPlugin {
 
 interface InternalPluginRegistry {
 	getPluginById(id: string): CoreDailyNotesPlugin | null | undefined;
+}
+
+/** CodeMirror stores line endings as LF even when the vault file uses CRLF. */
+function normalizeEditorContent(content: string): string {
+	return content.replace(/\r\n/g, "\n");
 }
 
 export default class DailyWorkLogPlugin extends Plugin {
@@ -215,12 +220,75 @@ export default class DailyWorkLogPlugin extends Plugin {
 		};
 	}
 
-	async processWrite(file: TFile, fn: (data: string) => string): Promise<void> {
+	async processWrite(file: TFile, fn: (data: string) => string): Promise<string> {
+		let updatedContent = "";
 		await this.app.vault.process(file, (data) => {
 			const content = fn(data);
+			updatedContent = content;
 			this.selfWriteGuard.record(file.path, data, content);
 			return content;
 		});
+		return updatedContent;
+	}
+
+	/**
+	 * Focuses the open Markdown view for a file at a zero-based editor position.
+	 * When `expectedContent` is supplied, wait until Obsidian's editor buffer has
+	 * received the vault write before setting the cursor. Otherwise the cursor
+	 * can attach to the old line that used to follow the insertion point.
+	 */
+	async focusEditorAtPosition(
+		file: TFile,
+		position: { line: number; ch: number },
+		expectedContent?: string
+	): Promise<void> {
+		if (!this.settings.focusEditorAfterSave) return;
+
+		const leaf = this.app.workspace.getLeavesOfType("markdown").find(
+			(candidate) => candidate.view instanceof MarkdownView && candidate.view.file?.path === file.path
+		);
+		if (!leaf || !(leaf.view instanceof MarkdownView)) return;
+
+		await this.app.workspace.revealLeaf(leaf);
+		const view = leaf.view;
+		if (view.file?.path !== file.path) return;
+
+		// A cursor only exists in Editing view. Preserve the user's Live Preview
+		// or Source mode preference while switching out of Reading view.
+		if (view.getMode() === "preview") {
+			await view.setState({ ...view.getState(), mode: "source" }, { history: false });
+		}
+
+		const editor = view.editor;
+		if (expectedContent !== undefined) {
+			const expected = normalizeEditorContent(expectedContent);
+			let editorIsCurrent = false;
+			// Vault.process() completes the file write before the Markdown view's
+			// editor buffer is guaranteed to have processed the corresponding
+			// change. Wait for that buffer update so the position is applied to
+			// the inserted line, not the old following line.
+			for (let attempt = 0; attempt < 40; attempt++) {
+				if (normalizeEditorContent(editor.getValue()) === expected) {
+					editorIsCurrent = true;
+					break;
+				}
+				await new Promise<void>((resolve) => window.setTimeout(resolve, 16));
+			}
+			if (!editorIsCurrent && normalizeEditorContent(editor.getValue()) !== expected) {
+				// Do not place the cursor at this numeric position in a stale buffer:
+				// it would land on the pre-existing line after the new entry.
+				return;
+			}
+		}
+
+		const lastLine = editor.lineCount() - 1;
+		if (lastLine < 0) return;
+		const line = Math.min(Math.max(position.line, 0), lastLine);
+		const ch = Math.min(Math.max(position.ch, 0), editor.getLine(line).length);
+		const cursor = { line, ch };
+		editor.setCursor(cursor);
+		editor.scrollIntoView({ from: cursor, to: cursor }, true);
+		editor.focus();
 	}
 
 	private async handleVaultModify(file: unknown): Promise<void> {
@@ -399,19 +467,29 @@ export default class DailyWorkLogPlugin extends Plugin {
 	}
 
 	/**
-	 * Adds a new event to the daily note file using the parser's appendLineToBlock.
+	 * Adds a new event through the parser's position-aware append helper.
 	 */
 	private async addEventToFile(
 		file: TFile,
 		values: { start: string; end: string; category?: string; description: string }
 	): Promise<void> {
 		try {
-			await this.processWrite(file, (content) => {
+			const cursorPosition: { value: { line: number; ch: number } | null } = { value: null };
+			const updatedContent = await this.processWrite(file, (content) => {
 				const newLine = buildTimelineLine(values);
-				return appendLineToBlock(content, newLine, this.getEventHeadingConfig());
+				const appended = appendLineToBlockWithPosition(content, newLine, this.getEventHeadingConfig());
+				const insertedLines = newLine.split("\n");
+				cursorPosition.value = {
+					line: appended.line + insertedLines.length - 1,
+					ch: insertedLines[insertedLines.length - 1].length,
+				};
+				return appended.content;
 			});
 
 			this.refreshTimelineView();
+			if (this.settings.focusEditorAfterSave && cursorPosition.value) {
+				await this.focusEditorAtPosition(file, cursorPosition.value, updatedContent);
+			}
 			new Notice(t("noticeEventSaved", this.getUiLanguage()));
 		} catch (error) {
 			new Notice(

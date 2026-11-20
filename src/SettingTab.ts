@@ -96,6 +96,19 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 				},
 			},
 			{
+				name: t("settingFocusEditorAfterSaveName", lang),
+				desc: t("settingFocusEditorAfterSaveDesc", lang),
+				render: (setting) => {
+					setting.addToggle((toggle) =>
+						toggle.setValue(this.plugin.settings.focusEditorAfterSave).onChange(async (value) => {
+							this.plugin.settings.focusEditorAfterSave = value;
+							await this.plugin.saveSettings();
+							this.plugin.refreshViews();
+						})
+					);
+				},
+			},
+			{
 				name: t("settingEventHeadingTextName", lang),
 				desc: t("settingEventHeadingTextDesc", lang),
 				render: (setting) => {

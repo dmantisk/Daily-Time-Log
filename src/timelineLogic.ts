@@ -131,7 +131,10 @@ export function shouldCancelPendingTouchPress(
 
 export function buildTimelineLine(values: TimelineEventLineValues): string {
 	const categoryPart = values.category ? `[${values.category}] ` : "";
-	return `- ${values.start} - ${values.end} ${categoryPart}${values.description}`.trimEnd();
+	const line = `- ${values.start} - ${values.end} ${categoryPart}${values.description}`.trimEnd();
+	// Keep one trailing separator for an empty description so the editor cursor
+	// can be placed exactly where the user should start typing.
+	return values.description.trim() ? line : `${line} `;
 }
 
 export function timelineBlockGeometry(

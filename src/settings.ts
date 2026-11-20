@@ -143,6 +143,8 @@ export interface DailyWorkLogSettings {
 	dayStartMinutes: number;
 	/** Grid timeline's displayed end time in minutes since midnight (0-1430, 10-min increments). */
 	dayEndMinutes: number;
+	/** Whether saving a new event also focuses its Markdown editor at the inserted description. */
+	focusEditorAfterSave: boolean;
 	/** Whether event time ranges use tabular numerals in the editor and reading view. */
 	tabularTimeRanges: boolean;
 	/** Up to 10 entries; see CustomCategory for how these map into note bodies. */
@@ -163,6 +165,7 @@ export const DEFAULT_SETTINGS: DailyWorkLogSettings = {
 	eventHeadingLevel: DEFAULT_EVENT_HEADING.level,
 	dayStartMinutes: 0,
 	dayEndMinutes: 0, // 0 means midnight next day (full 24-hour timeline)
+	focusEditorAfterSave: false,
 	tabularTimeRanges: true,
 	categories: createDefaultCategories(),
 	commandOpenSidebarEnabled: true,
@@ -413,6 +416,11 @@ export function migrateLoadedSettings(loaded: unknown): { settings: DailyWorkLog
 			settings.dayEndMinutes = migrated.dayEndMinutes;
 			shouldSave = true;
 		}
+	}
+
+	if (typeof loadedData?.focusEditorAfterSave !== "boolean") {
+		settings.focusEditorAfterSave = DEFAULT_SETTINGS.focusEditorAfterSave;
+		shouldSave = true;
 	}
 
 	if (typeof loadedData?.tabularTimeRanges !== "boolean") {

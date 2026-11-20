@@ -5,7 +5,7 @@ import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
 import { TimelineModal, type EventEntryValues } from "../modals/TimelineModal";
 import type DailyWorkLogPlugin from "../main";
 import {
-	appendLineToBlock,
+	appendLineToBlockWithPosition,
 	hasEventBlock,
 	parseDailyNote,
 	removeLineRangeAt,
@@ -190,10 +190,21 @@ export class TimelineController {
 
 	private async addEvent(file: TFile, values: EventEntryValues): Promise<void> {
 		try {
-			await this.plugin.processWrite(file, (content) =>
-				appendLineToBlock(content, buildTimelineLine(values), this.plugin.getEventHeadingConfig())
-			);
+			const cursorPosition: { value: { line: number; ch: number } | null } = { value: null };
+			const updatedContent = await this.plugin.processWrite(file, (content) => {
+				const newLine = buildTimelineLine(values);
+				const appended = appendLineToBlockWithPosition(content, newLine, this.plugin.getEventHeadingConfig());
+				const insertedLines = newLine.split("\n");
+				cursorPosition.value = {
+					line: appended.line + insertedLines.length - 1,
+					ch: insertedLines[insertedLines.length - 1].length,
+				};
+				return appended.content;
+			});
 			await this.reloadFile(file);
+			if (this.plugin.settings.focusEditorAfterSave && cursorPosition.value) {
+				await this.plugin.focusEditorAtPosition(file, cursorPosition.value, updatedContent);
+			}
 		} catch (error) {
 			new Notice(`${t("noticeSaveEventFailed", this.plugin.getUiLanguage())}: ${errorMessage(error)}`);
 		}

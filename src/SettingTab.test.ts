@@ -41,6 +41,7 @@ function createPluginStub() {
 		dayStartMinutes: 0,
 		dayEndMinutes: 0,
 		tabularTimeRanges: true,
+		focusEditorAfterSave: false,
 		categories: [
 			{ name: "Work", displayName: "Work", color: "#d0e1fd", isDefault: true },
 			{ name: "Study", displayName: "Study", color: "#ebd3f8", isDefault: true },
@@ -177,6 +178,21 @@ describe("DailyWorkLogSettingTab", () => {
 		await timeSetting?.components.toggles[0].setValueFromUser(false);
 
 		expect(plugin.settings.tabularTimeRanges).toBe(false);
+		expect(plugin.saveSettings).toHaveBeenCalledOnce();
+		expect(plugin.refreshViews).toHaveBeenCalledOnce();
+	});
+
+	it("persists and refreshes when editor focus after saving changes", async () => {
+		const plugin = renderTab();
+		const focusSetting = Setting.created.find(
+			(setting) => setting.nameEl.textContent === "Automatically focus editor after saving"
+		);
+		expect(focusSetting).toBeDefined();
+		expect(focusSetting?.components.toggles[0].getValue()).toBe(false);
+
+		await focusSetting?.components.toggles[0].setValueFromUser(true);
+
+		expect(plugin.settings.focusEditorAfterSave).toBe(true);
 		expect(plugin.saveSettings).toHaveBeenCalledOnce();
 		expect(plugin.refreshViews).toHaveBeenCalledOnce();
 	});

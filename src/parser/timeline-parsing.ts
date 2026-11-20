@@ -256,26 +256,57 @@ export function timelineRangeMatches(lines: string[], item: TimelineItem): boole
  * Event list therefore stays grouped directly under the configured
  * heading, and nested sections keep their own content.
  */
-export function appendLineToBlock(
+export interface AppendedTimelineLine {
+	/** Updated Markdown content, preserving the note's original line endings. */
+	content: string;
+	/** Zero-based physical line index where `newLine` begins. */
+	line: number;
+}
+
+/**
+ * Appends a Timeline line and returns its exact insertion position.
+ *
+ * This is the position-aware counterpart to `appendLineToBlock()`. It lets
+ * callers hand the cursor to Obsidian's editor without trying to rediscover
+ * an insertion point from the updated note (which is ambiguous when entries
+ * have identical text or the Event block contains nested headings).
+ */
+export function appendLineToBlockWithPosition(
 	content: string,
 	newLine: string,
 	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
-): string {
+): AppendedTimelineLine {
 	const { lines, bodyStart } = stripFrontmatter(content);
 	const block = findEventBlock(lines, bodyStart, config);
 
 	if (!block) {
 		const heading = `${"#".repeat(config.level)} ${config.text}`;
 		const base = lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
-		return joinLines([...base, heading, newLine, ""], content);
+		return {
+			content: joinLines([...base, heading, newLine, ""], content),
+			line: base.length + 1,
+		};
 	}
 
 	const insertAt = endOfOwnContent(lines, block, config.level);
 	if (insertAt >= lines.length) {
-		return appendAtEndOfFile(lines, newLine, content);
+		const line = lines.length > 0 && lines[lines.length - 1] === "" ? lines.length - 1 : lines.length;
+		return { content: appendAtEndOfFile(lines, newLine, content), line };
 	}
 
-	return joinLines([...lines.slice(0, insertAt), newLine, ...lines.slice(insertAt)], content);
+	return {
+		content: joinLines([...lines.slice(0, insertAt), newLine, ...lines.slice(insertAt)], content),
+		line: insertAt,
+	};
+}
+
+/** Existing string-only API retained for callers that do not need cursor placement. */
+export function appendLineToBlock(
+	content: string,
+	newLine: string,
+	config: EventHeadingConfig = DEFAULT_EVENT_HEADING
+): string {
+	return appendLineToBlockWithPosition(content, newLine, config).content;
 }
 
 /**

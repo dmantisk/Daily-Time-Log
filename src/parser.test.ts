@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeDashboardStats } from "./dashboardCollector";
 import {
 	appendLineToBlock,
+	appendLineToBlockWithPosition,
 	DEFAULT_EVENT_HEADING,
 	findEventBlock,
 	findEventBlockInContent,
@@ -749,6 +750,44 @@ describe("parseDailyNote", () => {
 		expect(result.timeline).toEqual([]);
 	});
 });
+describe("appendLineToBlockWithPosition", () => {
+	it("returns the position after creating a missing Event heading", () => {
+		const result = appendLineToBlockWithPosition("# Notes\n", "- 09:00 - 10:00 [Work] ");
+		expect(result.content).toBe("# Notes\n# Event\n- 09:00 - 10:00 [Work] \n");
+		expect(result.line).toBe(2);
+	});
+
+	it("returns the insertion position before the first deeper heading", () => {
+		const content = "# Event\n- 09:00 - 10:00 [Work] First\n### Notes\nOther";
+		const result = appendLineToBlockWithPosition(content, "- 10:00 - 11:00 [Work] Second");
+		expect(result.content).toBe(
+			"# Event\n- 09:00 - 10:00 [Work] First\n- 10:00 - 11:00 [Work] Second\n### Notes\nOther"
+		);
+		expect(result.line).toBe(2);
+	});
+
+	it("returns the position at the end of the Event block and preserves CRLF", () => {
+		const content = "# Event\r\n- 09:00 - 10:00 [Work] First\r\n";
+		const result = appendLineToBlockWithPosition(content, "- 10:00 - 11:00 [Work] Second");
+		expect(result.content).toBe("# Event\r\n- 09:00 - 10:00 [Work] First\r\n- 10:00 - 11:00 [Work] Second\r\n");
+		expect(result.line).toBe(2);
+	});
+
+	it("keeps the cursor line relative to the full file when frontmatter exists", () => {
+		const content = "---\ntags: [work]\n---\n# Event\n- 09:00 - 10:00 [Work] First\n### Notes\nOther";
+		const result = appendLineToBlockWithPosition(content, "- 10:00 - 11:00 [Work] Second");
+		expect(result.line).toBe(5);
+		expect(result.content.split("\n")[result.line]).toBe("- 10:00 - 11:00 [Work] Second");
+	});
+
+	it("returns the full-file line when creating an Event section below frontmatter", () => {
+		const content = "---\ntags: [work]\n---\n# Notes\n";
+		const result = appendLineToBlockWithPosition(content, "- 09:00 - 10:00 [Work] ");
+		expect(result.line).toBe(5);
+		expect(result.content.split("\n")[result.line]).toBe("- 09:00 - 10:00 [Work] ");
+	});
+});
+
 describe("appendLineToBlock", () => {
 	it("inserts directly under the heading, before any subheading", () => {
 		const content = "# Intro\n## Activity\n- 9:00 - 10:00 work\n### Notes\nother";

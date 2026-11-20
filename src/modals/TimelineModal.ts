@@ -30,8 +30,10 @@ export interface EventEntryValues {
  * the app's own and follow the active theme (AGENTS-reference.md).
  */
 export class TimelineModal extends Modal {
-	private startComponent: TextComponent | null = null;
-	private endComponent: TextComponent | null = null;
+	private startHourComponent: TextComponent | null = null;
+	private startMinuteComponent: TextComponent | null = null;
+	private endHourComponent: TextComponent | null = null;
+	private endMinuteComponent: TextComponent | null = null;
 	private descriptionComponent: TextAreaComponent | null = null;
 	private categoryDropdown: DropdownComponent | null = null;
 	private categoryDot: HTMLSpanElement | null = null;
@@ -40,6 +42,13 @@ export class TimelineModal extends Modal {
 	 * The category picked in the modal, or `undefined` for uncategorized.
 	 */
 	private selectedCategory: string | undefined;
+
+	private readonly onModalKeydown = (event: KeyboardEvent): void => {
+		if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) return;
+		event.preventDefault();
+		event.stopPropagation();
+		this.handleSave();
+	};
 
 	/** The raw markup the description was parsed from, kept for the untouched-restore rule. */
 	private readonly originalDescription: string;
@@ -60,6 +69,7 @@ export class TimelineModal extends Modal {
 	}
 
 	onOpen(): void {
+		this.contentEl.addEventListener("keydown", this.onModalKeydown);
 		this.setTitle(this.initial ? t("modalEditTitle", this.language) : t("modalAddTitle", this.language));
 
 		const body = this.contentEl.createDiv({ cls: "dwl-modal-body" });
@@ -69,25 +79,42 @@ export class TimelineModal extends Modal {
 		timeField.createEl("label", { cls: "dwl-modal-label", text: t("lblTimeSet", this.language) });
 
 		const timeRow = timeField.createDiv({ cls: "dwl-modal-time-row" });
-		this.startComponent = new TextComponent(timeRow);
-		this.startComponent.setPlaceholder("09:00").setValue(this.initial ? this.initial.start : this.defaultStart);
-		this.startComponent.inputEl.addClass("dwl-modal-time-input");
-		this.startComponent.inputEl.addEventListener("keydown", (e) => {
-			if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
-				this.handleSave();
-				e.preventDefault();
-			}
-		});
+		const [startHour = "", startMinute = ""] = (this.initial?.start ?? this.defaultStart).split(":");
+		const [endHour = "", endMinute = ""] = (this.initial?.end ?? this.defaultEnd).split(":");
 
-		this.endComponent = new TextComponent(timeRow);
-		this.endComponent.setPlaceholder("10:00").setValue(this.initial ? this.initial.end : this.defaultEnd);
-		this.endComponent.inputEl.addClass("dwl-modal-time-input");
-		this.endComponent.inputEl.addEventListener("keydown", (e) => {
-			if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
-				this.handleSave();
-				e.preventDefault();
-			}
-		});
+		const startGroup = timeRow.createDiv({ cls: "dwl-modal-time-group" });
+		startGroup.createDiv({ cls: "dwl-modal-label", text: t("lblStartTime", this.language) });
+		const startParts = startGroup.createDiv({ cls: "dwl-modal-time-parts" });
+		this.startHourComponent = this.createTimeInput(
+			startParts,
+			`${t("lblStartTime", this.language)} ${t("lblHour", this.language)}`,
+			startHour,
+			23
+		);
+		startParts.createSpan({ cls: "dwl-modal-time-separator", text: ":" });
+		this.startMinuteComponent = this.createTimeInput(
+			startParts,
+			`${t("lblStartTime", this.language)} ${t("lblMinute", this.language)}`,
+			startMinute,
+			59
+		);
+
+		const endGroup = timeRow.createDiv({ cls: "dwl-modal-time-group" });
+		endGroup.createDiv({ cls: "dwl-modal-label", text: t("lblEndTime", this.language) });
+		const endParts = endGroup.createDiv({ cls: "dwl-modal-time-parts" });
+		this.endHourComponent = this.createTimeInput(
+			endParts,
+			`${t("lblEndTime", this.language)} ${t("lblHour", this.language)}`,
+			endHour,
+			24
+		);
+		endParts.createSpan({ cls: "dwl-modal-time-separator", text: ":" });
+		this.endMinuteComponent = this.createTimeInput(
+			endParts,
+			`${t("lblEndTime", this.language)} ${t("lblMinute", this.language)}`,
+			endMinute,
+			59
+		);
 
 		// --- Category ---
 		const categoryField = body.createDiv({ cls: "dwl-modal-field" });
@@ -147,11 +174,9 @@ export class TimelineModal extends Modal {
 		// Obsidian's input components turn the spellchecker off, which is
 		// right for a time field but wrong for free prose.
 		this.descriptionComponent.inputEl.setAttribute("spellcheck", "true");
-		this.descriptionComponent.inputEl.addEventListener("keydown", (e) => {
-			if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-				this.handleSave();
-				e.preventDefault();
-			}
+		descriptionField.createDiv({
+			cls: "dwl-modal-shortcut-hint",
+			text: t("modalSaveShortcutHint", this.language),
 		});
 
 		// Focus: new entry -> dropdown, editing -> description
@@ -195,6 +220,36 @@ export class TimelineModal extends Modal {
 			.onClick(() => this.handleSave());
 	}
 
+	/** Creates one native numeric input for an hour or minute segment. */
+	private createTimeInput(
+		containerEl: HTMLElement,
+		ariaLabel: string,
+		value: string,
+		max: number
+	): TextComponent {
+		const component = new TextComponent(containerEl);
+		component.inputEl.type = "number";
+		component.inputEl.min = "0";
+		component.inputEl.max = String(max);
+		component.inputEl.step = "1";
+		component.inputEl.inputMode = "numeric";
+		component.inputEl.setAttribute("aria-label", ariaLabel);
+		component.inputEl.addClass("dwl-modal-time-input");
+		component.setValue(value.padStart(2, "0"));
+		component.inputEl.addEventListener("blur", () => {
+			const current = component.getValue();
+			if (/^\d{1,2}$/.test(current)) component.setValue(current.padStart(2, "0"));
+		});
+		component.inputEl.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" && !event.ctrlKey && !event.metaKey) {
+				this.handleSave();
+				event.preventDefault();
+				event.stopPropagation();
+			}
+		});
+		return component;
+	}
+
 	/**
 	 * Updates the colored dot next to the category dropdown.
 	 */
@@ -224,8 +279,8 @@ export class TimelineModal extends Modal {
 	 *    (AGENTS-reference.md) — reject rather than silently losing it.
 	 */
 	private handleSave(): void {
-		const start = this.startComponent?.getValue() ?? "";
-		const end = this.endComponent?.getValue() ?? "";
+		const start = this.getTimeValue(this.startHourComponent, this.startMinuteComponent);
+		const end = this.getTimeValue(this.endHourComponent, this.endMinuteComponent);
 		const description = this.descriptionComponent?.getValue() ?? "";
 
 		if (!TIME_VALUE_REGEX.test(start) || !TIME_END_VALUE_REGEX.test(end)) {
@@ -272,9 +327,20 @@ export class TimelineModal extends Modal {
 		this.close();
 	}
 
+	/** Combines two independently edited segments into the parser's HH:mm form. */
+	private getTimeValue(hour: TextComponent | null, minute: TextComponent | null): string {
+		const hourValue = hour?.getValue() ?? "";
+		const minuteValue = minute?.getValue() ?? "";
+		if (!/^\d{1,2}$/.test(hourValue) || !/^\d{1,2}$/.test(minuteValue)) return "";
+		return `${hourValue.padStart(2, "0")}:${minuteValue.padStart(2, "0")}`;
+	}
+
 	onClose(): void {
-		this.startComponent = null;
-		this.endComponent = null;
+		this.contentEl.removeEventListener("keydown", this.onModalKeydown);
+		this.startHourComponent = null;
+		this.startMinuteComponent = null;
+		this.endHourComponent = null;
+		this.endMinuteComponent = null;
 		this.descriptionComponent = null;
 		this.categoryDropdown = null;
 		this.categoryDot = null;

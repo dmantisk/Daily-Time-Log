@@ -31,6 +31,7 @@ describe("settings defaults", () => {
 		expect(DEFAULT_SETTINGS.dayStartMinutes).toBe(0);
 		expect(DEFAULT_SETTINGS.dayEndMinutes).toBe(0); // 0 means midnight next day (full 24-hour timeline)
 		expect(DEFAULT_SETTINGS.tabularTimeRanges).toBe(true);
+		expect(DEFAULT_SETTINGS.focusEditorAfterSave).toBe(false);
 	});
 
 	it("fills missing fields while preserving saved overrides", () => {
@@ -44,6 +45,27 @@ describe("settings defaults", () => {
 		const loaded: Partial<DailyWorkLogSettings> = { categories: [] };
 		const merged = Object.assign({}, DEFAULT_SETTINGS, loaded);
 		expect(merged.categories).toEqual([]);
+	});
+});
+
+describe("focus editor setting migration", () => {
+	it("defaults to disabled for existing settings files", () => {
+		const result = migrateLoadedSettings({ language: "en" });
+		expect(result.settings.focusEditorAfterSave).toBe(false);
+		expect(result.shouldSave).toBe(true);
+	});
+
+	it("preserves a saved boolean preference", () => {
+		const enabled = migrateLoadedSettings({ focusEditorAfterSave: true });
+		const disabled = migrateLoadedSettings({ focusEditorAfterSave: false });
+		expect(enabled.settings.focusEditorAfterSave).toBe(true);
+		expect(disabled.settings.focusEditorAfterSave).toBe(false);
+	});
+
+	it("resets an invalid saved value to the default", () => {
+		const result = migrateLoadedSettings({ focusEditorAfterSave: "yes" });
+		expect(result.settings.focusEditorAfterSave).toBe(false);
+		expect(result.shouldSave).toBe(true);
 	});
 });
 

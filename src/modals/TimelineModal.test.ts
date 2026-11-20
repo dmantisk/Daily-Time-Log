@@ -39,7 +39,7 @@ function bodyOf(modal: TimelineModal): HTMLElement {
 	return modal.contentEl.querySelector(".dwl-modal-body") as HTMLElement;
 }
 
-/** The `<input>` elements of the time row, in order: start, then end. */
+/** The four `<input>` elements of the time row: start hour/minute, end hour/minute. */
 function timeInputsOf(modal: TimelineModal): HTMLInputElement[] {
 	return [...bodyOf(modal).querySelectorAll<HTMLInputElement>(".dwl-modal-time-input")];
 }
@@ -109,12 +109,20 @@ describe("TimelineModal", () => {
 	it("builds its body from Obsidian's own components", () => {
 		const { modal } = openModal(null);
 
-		// Two time inputs, one textarea — all created by Obsidian's
-		// `TextComponent` / `TextAreaComponent`, so they are plain
-		// `<input type="text">` / `<textarea>` elements.
+		// Four native numeric time inputs and one textarea — all created by
+		// Obsidian's `TextComponent` / `TextAreaComponent`.
 		const inputs = timeInputsOf(modal);
-		expect(inputs).toHaveLength(2);
-		expect(inputs[0].type).toBe("text");
+		expect(inputs).toHaveLength(4);
+		expect(inputs.map((input) => input.type)).toEqual(["number", "number", "number", "number"]);
+		expect(inputs.map((input) => input.value)).toEqual(["09", "00", "10", "00"]);
+		expect(inputs.map((input) => input.getAttribute("aria-label"))).toEqual([
+			"Start hour",
+			"Start minute",
+			"End hour",
+			"End minute",
+		]);
+		expect(inputs.map((input) => input.max)).toEqual(["23", "59", "24", "59"]);
+		expect(inputs.every((input) => input.min === "0" && input.step === "1")).toBe(true);
 		expect(textareaOf(modal).tagName).toBe("TEXTAREA");
 
 		// Category dropdown is a native <select>
@@ -145,7 +153,7 @@ describe("TimelineModal", () => {
 
 	it("rejects an invalid time and keeps the modal open", () => {
 		const { modal, saved } = openModal(null);
-		timeInputsOf(modal)[0].value = "9am";
+		timeInputsOf(modal)[0].value = "24";
 
 		buttonLabelled(modal, "Save").click();
 
@@ -156,14 +164,29 @@ describe("TimelineModal", () => {
 
 	it("accepts 24:00 as an end time but not as a start time", () => {
 		const { modal, saved } = openModal(null);
-		const [start, end] = timeInputsOf(modal);
-		start.value = "09:00";
-		end.value = "24:00";
+		const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+		startHour.value = "9";
+		startMinute.value = "0";
+		endHour.value = "24";
+		endMinute.value = "0";
 
 		buttonLabelled(modal, "Save").click();
 
 		expect(saved).toHaveLength(1);
+		expect(saved[0].start).toBe("09:00");
 		expect(saved[0].end).toBe("24:00");
+	});
+
+	it("rejects 24:00 as a start time", () => {
+		const { modal, saved } = openModal(null);
+		const [startHour, startMinute] = timeInputsOf(modal);
+		startHour.value = "24";
+		startMinute.value = "0";
+
+		buttonLabelled(modal, "Save").click();
+
+		expect(saved).toHaveLength(0);
+		expect(Notice.shown).toHaveLength(1);
 	});
 
 	it("restores the original markup when the description was not touched", () => {
@@ -293,9 +316,11 @@ describe("TimelineModal", () => {
 
 	it("allows overnight ranges (end before start)", () => {
 		const { modal, saved } = openModal(null);
-		const [start, end] = timeInputsOf(modal);
-		start.value = "23:00";
-		end.value = "01:00";
+		const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+		startHour.value = "23";
+		startMinute.value = "0";
+		endHour.value = "1";
+		endMinute.value = "0";
 
 		buttonLabelled(modal, "Save").click();
 
@@ -306,9 +331,11 @@ describe("TimelineModal", () => {
 
 	it("rejects equal start and end times", () => {
 		const { modal, saved } = openModal(null);
-		const [start, end] = timeInputsOf(modal);
-		start.value = "09:00";
-		end.value = "09:00";
+		const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+		startHour.value = "9";
+		startMinute.value = "0";
+		endHour.value = "9";
+		endMinute.value = "0";
 
 		buttonLabelled(modal, "Save").click();
 
@@ -316,13 +343,58 @@ describe("TimelineModal", () => {
 		expect(Notice.shown).toHaveLength(1);
 	});
 
+	it("submits with Ctrl+Enter from the category control", () => {
+		const { modal, saved } = openModal(null);
+		const event = new KeyboardEvent("keydown", {
+			key: "Enter",
+			ctrlKey: true,
+			bubbles: true,
+			cancelable: true,
+		});
+
+		categoryDropdownOf(modal).dispatchEvent(event);
+
+		expect(event.defaultPrevented).toBe(true);
+		expect(saved).toHaveLength(1);
+	});
+
+	it("submits with Cmd+Enter on macOS", () => {
+		const { modal, saved } = openModal(null);
+		const event = new KeyboardEvent("keydown", {
+			key: "Enter",
+			metaKey: true,
+			bubbles: true,
+			cancelable: true,
+		});
+
+		textareaOf(modal).dispatchEvent(event);
+
+		expect(event.defaultPrevented).toBe(true);
+		expect(saved).toHaveLength(1);
+	});
+
+	it("pads single-digit hour and minute values when a field loses focus", () => {
+		const { modal } = openModal(null);
+		const [startHour, startMinute] = timeInputsOf(modal);
+		startHour.value = "9";
+		startMinute.value = "5";
+
+		startHour.dispatchEvent(new Event("blur"));
+		startMinute.dispatchEvent(new Event("blur"));
+
+		expect(startHour.value).toBe("09");
+		expect(startMinute.value).toBe("05");
+	});
+
 	it("submits with plain Enter from time inputs", () => {
 		const { modal, saved } = openModal(null);
-		const [start, end] = timeInputsOf(modal);
-		start.value = "09:00";
-		end.value = "10:00";
+		const [startHour, startMinute, endHour, endMinute] = timeInputsOf(modal);
+		startHour.value = "9";
+		startMinute.value = "0";
+		endHour.value = "10";
+		endMinute.value = "0";
 
-		end.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+		endMinute.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 
 		expect(saved).toHaveLength(1);
 		expect(saved[0].start).toBe("09:00");

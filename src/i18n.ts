@@ -24,7 +24,12 @@ export type UIStringKey =
 	| "modalAddTitle"
 	| "modalEditTitle"
 	| "lblTimeSet"
+	| "lblStartTime"
+	| "lblEndTime"
+	| "lblHour"
+	| "lblMinute"
 	| "lblContent"
+	| "modalSaveShortcutHint"
 	| "fieldCategory"
 	| "categoryNone"
 	| "uncategorized"
@@ -60,6 +65,8 @@ export type UIStringKey =
 	| "settingDayEndTimeDesc"
 	| "settingTabularTimeRangesName"
 	| "settingTabularTimeRangesDesc"
+	| "settingFocusEditorAfterSaveName"
+	| "settingFocusEditorAfterSaveDesc"
 	| "settingEventHeadingTextName"
 	| "settingEventHeadingTextDesc"
 	| "settingEventHeadingLevelName"
@@ -152,7 +159,12 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		modalAddTitle: "What did you do?",
 		modalEditTitle: "Edit Daily Activity",
 		lblTimeSet: "Time Setting",
+		lblStartTime: "Start",
+		lblEndTime: "End",
+		lblHour: "hour",
+		lblMinute: "minute",
 		lblContent: "Content",
+		modalSaveShortcutHint: "Press Ctrl/Cmd + Enter to save.",
 		fieldCategory: "Category",
 		categoryNone: "No category",
 		uncategorized: "Uncategorized",
@@ -194,6 +206,9 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingTabularTimeRangesName: "Tabular time numerals",
 		settingTabularTimeRangesDesc:
 			"Align digits consistently in event times without changing the font. Requires a font that supports tabular numerals.",
+		settingFocusEditorAfterSaveName: "Automatically focus editor after saving",
+		settingFocusEditorAfterSaveDesc:
+			"After saving a new entry, focus its open Markdown editor and place the cursor at the end of the entry. Ctrl+Enter follows this setting too.",
 		settingLanguageName: "Language",
 		settingEventHeadingTextName: "Event heading text",
 		settingEventHeadingTextDesc: "Heading label that marks the start of the Event section in daily notes.",
@@ -272,7 +287,12 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		modalAddTitle: "무엇을 했나요?",
 		modalEditTitle: "일과 수정",
 		lblTimeSet: "시간 설정",
+		lblStartTime: "시작",
+		lblEndTime: "종료",
+		lblHour: "시",
+		lblMinute: "분",
 		lblContent: "내용",
+		modalSaveShortcutHint: "Ctrl/Cmd + Enter를 눌러 저장합니다.",
 		fieldCategory: "카테고리",
 		categoryNone: "카테고리 없음",
 		uncategorized: "미분류",
@@ -314,6 +334,9 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		settingTabularTimeRangesName: "시간 숫자를 고정폭으로 표시",
 		settingTabularTimeRangesDesc:
 			"글꼴을 바꾸지 않고 이벤트 시간의 숫자 폭을 일정하게 맞춥니다. 고정폭 숫자를 지원하는 글꼴이 필요합니다.",
+		settingFocusEditorAfterSaveName: "저장 후 편집기에 자동으로 포커스",
+		settingFocusEditorAfterSaveDesc:
+			"새 항목을 저장한 후 열려 있는 해당 마크다운 편집기에 포커스를 두고 항목 끝에 커서를 놓습니다. Ctrl+Enter도 이 설정을 따릅니다.",
 		settingLanguageName: "언어",
 		settingEventHeadingTextName: "이벤트 제목 문구",
 		settingEventHeadingTextDesc: "일일 노트에서 Event 섹션의 시작을 표시하는 제목 문구입니다.",

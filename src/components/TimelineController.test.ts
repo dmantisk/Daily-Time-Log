@@ -58,7 +58,7 @@ interface PluginStub {
 	getDailyNoteFolder: () => string;
 	getDailyNoteFormat: () => string;
 	writeFile: (file: TFile, content: string) => Promise<void>;
-	processWrite: (file: TFile, fn: (content: string) => string) => Promise<void>;
+	processWrite: (file: TFile, fn: (content: string) => string) => Promise<string>;
 }
 
 function createFile(path: string): TFile {
@@ -133,6 +133,7 @@ function createPluginStub(
 		},
 		processWrite: async (_file, fn) => {
 			content = fn(content);
+			return content;
 		},
 	};
 

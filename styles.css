@@ -290,6 +290,21 @@
 	gap: 0.4rem;
 }
 
+.dwl-modal-time-group {
+	min-width: 0;
+}
+
+.dwl-modal-time-parts {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.dwl-modal-time-separator {
+	color: var(--text-muted);
+}
+
 /* The time inputs and the textarea are Obsidian's own components, so their
    colours, borders and focus ring come from the theme. Only the sizing the
    app does not provide is set here: neither `input[type="text"]` nor
@@ -305,6 +320,12 @@
 	resize: vertical;
 	min-height: 48px;
 	max-height: 90px;
+}
+
+.dwl-modal-shortcut-hint {
+	margin-top: 0.25rem;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
 }
 
 /* Dashboard uses Obsidian's theme variables directly. */

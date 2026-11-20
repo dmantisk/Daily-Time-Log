@@ -114,13 +114,16 @@ The modal shell, title, background, overlay and default buttons use Obsidian `Mo
 
 ```
 ┌─────────────────────────────────────────┐
-│ What did you do?                         │  ← title (black)
+│ What did you do?                         │
 ├─────────────────────────────────────────┤
 │ Time Setting                             │
-│ [09:00]           [10:00]                │  ← start / end
+│ Start  [09] : [00]   End  [10] : [00]    │  ← hour / minute inputs
+│                                         │
+│ Category                     [Work  ▾]  │  ← native dropdown
 │                                         │
 │ Content                                  │
-│ [Enter detailed content.                ]│  ← textarea (vertical resize)
+│ [Enter detailed content.                ]│  ← native textarea
+│ Ctrl/Cmd + Enter to save                 │  ← keyboard shortcut hint
 │                                         │
 │ [Delete]                 [Cancel] [Save] │
 └─────────────────────────────────────────┘
@@ -128,16 +131,20 @@ The modal shell, title, background, overlay and default buttons use Obsidian `Mo
 
 | Field | Type | Format | Validation |
 |---|---|---|---|
-| Start time | `TextComponent` | `HH:mm` | `TIME_VALUE_REGEX` from `parser.ts` (checks the hour 00-23 and minute 00-59 ranges — the digit-count-only `/\d{1,2}:\d{2}/` was discarded because it also let `99:99` through) |
-| End time | `TextComponent` | `HH:mm` | Same as above, plus `24:00` (the end of the day) |
-| Content | `TextAreaComponent` | Free text | None (empty values allowed) |
+| Start hour / minute | Obsidian `TextComponent` | Two numeric segments joined as `HH:mm` | `TIME_VALUE_REGEX` (hours 00-23, minutes 00-59) |
+| End hour / minute | Obsidian `TextComponent` | Two numeric segments joined as `HH:mm` | `TIME_END_VALUE_REGEX` (hours 00-23, minutes 00-59, plus `24:00`) |
+| Category | Obsidian `DropdownComponent` | Configured category display name | Existing category matching rules |
+| Content | Obsidian `TextAreaComponent` | Free text | Existing multiline / marker / fence validation; empty values allowed |
 
-- **Delete button**: hidden when adding, shown when editing
-- **Save result**: appended to the end of the Event block's own content in the `- HH:mm - HH:mm content` format (right below the configured Event heading, before any subheading)
-- **Edit**: that line is replaced in place (after re-validating the line index)
+- **Time entry**: Four native numeric `TextComponent` inputs are used. Hour and minute values are padded to two digits before validation and recombined into the existing `HH:mm` storage format. Overnight ranges remain valid; equal start/end values remain invalid.
+- **Keyboard save**: `Ctrl+Enter` (or `Cmd+Enter` on macOS) performs the same save-and-close action as the Save button. The description textarea remains available for users who prefer the modal-only workflow.
+- **Delete button**: hidden when adding, shown when editing.
+- **Save result**: new entries are written through `processWrite()` and inserted at the end of the configured Event heading's own content, before any deeper subheading. The position-aware append helper also returns the exact physical line for optional editor focus.
+- **Editor focus preference**: the persistent `focusEditorAfterSave` setting defaults to OFF. When ON, saving a new entry from either the modal's Save button or `Ctrl/Cmd+Enter` focuses the already-open Markdown view for that daily note and places the cursor at the end of the new entry. With an empty description, a trailing separator is retained so the cursor is ready for typing. When OFF, both save actions retain the existing modal workflow. Editing and deleting existing entries do not trigger automatic cursor placement.
+- **Edit**: the existing event is replaced in place after re-validating the line index; existing description content and raw HTML preservation remain unchanged.
 
 > [!NOTE]
-> *(updated 2026-10-30)* The modal is **imperative, not React** — it is built directly in `Modal.contentEl` from Obsidian's own `TextComponent`, `TextAreaComponent` and `ButtonComponent`. The button row is Obsidian's own `.modal-button-container`; the save button is `.mod-cta` and the delete button is `.mod-destructive` + `.mod-secondary` (the last is what pushes it to the far left of the row). Only the **category chips** remain hand-rolled, because Obsidian has no native control for a set of coloured category labels. The validation rules are unchanged from the React version, and `src/modals/TimelineModal.test.ts` guards them.
+> The modal is imperative, not React, and uses Obsidian's native `Modal`, `TextComponent`, `TextAreaComponent`, `DropdownComponent` and `ButtonComponent`. The button row is Obsidian's `.modal-button-container`; the Save button uses `.mod-cta` and the Delete button uses `.mod-destructive` + `.mod-secondary`. Only the category colour dot and the small layout wrappers are custom because no native component provides that exact presentation. Editor focus uses the public `MarkdownView.editor` API, not CodeMirror DOM internals.
 
 ### 4.3 Confirmation Popup
 

@@ -15,7 +15,7 @@ import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 installObsidianDomHelpers();
 
 import { Notice } from "./test/obsidian-mock";
-import { TFile, Plugin, WorkspaceLeaf, ItemView } from "obsidian";
+import { MarkdownView, TFile, Plugin, WorkspaceLeaf, ItemView } from "obsidian";
 import DailyWorkLogPlugin from "./main";
 import { DailyWorkLogView, VIEW_TYPE_DAILY_WORK_LOG } from "./view";
 import { TimelineController } from "./components/TimelineController";
@@ -40,7 +40,7 @@ const TEST_MANIFEST = {
 
 // Mock WorkspaceLeaf that wraps a view
 class MockWorkspaceLeaf {
-	view: DailyWorkLogView | null = null;
+	view: any = null;
 	viewType: string = "";
 	containerEl: HTMLElement = document.createElement("div");
 
@@ -61,6 +61,7 @@ class MockWorkspaceLeaf {
 class MockWorkspace {
 	private leaves: MockWorkspaceLeaf[] = [];
 	private activeFile: TFile | null = null;
+	revealedLeaf: MockWorkspaceLeaf | null = null;
 
 	setActiveFile(file: TFile | null) {
 		this.activeFile = file;
@@ -80,7 +81,9 @@ class MockWorkspace {
 		return new MockWorkspaceLeaf();
 	}
 
-	revealLeaf(_leaf: MockWorkspaceLeaf): void {}
+	revealLeaf(leaf: MockWorkspaceLeaf): void {
+		this.revealedLeaf = leaf;
+	}
 
 	addLeaf(leaf: MockWorkspaceLeaf) {
 		this.leaves.push(leaf);
@@ -337,6 +340,78 @@ vi.mock("./modals/TimelineModal", () => {
 		open(): void {}
 	}
 	return { TimelineModal: MockTimelineModal };
+});
+
+describe("focusEditorAtPosition", () => {
+	let fixture: TestFixture;
+
+	beforeEach(async () => {
+		fixture = await createTestFixture();
+	});
+
+	afterEach(() => {
+		if (fixture?.view) fixture.view.onClose();
+		if (fixture?.viewContainer) fixture.viewContainer.remove();
+	});
+
+	it("reveals the matching note and focuses the editor at a clamped position", async () => {
+		const markdownView = new MarkdownView();
+		markdownView.file = fixture.activeFile;
+		markdownView.state = { mode: "preview", source: false };
+		markdownView.lines = ["# Event", "- 09:00 - 10:00 [Work] Task"];
+		const leaf = new MockWorkspaceLeaf(markdownView as never);
+		leaf.viewType = "markdown";
+		fixture.workspace.addLeaf(leaf);
+		fixture.plugin.settings.focusEditorAfterSave = true;
+
+		await fixture.plugin.focusEditorAtPosition(fixture.activeFile, { line: 1, ch: 999 });
+
+		expect(fixture.workspace.revealedLeaf).toBe(leaf);
+		expect(markdownView.getMode()).toBe("source");
+		expect(markdownView.cursor).toEqual({ line: 1, ch: markdownView.lines[1].length });
+		expect(markdownView.focused).toBe(true);
+	});
+
+	it("waits for the Markdown editor buffer to receive the vault write before placing the cursor", async () => {
+		const markdownView = new MarkdownView();
+		markdownView.file = fixture.activeFile;
+		markdownView.lines = ["# Event", "- 09:00 - 10:00 [Work] Existing", "### Notes"];
+		const leaf = new MockWorkspaceLeaf(markdownView as never);
+		leaf.viewType = "markdown";
+		fixture.workspace.addLeaf(leaf);
+		fixture.plugin.settings.focusEditorAfterSave = true;
+
+		const updatedContent =
+			"# Event\n- 09:00 - 10:00 [Work] Existing\n- 10:00 - 11:00 [Work] New entry\n### Notes";
+		const focusPromise = fixture.plugin.focusEditorAtPosition(
+			fixture.activeFile,
+			{ line: 2, ch: "- 10:00 - 11:00 [Work] New entry".length },
+			updatedContent
+		);
+
+		// Simulate Obsidian applying the vault modify event after the write call.
+		window.setTimeout(() => {
+			markdownView.lines = updatedContent.split("\n");
+		}, 24);
+		await focusPromise;
+
+		expect(markdownView.cursor).toEqual({ line: 2, ch: "- 10:00 - 11:00 [Work] New entry".length });
+		expect(markdownView.focused).toBe(true);
+	});
+
+	it("does not reveal or focus an editor when the preference is disabled", async () => {
+		const markdownView = new MarkdownView();
+		markdownView.file = fixture.activeFile;
+		const leaf = new MockWorkspaceLeaf(markdownView as never);
+		leaf.viewType = "markdown";
+		fixture.workspace.addLeaf(leaf);
+
+		await fixture.plugin.focusEditorAtPosition(fixture.activeFile, { line: 0, ch: 0 });
+
+		expect(fixture.workspace.revealedLeaf).toBeNull();
+		expect(markdownView.cursor).toBeNull();
+		expect(markdownView.focused).toBe(false);
+	});
 });
 
 describe("P2-3: Add log entry command refreshes open DailyWorkLogView", () => {

@@ -185,6 +185,49 @@ export class VaultInstance {
 
 export class WorkspaceLeaf {}
 
+/** Minimal MarkdownView test double for the public editor/focus API. */
+export class MarkdownView {
+	file: TFile | null = null;
+	state: { mode: "source" | "preview"; source?: boolean } = { mode: "source", source: false };
+	lines: string[] = [""];
+	cursor: { line: number; ch: number } | null = null;
+	focused = false;
+	editor = {
+		lineCount: (): number => this.lines.length,
+		getLine: (line: number): string => this.lines[line] ?? "",
+		getValue: (): string => this.lines.join("\n"),
+		setCursor: (position: { line: number; ch: number }): void => {
+			this.cursor = position;
+		},
+		scrollIntoView: (
+			_range: { from: { line: number; ch: number }; to: { line: number; ch: number } },
+			_center?: boolean
+		): void => {},
+		focus: (): void => {
+			this.focused = true;
+		},
+	};
+
+	getViewType(): string {
+		return "markdown";
+	}
+
+	getMode(): "source" | "preview" {
+		return this.state.mode;
+	}
+
+	getState(): { mode: "source" | "preview"; source?: boolean } {
+		return { ...this.state };
+	}
+
+	async setState(
+		state: { mode: "source" | "preview"; source?: boolean },
+		_result?: { history?: boolean }
+	): Promise<void> {
+		this.state = { ...state };
+	}
+}
+
 export class ItemView {
 	containerEl: HTMLElement = document.createElement("div");
 	/**

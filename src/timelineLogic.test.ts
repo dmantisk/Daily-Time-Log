@@ -163,7 +163,7 @@ describe("buildTimelineLine", () => {
 		).toBe("- 09:00 - 10:00 [Work] Planning");
 	});
 
-	it("omits an empty category and trims trailing whitespace", () => {
+	it("omits an empty category but keeps a separator for an empty description", () => {
 		expect(
 			buildTimelineLine({
 				start: "09:00",
@@ -171,7 +171,18 @@ describe("buildTimelineLine", () => {
 				category: "",
 				description: "",
 			})
-		).toBe("- 09:00 - 10:00");
+		).toBe("- 09:00 - 10:00 ");
+	});
+
+	it("keeps the category separator when the description is empty", () => {
+		expect(
+			buildTimelineLine({
+				start: "09:00",
+				end: "10:00",
+				category: "Work",
+				description: "",
+			})
+		).toBe("- 09:00 - 10:00 [Work] ");
 	});
 });
 
