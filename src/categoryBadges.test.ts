@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CATEGORY_BADGE_REGEX_SOURCE } from "./parser";
+import { CATEGORY_BADGE_REGEX_SOURCE, parseDailyNote } from "./parser";
 
 describe("CATEGORY_BADGE_REGEX_SOURCE", () => {
 	const regex = () => new RegExp(CATEGORY_BADGE_REGEX_SOURCE, "g");
@@ -55,6 +55,22 @@ describe("CATEGORY_BADGE_REGEX_SOURCE", () => {
 		const matches = Array.from(text.matchAll(regex()));
 		expect(matches.length).toBe(1);
 		expect(matches[0][1]).toBe("Work");
+	});
+
+	it("allows badges in continuation prose without creating another timeline item", () => {
+		const note = [
+			"# Event",
+			"- 09:00 - 10:00 [Work] Team meeting",
+			"  Follow-up: discussion ran 11:00 - 12:00 [Work].",
+		].join("\n");
+
+		const matches = Array.from(note.matchAll(regex()));
+		expect(matches.map((match) => match[1])).toEqual(["Work", "Work"]);
+
+		const { timeline } = parseDailyNote(note);
+		expect(timeline).toHaveLength(1);
+		expect(timeline[0]).toMatchObject({ start: "09:00", end: "10:00", category: "Work" });
+		expect(timeline[0].description).toContain("Follow-up: discussion ran 11:00 - 12:00 [Work].");
 	});
 
 	it("matches category badge with `~` time separator", () => {

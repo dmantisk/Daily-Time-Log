@@ -7,6 +7,7 @@ import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { editorInfoField } from "obsidian";
 import { buildCategoryBadgeEditorPlugin, buildTimeRangeEditorPlugin } from "./categoryBadges";
+import { parseDailyNote } from "./parser";
 import type { CustomCategory } from "./settings";
 import { installObsidianDomHelpers } from "./test/obsidian-dom-mock";
 
@@ -17,6 +18,29 @@ installObsidianDomHelpers();
 const CATEGORIES: CustomCategory[] = [{ name: "Work", displayName: "Work", color: "#d0e1fd" }];
 
 describe("category badge editor plugin", () => {
+	it("styles category references in continuation prose without creating another timeline item", () => {
+		const doc = [
+			"## Time Sheet",
+			"- 09:00 - 10:00 [Work] Team meeting",
+			"  Follow-up: discussion ran 11:00 - 12:00 [Work].",
+		].join("\n");
+		const state = EditorState.create({
+			doc,
+			extensions: [
+				editorInfoField.init(() => fakeFile("Log/2026/10/22.md")),
+				buildCategoryBadgeEditorPlugin(CATEGORIES, "Log", { text: "Time Sheet", level: 2 }, "YYYY/MM/DD"),
+			],
+		});
+		const view = new EditorView({ state, parent: document.createElement("div") });
+
+		try {
+			expect(view.dom.querySelectorAll(".dwl-cat-badge")).toHaveLength(2);
+			expect(parseDailyNote(doc, { text: "Time Sheet", level: 2 }).timeline).toHaveLength(1);
+		} finally {
+			view.destroy();
+		}
+	});
+
 	it("badges configured categories and leaves unknown tags as plain text", () => {
 		const doc = [
 			"## Time Sheet",
