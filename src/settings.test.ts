@@ -200,6 +200,31 @@ describe("validateCategoryName", () => {
 		expect(validateCategoryName(categories, "Work", 0)).toBeNull();
 		expect(validateCategoryName(categories, "Study", 0)).toBe("duplicate");
 	});
+
+	it("rejects names containing square brackets anywhere", () => {
+		// Square brackets are reserved delimiters in the Markdown Event
+		// format. A category named "QA[UX]" would be written as
+		// "- 09:00 - 10:00 [QA[UX]] Testing" which the parser cannot
+		// reliably recover.
+		expect(validateCategoryName(categories, "QA[UX]")).toBe("brackets");
+		expect(validateCategoryName(categories, "QA[UX")).toBe("brackets");
+		expect(validateCategoryName(categories, "QAUX]")).toBe("brackets");
+		expect(validateCategoryName(categories, "[")).toBe("brackets");
+		expect(validateCategoryName(categories, "]")).toBe("brackets");
+		expect(validateCategoryName(categories, "[Work]")).toBe("brackets");
+		expect(validateCategoryName(categories, "Work]")).toBe("brackets");
+		expect(validateCategoryName(categories, "[Work")).toBe("brackets");
+	});
+
+	it("accepts valid names without brackets", () => {
+		// Valid names with hyphens, spaces, and Korean characters
+		expect(validateCategoryName(categories, "QA-UX")).toBeNull();
+		expect(validateCategoryName(categories, "Deep Work")).toBeNull();
+		expect(validateCategoryName(categories, "업무")).toBeNull();
+		expect(validateCategoryName(categories, "개인 프로젝트")).toBeNull();
+		expect(validateCategoryName(categories, "QA_UX")).toBeNull();
+		expect(validateCategoryName(categories, "QA.UX")).toBeNull();
+	});
 });
 
 describe("isValidMinutes", () => {

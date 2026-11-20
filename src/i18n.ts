@@ -81,6 +81,7 @@ export type UIStringKey =
 	| "alertCatNameEmpty"
 	| "alertCatLimitMax"
 	| "alertCatNameExists"
+	| "alertCatNameBrackets"
 	| "settingCommandsSection"
 	| "settingCommandsDesc"
 	| "settingCommandOpenSidebarName"
@@ -214,6 +215,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		alertCatNameEmpty: "Please enter a category name.",
 		alertCatLimitMax: "You cannot have more than 10 categories.",
 		alertCatNameExists: "This category name already exists.",
+		alertCatNameBrackets: "Category names cannot contain [ or ].",
 		settingCommandsSection: "Commands",
 		settingCommandsDesc: "Enable or disable plugin commands.",
 		settingCommandOpenSidebarName: "Open sidebar command",
@@ -333,6 +335,7 @@ export const STRINGS: Record<MarkerLanguage, Record<UIStringKey, string>> = {
 		alertCatNameEmpty: "카테고리 이름을 입력해 주세요.",
 		alertCatLimitMax: "카테고리는 최대 10개까지 등록할 수 있습니다.",
 		alertCatNameExists: "이미 존재하는 카테고리 이름입니다.",
+		alertCatNameBrackets: "카테고리 이름에 [ 또는 ]을(를) 사용할 수 없습니다.",
 		settingCommandsSection: "명령어",
 		settingCommandsDesc: "플러그인 명령어를 활성화 또는 비활성화합니다.",
 		settingCommandOpenSidebarName: "사이드바 열기 명령어",

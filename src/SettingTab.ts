@@ -242,7 +242,13 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 							const trimmed = text.getValue().trim();
 							const problem = validateCategoryName(categories, trimmed, index);
 							if (problem) {
-								new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
+								const key =
+									problem === "empty"
+										? "alertCatNameEmpty"
+										: problem === "brackets"
+											? "alertCatNameBrackets"
+											: "alertCatNameExists";
+								new Notice(t(key, lang));
 								text.setValue(categories[index].displayName);
 								return;
 							}
@@ -338,7 +344,13 @@ export class DailyWorkLogSettingTab extends PluginSettingTab {
 							const trimmed = newName.trim();
 							const problem = validateCategoryName(categories, trimmed);
 							if (problem) {
-								new Notice(t(problem === "empty" ? "alertCatNameEmpty" : "alertCatNameExists", lang));
+								const key =
+									problem === "empty"
+										? "alertCatNameEmpty"
+										: problem === "brackets"
+											? "alertCatNameBrackets"
+											: "alertCatNameExists";
+								new Notice(t(key, lang));
 								return;
 							}
 							if (categories.length >= MAX_CATEGORIES) {
