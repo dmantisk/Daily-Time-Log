@@ -71,7 +71,10 @@ function createMockMarkdownView(initialLines: string[] = [""]): {
 	view.editor = editor as any;
 	view.getMode = () => mode;
 	view.getState = () => ({ mode, source: mode === "source" });
-	view.setState = async (state: { mode: "source" | "preview"; source?: boolean }, _options?: { history?: boolean }) => {
+	view.setState = async (
+		state: { mode: "source" | "preview"; source?: boolean },
+		_options?: { history?: boolean }
+	) => {
 		mode = state.mode;
 	};
 	view.getViewType = () => "markdown";
@@ -432,19 +435,18 @@ describe("focusEditorAtPosition", () => {
 	});
 
 	it("waits for the Markdown editor buffer to receive the vault write before placing the cursor", async () => {
-		const { view: markdownView, editor, setLines } = createMockMarkdownView([
-			"# Event",
-			"- 09:00 - 10:00 [Work] Existing",
-			"### Notes",
-		]);
+		const {
+			view: markdownView,
+			editor,
+			setLines,
+		} = createMockMarkdownView(["# Event", "- 09:00 - 10:00 [Work] Existing", "### Notes"]);
 		markdownView.file = fixture.activeFile;
 		const leaf = new MockWorkspaceLeaf(markdownView as never);
 		leaf.viewType = "markdown";
 		fixture.workspace.addLeaf(leaf);
 		fixture.plugin.settings.focusEditorAfterSave = true;
 
-		const updatedContent =
-			"# Event\n- 09:00 - 10:00 [Work] Existing\n- 10:00 - 11:00 [Work] New entry\n### Notes";
+		const updatedContent = "# Event\n- 09:00 - 10:00 [Work] Existing\n- 10:00 - 11:00 [Work] New entry\n### Notes";
 		const focusPromise = fixture.plugin.focusEditorAtPosition(
 			fixture.activeFile,
 			{ line: 2, ch: "- 10:00 - 11:00 [Work] New entry".length },

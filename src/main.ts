@@ -244,9 +244,9 @@ export default class DailyWorkLogPlugin extends Plugin {
 	): Promise<void> {
 		if (!this.settings.focusEditorAfterSave) return;
 
-		const leaf = this.app.workspace.getLeavesOfType("markdown").find(
-			(candidate) => candidate.view instanceof MarkdownView && candidate.view.file?.path === file.path
-		);
+		const leaf = this.app.workspace
+			.getLeavesOfType("markdown")
+			.find((candidate) => candidate.view instanceof MarkdownView && candidate.view.file?.path === file.path);
 		if (!leaf || !(leaf.view instanceof MarkdownView)) return;
 
 		await this.app.workspace.revealLeaf(leaf);

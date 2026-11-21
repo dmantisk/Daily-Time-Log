@@ -116,8 +116,7 @@ describe("TimelineModal", () => {
 		});
 		const style = window.getComputedStyle(textarea);
 		const borderHeight =
-			(Number.parseFloat(style.borderTopWidth) || 0) +
-			(Number.parseFloat(style.borderBottomWidth) || 0);
+			(Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0);
 
 		textarea.dispatchEvent(new Event("input", { bubbles: true }));
 		expect(textarea.style.height).toBe(`${120 + borderHeight}px`);

@@ -79,7 +79,10 @@ export class TimelineModal extends Modal {
 
 		// Start Time group
 		const startGroup = metadataRow.createDiv({ cls: "dwl-modal-time-group" });
-		const startLabel = startGroup.createSpan({ cls: "dwl-modal-time-label", text: t("lblStartTime", this.language) });
+		const startLabel = startGroup.createSpan({
+			cls: "dwl-modal-time-label",
+			text: t("lblStartTime", this.language),
+		});
 		startLabel.setAttribute("aria-hidden", "true"); // Inputs have their own aria-labels
 		const startParts = startGroup.createDiv({ cls: "dwl-modal-time-parts" });
 		const [startHour = "", startMinute = ""] = (this.initial?.start ?? this.defaultStart).split(":");
@@ -125,7 +128,10 @@ export class TimelineModal extends Modal {
 
 		// Category group
 		const categoryGroup = metadataRow.createDiv({ cls: "dwl-modal-category-group" });
-		const categoryLabel = categoryGroup.createSpan({ cls: "dwl-modal-category-label", text: t("fieldCategory", this.language) });
+		const categoryLabel = categoryGroup.createSpan({
+			cls: "dwl-modal-category-label",
+			text: t("fieldCategory", this.language),
+		});
 		categoryLabel.setAttribute("aria-hidden", "true"); // Dropdown has its own aria-label
 
 		this.categoryDropdown = new DropdownComponent(categoryGroup);
@@ -311,7 +317,8 @@ export class TimelineModal extends Modal {
 					component.inputEl.value = validHour;
 
 					// The minute component will be set via a property we attach
-					const pairMinute = (component.inputEl as HTMLInputElement & { pairMinute?: TextComponent }).pairMinute;
+					const pairMinute = (component.inputEl as HTMLInputElement & { pairMinute?: TextComponent })
+						.pairMinute;
 					if (pairMinute) {
 						pairMinute.setValue(validMinute);
 						pairMinute.inputEl.value = validMinute;
