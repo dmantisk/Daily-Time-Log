@@ -4,19 +4,20 @@ An Obsidian plugin that visualizes time-tracking Events directly from your daily
 
 A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by SeongChan Hong, used under the MIT License.
 
-> ## Vibe coded!
-> Almost all commits since the fork are written by AI
-> 
-> Notable changes in the fork;
+> ## Vibe coded
+>
+> Almost all commits since the fork are written by AI.
+>
+> Notable changes in the fork:
+>
 > - Customisation via the core daily notes plugin (templates & name date format)
 > - Removed ToDo handling
 > - Minimised custom elements to use native Obsidian elements instead (i.e. the react based time line view is replaced)
 > - Additional styling to the editor and timeline view
 >   - Category tag in the editor matches the timeline view
 >   - Tabular figures for the time periods
-
-
-<img width="1407" height="870" alt="Daily-time-log" src="https://github.com/user-attachments/assets/21cecb51-ca9b-4ee3-a3bd-8d1ad6c4096c" />
+>
+> ![Daily-time-log](https://github.com/user-attachments/assets/21cecb51-ca9b-4ee3-a3bd-8d1ad6c4096c)
 
 ## Features
 
@@ -45,8 +46,8 @@ Daily Time Log follows the date format and "New file location" configured in Obs
 - Events are read **only from under the configured heading**. The section ends at the next heading at the *same level or above* — so with `# Event` (level 1), any `#` heading ends it, while with `## Event` (level 2), a `###` subheading and its content stay inside the Event section.
 - A note without the configured heading has no Event section: the sidebar shows a "No Event section" banner and Work Insights counts it as zero Event time. Adding an Event from the sidebar creates the heading in the note automatically.
 
-<img width="885" height="625" alt="Daily-time-log-settings-1" src="https://github.com/user-attachments/assets/df36237d-0128-4575-9266-598f73d9afd9" />
-<img width="890" height="723" alt="Daily-time-log-settings-2" src="https://github.com/user-attachments/assets/db4745c3-ee86-4701-a35f-912769cfd2dd" />
+![Daily-time-log-settings-1](https://github.com/user-attachments/assets/df36237d-0128-4575-9266-598f73d9afd9)
+![Daily-time-log-settings-2](https://github.com/user-attachments/assets/db4745c3-ee86-4701-a35f-912769cfd2dd)
 
 ## Installation
 
