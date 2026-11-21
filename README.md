@@ -126,6 +126,19 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 1.1.0 (2026-11-21)
+
+- **Modal improvements**: expanded description field, better time entry with keyboard-friendly input, improved cursor placement and spacing.
+- **Commands**: added "Add new log entry" command; added setting to toggle commands on/off.
+- **Customizable day hours**: configurable start/end hours for the timeline grid.
+- **Parser hardening**: reject fenced code blocks in Event descriptions; ignore indented code headings; reject brackets in category names.
+- **Dashboard**: respect daily note date format in period summaries.
+- **Timeline refresh**: refresh after command-based Event saves; apply command settings immediately.
+- **Refactoring**: split parser into modular files (heading-normalization, event-block, timeline-parsing, time-math, html); extract SelfWriteGuard with tests; make parser.ts a barrel re-export.
+- **Code quality**: Prettier formatting across codebase; ESLint fixes; honor reduced-motion preference; add DOM.Iterable to test tsconfig.
+- **Tests**: fix TFile fixtures, stub settings types, SettingTab test types; add dashboard fixture paths; import stub statics from obsidian-mock.
+- **Documentation**: split parser rules into topic files; record pointer-only sidebar decision; update AGENTS.md and design.md; add parser/plugin-layer instructions.
+
 ### 1.0.0 (2026-11-01)
 
 - Added configurable tabular numerals for event times in the editor and reading view.
