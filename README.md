@@ -16,8 +16,8 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 > - Additional styling to the editor and timeline view
 >   - Category tag in the editor matches the timeline view
 >   - Tabular figures for the time periods
->
-> ![Daily-time-log](https://github.com/user-attachments/assets/21cecb51-ca9b-4ee3-a3bd-8d1ad6c4096c)
+
+![Daily-time-log](https://github.com/user-attachments/assets/21cecb51-ca9b-4ee3-a3bd-8d1ad6c4096c)
 
 ## Features
 
