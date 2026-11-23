@@ -12,6 +12,7 @@ A fork of [seongchan/DailyWorkLog](https://github.com/seongchan/DailyWorkLog) by
 >
 > - Customisation via the core daily notes plugin (templates & name date format)
 > - Removed ToDo handling
+> - Improved keyboard handling
 > - Minimised custom elements to use native Obsidian elements instead (i.e. the react based time line view is replaced)
 > - Additional styling to the editor and timeline view
 >   - Category tag in the editor matches the timeline view
