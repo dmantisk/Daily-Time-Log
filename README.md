@@ -128,6 +128,10 @@ npm run build   # type-check (tsc) + production build
 
 ## Changelog
 
+### 1.1.1 (2026-11-26)
+
+- **CSS**: removed all `!important` declarations from `styles.css` by increasing selector specificity (added `.mod-root` and `.dwl-modal-time-parts` parents), addressing automated plugin review feedback.
+
 ### 1.1.0 (2026-11-21)
 
 - **Modal improvements**: expanded description field, better time entry with keyboard-friendly input, improved cursor placement and spacing.
