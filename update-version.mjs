@@ -72,13 +72,7 @@ if (changelogEntry) {
 	let insertIdx = changelogIdx + 1;
 	while (insertIdx < lines.length && !lines[insertIdx].startsWith("### ")) insertIdx++;
 
-	const newSection = [
-		"",
-		heading,
-		"",
-		...changelogEntry.split("\n"),
-		"",
-	];
+	const newSection = ["", heading, "", ...changelogEntry.split("\n"), ""];
 
 	lines.splice(insertIdx, 0, ...newSection);
 
