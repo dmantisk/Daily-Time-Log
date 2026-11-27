@@ -52,20 +52,33 @@ Daily Time Log follows the date format and "New file location" configured in Obs
 
 ## Installation
 
-This plugin isn't published on the Community Plugins browser yet. To install manually:
+### Option 1: Community plugin store (in app)
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from a [release](../../releases) (or build them yourself — see below).
+Open Obsidian, go to **Settings → Community plugins → Browse**, search for **Daily Time Log**, and install it. Or open it directly:
+
+[obsidian://plugin?id=daily-time-log](obsidian://plugin?id=daily-time-log)
+
+### Option 2: Community plugin site
+
+Visit the [Daily Time Log plugin page](https://obsidian.md/plugins/daily-time-log) on the Obsidian community site and click **Install**.
+
+### Option 3: Manual download from release
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from a [release](../../releases).
 2. Copy the three files into `<your vault>/.obsidian/plugins/daily-time-log/`.
-3. In Obsidian, go to **Settings → Community plugins**, turn off Restricted mode if needed, and enable **Daily Time Log**.
 
-### Building from source
+### Option 4: Build from source
 
 ```bash
 npm install
 npm run build   # outputs dist/main.js, dist/manifest.json, dist/styles.css
 ```
 
+Then copy the three files from `dist/` into `<your vault>/.obsidian/plugins/daily-time-log/`.
+
 For active development, use `npm run dev` instead — it rebuilds automatically on every change (esbuild watch mode).
+
+After installing via any method, go to **Settings → Community plugins**, turn off Restricted mode if needed, and enable **Daily Time Log**.
 
 ## Usage
 
