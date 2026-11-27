@@ -125,12 +125,14 @@ When viewing Event content in the sidebar, HTML tags are stripped out. This uses
 
 ## Settings
 
-- **Day Start Hour / Day End Hour**: the hour range shown on the grid.
+- **Day Start Time / Day End Time**: the time range shown on the grid, in 10-minute increments.
 - **Daily Note Folder**: the plugin reads the folder and date format from Obsidian's core Daily Notes plugin settings (not a separate plugin setting). The dashboard scans inside that folder when set. When no folder is configured, it checks Markdown files at the vault root and follows only folders whose names match the configured date-format path (for example, year/month folders for `YYYY/MM/DD`); unrelated folders are not traversed.
 - **Event Heading Text / Level**: configure the heading that begins the Event section in your notes. Only this exact heading (at this exact level) is recognized — change it and notes using the old heading stop being parsed as an Event block.
 - **Tabular time numerals**: toggle consistent-width digits for event times without changing the surrounding font.
+- **Automatically focus editor after saving**: after saving a new entry, focus its open Markdown editor and place the cursor at the end of the entry.
 - **Language**: follows Obsidian's UI language by default; English or Korean can be selected as an override.
 - **Category Management**: add, rename, recolor, or delete categories, or reset to the defaults. Up to 10 categories in total; names must be unique.
+- **Commands**: enable or disable the plugin commands ("Open sidebar", "Open Work Insights", "Add log entry").
 
 ## Development
 
